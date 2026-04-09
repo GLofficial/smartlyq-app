@@ -55,7 +55,9 @@ class ApiClient {
 				return retryResponse.json();
 			}
 			this.clearToken();
-			window.location.href = "/login";
+			// Use base URL so we stay within the React app (not the PHP app)
+			const base = import.meta.env.BASE_URL || "/";
+			window.location.href = `${base}login`;
 			throw new Error("Session expired");
 		}
 

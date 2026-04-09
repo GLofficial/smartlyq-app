@@ -15,7 +15,8 @@ export function Header() {
 	const handleLogout = () => {
 		apiClient.logout();
 		clearAuth();
-		window.location.href = "/login";
+		const base = import.meta.env.BASE_URL || "/";
+		window.location.href = `${base}login`;
 	};
 
 	return (
