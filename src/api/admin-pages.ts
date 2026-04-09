@@ -4,7 +4,7 @@ import { apiClient } from "@/lib/api-client";
 export function useAdminPricing() {
 	return useQuery({
 		queryKey: ["admin", "pricing"],
-		queryFn: () => apiClient.get<{ pricing: { id: number; endpoint: string; cost: number; type: string; vendor_cost: number; description: string; status: number }[] }>("/api/spa/admin/pricing"),
+		queryFn: () => apiClient.get<{ pricing: { id: number; endpoint: string; unit_name: string; cost: number; min_units: number; max_units: number; is_active: boolean; updated_at: string | null }[] }>("/api/spa/admin/pricing"),
 	});
 }
 

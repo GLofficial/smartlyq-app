@@ -22,23 +22,23 @@ export function AdminPricingPage() {
 								<thead>
 									<tr className="border-b border-[var(--border)]">
 										<th className="py-2 text-left font-medium">Endpoint</th>
-										<th className="py-2 text-left font-medium">Type</th>
+										<th className="py-2 text-left font-medium">Unit</th>
 										<th className="py-2 text-right font-medium">Cost/Unit</th>
-										<th className="py-2 text-right font-medium">Vendor Cost</th>
-										<th className="py-2 text-left font-medium">Description</th>
-										<th className="py-2 text-center font-medium">Status</th>
+										<th className="py-2 text-right font-medium">Min</th>
+										<th className="py-2 text-right font-medium">Max</th>
+										<th className="py-2 text-center font-medium">Active</th>
 									</tr>
 								</thead>
 								<tbody>
 									{data.pricing.map((p) => (
 										<tr key={p.id} className="border-b border-[var(--border)] hover:bg-[var(--accent)]">
 											<td className="py-2 font-mono text-xs">{p.endpoint}</td>
-											<td className="py-2"><span className="rounded bg-[var(--muted)] px-2 py-0.5 text-xs">{p.type}</span></td>
-											<td className="py-2 text-right font-medium">${p.cost.toFixed(4)}</td>
-											<td className="py-2 text-right text-[var(--muted-foreground)]">${p.vendor_cost.toFixed(4)}</td>
-											<td className="py-2 text-[var(--muted-foreground)] text-xs">{p.description}</td>
+											<td className="py-2"><span className="rounded bg-[var(--muted)] px-2 py-0.5 text-xs">{p.unit_name}</span></td>
+											<td className="py-2 text-right font-medium">${(p.cost ?? 0).toFixed(4)}</td>
+											<td className="py-2 text-right text-[var(--muted-foreground)]">{p.min_units}</td>
+											<td className="py-2 text-right text-[var(--muted-foreground)]">{p.max_units}</td>
 											<td className="py-2 text-center">
-												<span className={`h-2 w-2 inline-block rounded-full ${p.status === 1 ? "bg-green-500" : "bg-gray-400"}`} />
+												<span className={`h-2 w-2 inline-block rounded-full ${p.is_active ? "bg-green-500" : "bg-gray-400"}`} />
 											</td>
 										</tr>
 									))}
