@@ -41,10 +41,10 @@ export function ChatPage() {
 				<Card className="lg:col-span-1">
 					<CardHeader><CardTitle className="text-base">Conversations</CardTitle></CardHeader>
 					<CardContent>
-						{isLoading ? <Spinner /> : !data?.chats.length ? (
+						{isLoading ? <Spinner /> : !(data?.chats ?? []).length ? (
 							<p className="text-sm text-[var(--muted-foreground)]">No chats yet.</p>
 						) : (
-							<div className="space-y-1">{data.chats.map((c) => (
+							<div className="space-y-1">{data?.chats.map((c) => (
 								<button key={c.id} type="button" onClick={() => setActiveChatId(c.id)}
 									className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-left transition-colors ${activeChatId === c.id ? "bg-[color-mix(in_srgb,var(--sq-primary)_10%,transparent)] font-medium" : "hover:bg-[var(--accent)]"}`}>
 									<MessageSquare size={14} /><span className="truncate flex-1">{c.title}</span>

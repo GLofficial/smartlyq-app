@@ -13,11 +13,11 @@ export function AdminKbPage() {
 			<Card>
 				<CardHeader><CardTitle className="text-lg">Sources ({data?.sources.length ?? 0})</CardTitle></CardHeader>
 				<CardContent>
-					{isLoading ? <Spinner /> : !data?.sources.length ? (
+					{isLoading ? <Spinner /> : !(data?.sources ?? []).length ? (
 						<div className="flex flex-col items-center gap-2 py-8"><BookOpen size={32} className="text-[var(--muted-foreground)]" /><p className="text-sm text-[var(--muted-foreground)]">No knowledge sources.</p></div>
 					) : (
 						<div className="space-y-2">
-							{data.sources.map((s) => {
+							{data?.sources.map((s) => {
 								const Icon = TYPE_ICONS[s.type] ?? Globe;
 								return (
 									<div key={s.id} className="flex items-center gap-3 rounded border border-[var(--border)] p-3">

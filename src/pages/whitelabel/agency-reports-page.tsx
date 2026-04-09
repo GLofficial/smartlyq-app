@@ -12,7 +12,7 @@ export function AgencyReportsPage() {
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-lg">
-						{data ? `${data.reports.length} report${data.reports.length !== 1 ? "s" : ""}` : "Loading..."}
+						{data ? `${data?.reports.length} report${data?.reports.length !== 1 ? "s" : ""}` : "Loading..."}
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
@@ -20,7 +20,7 @@ export function AgencyReportsPage() {
 						<div className="flex h-32 items-center justify-center">
 							<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 						</div>
-					) : !data?.reports.length ? (
+					) : !(data?.reports ?? []).length ? (
 						<div className="flex flex-col items-center gap-3 py-12">
 							<FileText size={48} className="text-[var(--muted-foreground)]" />
 							<p className="text-[var(--muted-foreground)]">No reports generated yet.</p>
@@ -41,7 +41,7 @@ export function AgencyReportsPage() {
 									</tr>
 								</thead>
 								<tbody>
-									{data.reports.map((report) => (
+									{data?.reports.map((report) => (
 										<tr key={report.id} className="border-b border-[var(--border)] hover:bg-[var(--accent)]">
 											<td className="py-2 font-medium">{report.name}</td>
 											<td className="py-2 text-[var(--muted-foreground)]">{report.period}</td>

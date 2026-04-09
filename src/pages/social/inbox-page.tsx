@@ -16,7 +16,7 @@ export function InboxPage() {
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-lg">
-						{data ? `${data.total} conversations` : "Loading..."}
+						{data ? `${data?.total} conversations` : "Loading..."}
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
@@ -24,14 +24,14 @@ export function InboxPage() {
 						<div className="flex h-32 items-center justify-center">
 							<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 						</div>
-					) : !data?.conversations.length ? (
+					) : !(data?.conversations ?? []).length ? (
 						<div className="flex flex-col items-center gap-2 py-12">
 							<MessageSquare size={40} className="text-[var(--muted-foreground)]" />
 							<p className="text-sm text-[var(--muted-foreground)]">No conversations yet.</p>
 						</div>
 					) : (
 						<div className="space-y-2">
-							{data.conversations.map((conv) => (
+							{data?.conversations.map((conv) => (
 								<div
 									key={conv.id}
 									className="flex items-center gap-4 rounded-md border border-[var(--border)] p-4 transition-colors hover:bg-[var(--accent)] cursor-pointer"
@@ -67,14 +67,14 @@ export function InboxPage() {
 						</div>
 					)}
 
-					{data && data.pages > 1 && (
+					{data && data?.pages > 1 && (
 						<div className="mt-4 flex items-center justify-between">
-							<p className="text-sm text-[var(--muted-foreground)]">Page {data.page} of {data.pages}</p>
+							<p className="text-sm text-[var(--muted-foreground)]">Page {data?.page} of {data?.pages}</p>
 							<div className="flex gap-2">
 								<Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
 									<ChevronLeft size={16} />
 								</Button>
-								<Button variant="outline" size="sm" disabled={page >= data.pages} onClick={() => setPage((p) => p + 1)}>
+								<Button variant="outline" size="sm" disabled={page >= data?.pages} onClick={() => setPage((p) => p + 1)}>
 									<ChevronRight size={16} />
 								</Button>
 							</div>

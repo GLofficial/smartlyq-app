@@ -81,13 +81,13 @@ export function SocialDashboardPage() {
 					<CardContent>
 						{isLoading ? (
 							<p className="text-sm text-[var(--muted-foreground)]">Loading...</p>
-						) : !data?.accounts.length ? (
+						) : !(data?.accounts ?? []).length ? (
 							<p className="text-sm text-[var(--muted-foreground)]">
 								No accounts connected yet.
 							</p>
 						) : (
 							<div className="space-y-3">
-								{data.accounts.map((acc) => (
+								{data?.accounts.map((acc) => (
 									<div
 										key={acc.id}
 										className="flex items-center gap-3 rounded-md border border-[var(--border)] p-3"
@@ -128,13 +128,13 @@ export function SocialDashboardPage() {
 					<CardContent>
 						{isLoading ? (
 							<p className="text-sm text-[var(--muted-foreground)]">Loading...</p>
-						) : !data?.upcoming_posts.length ? (
+						) : !(data?.upcoming_posts ?? []).length ? (
 							<p className="text-sm text-[var(--muted-foreground)]">
 								No scheduled posts.
 							</p>
 						) : (
 							<div className="space-y-3">
-								{data.upcoming_posts.map((post) => (
+								{data?.upcoming_posts.map((post) => (
 									<div
 										key={post.id}
 										className="flex items-center justify-between rounded-md border border-[var(--border)] p-3"
@@ -175,11 +175,11 @@ export function SocialDashboardPage() {
 				<CardContent>
 					{isLoading ? (
 						<p className="text-sm text-[var(--muted-foreground)]">Loading...</p>
-					) : !data?.recent_posts.length ? (
+					) : !(data?.recent_posts ?? []).length ? (
 						<p className="text-sm text-[var(--muted-foreground)]">No posts yet.</p>
 					) : (
 						<div className="space-y-2">
-							{data.recent_posts.map((post) => (
+							{data?.recent_posts.map((post) => (
 								<div
 									key={post.id}
 									className="flex items-center justify-between rounded-md border border-[var(--border)] p-3"

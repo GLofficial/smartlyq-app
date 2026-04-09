@@ -14,7 +14,7 @@ export function GoogleInsightsPage() {
 				<div className="flex h-40 items-center justify-center">
 					<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 				</div>
-			) : !data?.properties.length ? (
+			) : !(data?.properties ?? []).length ? (
 				<Card>
 					<CardContent className="flex flex-col items-center gap-4 py-12">
 						<BarChart3 size={48} className="text-[var(--muted-foreground)]" />
@@ -26,10 +26,10 @@ export function GoogleInsightsPage() {
 				</Card>
 			) : (
 				<Card>
-					<CardHeader><CardTitle className="text-lg">Properties ({data.properties.length})</CardTitle></CardHeader>
+					<CardHeader><CardTitle className="text-lg">Properties ({data?.properties.length})</CardTitle></CardHeader>
 					<CardContent>
 						<div className="space-y-2">
-							{data.properties.map((p) => (
+							{data?.properties.map((p) => (
 								<div key={p.id} className="flex items-center gap-3 rounded border border-[var(--border)] p-3">
 									<BarChart3 size={16} className="text-[var(--sq-primary)]" />
 									<div className="min-w-0 flex-1">

@@ -11,11 +11,11 @@ export function AdminCmsPagesPage() {
 			<Card>
 				<CardHeader><CardTitle className="text-lg">Pages ({data?.pages.length ?? 0})</CardTitle></CardHeader>
 				<CardContent>
-					{isLoading ? <Spinner /> : !data?.pages.length ? (
+					{isLoading ? <Spinner /> : !(data?.pages ?? []).length ? (
 						<div className="flex flex-col items-center gap-2 py-8"><FileText size={32} className="text-[var(--muted-foreground)]" /><p className="text-sm text-[var(--muted-foreground)]">No CMS pages.</p></div>
 					) : (
 						<div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-[var(--border)]"><th className="py-2 text-left font-medium">ID</th><th className="py-2 text-left font-medium">Title</th><th className="py-2 text-left font-medium">Slug</th><th className="py-2 text-left font-medium">Status</th><th className="py-2 text-left font-medium">Created</th></tr></thead><tbody>
-							{data.pages.map((p) => (
+							{data?.pages.map((p) => (
 								<tr key={p.id} className="border-b border-[var(--border)] hover:bg-[var(--accent)]">
 									<td className="py-2">{p.id}</td><td className="py-2 font-medium">{p.title}</td><td className="py-2 text-xs text-[var(--muted-foreground)]">{p.slug}</td>
 									<td className="py-2">{p.status === 1 ? <CheckCircle size={14} className="text-green-500" /> : <XCircle size={14} className="text-gray-400" />}</td>

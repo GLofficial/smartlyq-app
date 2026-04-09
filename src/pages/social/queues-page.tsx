@@ -13,7 +13,7 @@ export function QueuesPage() {
 				<div className="flex h-40 items-center justify-center">
 					<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 				</div>
-			) : !data?.queues.length ? (
+			) : !(data?.queues ?? []).length ? (
 				<Card>
 					<CardContent className="flex flex-col items-center gap-3 py-12">
 						<Layers size={48} className="text-[var(--muted-foreground)]" />
@@ -25,7 +25,7 @@ export function QueuesPage() {
 				</Card>
 			) : (
 				<div className="grid gap-4 sm:grid-cols-2">
-					{data.queues.map((q) => (
+					{data?.queues.map((q) => (
 						<Card key={q.id}>
 							<CardHeader className="pb-2">
 								<div className="flex items-center justify-between">

@@ -15,7 +15,7 @@ export function ChatbotHistoryPage() {
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-lg">
-						{data ? `${data.total} conversation${data.total !== 1 ? "s" : ""}` : "Loading..."}
+						{data ? `${data?.total} conversation${data?.total !== 1 ? "s" : ""}` : "Loading..."}
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
@@ -23,7 +23,7 @@ export function ChatbotHistoryPage() {
 						<div className="flex h-32 items-center justify-center">
 							<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 						</div>
-					) : !data?.sessions.length ? (
+					) : !(data?.sessions ?? []).length ? (
 						<div className="flex flex-col items-center gap-3 py-12">
 							<MessageSquare size={48} className="text-[var(--muted-foreground)]" />
 							<p className="text-[var(--muted-foreground)]">No chat history yet.</p>
@@ -45,7 +45,7 @@ export function ChatbotHistoryPage() {
 									</tr>
 								</thead>
 								<tbody>
-									{data.sessions.map((s) => (
+									{data?.sessions.map((s) => (
 										<tr key={s.id} className="border-b border-[var(--border)] hover:bg-[var(--accent)]">
 											<td className="py-2">
 												<p className="font-medium">{s.visitor_name || "Anonymous"}</p>
@@ -70,16 +70,16 @@ export function ChatbotHistoryPage() {
 							</table>
 						</div>
 					)}
-					{data && data.pages > 1 && (
+					{data && data?.pages > 1 && (
 						<div className="mt-4 flex items-center justify-between">
 							<p className="text-sm text-[var(--muted-foreground)]">
-								Page {data.page} of {data.pages}
+								Page {data?.page} of {data?.pages}
 							</p>
 							<div className="flex gap-2">
 								<Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
 									<ChevronLeft size={16} />
 								</Button>
-								<Button variant="outline" size="sm" disabled={page >= data.pages} onClick={() => setPage((p) => p + 1)}>
+								<Button variant="outline" size="sm" disabled={page >= data?.pages} onClick={() => setPage((p) => p + 1)}>
 									<ChevronRight size={16} />
 								</Button>
 							</div>

@@ -12,7 +12,7 @@ export function AdSetsPage() {
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-lg">
-						{data ? `${data.ad_sets.length} ad set${data.ad_sets.length !== 1 ? "s" : ""}` : "Loading..."}
+						{data ? `${data?.ad_sets.length} ad set${data?.ad_sets.length !== 1 ? "s" : ""}` : "Loading..."}
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
@@ -20,7 +20,7 @@ export function AdSetsPage() {
 						<div className="flex h-32 items-center justify-center">
 							<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 						</div>
-					) : !data?.ad_sets.length ? (
+					) : !(data?.ad_sets ?? []).length ? (
 						<div className="flex flex-col items-center gap-3 py-12">
 							<Layers size={48} className="text-[var(--muted-foreground)]" />
 							<p className="text-[var(--muted-foreground)]">No ad sets yet.</p>
@@ -43,7 +43,7 @@ export function AdSetsPage() {
 									</tr>
 								</thead>
 								<tbody>
-									{data.ad_sets.map((s) => (
+									{data?.ad_sets.map((s) => (
 										<tr key={s.id} className="border-b border-[var(--border)] hover:bg-[var(--accent)]">
 											<td className="py-2 font-medium">{s.name}</td>
 											<td className="py-2 text-[var(--muted-foreground)]">{s.campaign_name}</td>

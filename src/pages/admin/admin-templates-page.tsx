@@ -11,11 +11,11 @@ export function AdminTemplatesPage() {
 			<Card>
 				<CardHeader><CardTitle className="text-lg">Content Templates ({data?.templates.length ?? 0})</CardTitle></CardHeader>
 				<CardContent>
-					{isLoading ? <Spinner /> : !data?.templates.length ? (
+					{isLoading ? <Spinner /> : !(data?.templates ?? []).length ? (
 						<div className="flex flex-col items-center gap-2 py-8"><FileText size={32} className="text-[var(--muted-foreground)]" /><p className="text-sm text-[var(--muted-foreground)]">No templates.</p></div>
 					) : (
 						<div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-[var(--border)]"><th className="py-2 text-left font-medium">ID</th><th className="py-2 text-left font-medium">Name</th><th className="py-2 text-left font-medium">Category</th><th className="py-2 text-center font-medium">Premium</th><th className="py-2 text-center font-medium">Status</th></tr></thead><tbody>
-							{data.templates.map((t) => (
+							{data?.templates.map((t) => (
 								<tr key={t.id} className="border-b border-[var(--border)] hover:bg-[var(--accent)]">
 									<td className="py-2">{t.id}</td>
 									<td className="py-2"><div className="flex items-center gap-2">{t.icon && <span>{t.icon}</span>}<span className="font-medium">{t.name}</span></div></td>

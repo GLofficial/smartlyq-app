@@ -23,7 +23,7 @@ export function AdSettingsPage() {
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							{!data?.accounts.length ? (
+							{!(data?.accounts ?? []).length ? (
 								<div className="flex flex-col items-center gap-3 py-8">
 									<Link2 size={48} className="text-[var(--muted-foreground)]" />
 									<p className="text-[var(--muted-foreground)]">No ad accounts connected.</p>
@@ -33,7 +33,7 @@ export function AdSettingsPage() {
 								</div>
 							) : (
 								<div className="space-y-3">
-									{data.accounts.map((account) => (
+									{data?.accounts.map((account) => (
 										<div
 											key={account.id}
 											className="flex items-center justify-between rounded-lg border border-[var(--border)] p-4"

@@ -20,7 +20,7 @@ export function ChatbotListPage() {
 				<div className="flex h-40 items-center justify-center">
 					<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 				</div>
-			) : !data?.chatbots.length ? (
+			) : !(data?.chatbots ?? []).length ? (
 				<Card>
 					<CardContent className="flex flex-col items-center gap-4 py-12">
 						<Bot size={48} className="text-[var(--muted-foreground)]" />
@@ -32,7 +32,7 @@ export function ChatbotListPage() {
 				</Card>
 			) : (
 				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					{data.chatbots.map((bot) => (
+					{data?.chatbots.map((bot) => (
 						<Card key={bot.id} className="relative overflow-hidden">
 							<div className="h-1" style={{ backgroundColor: bot.primary_color }} />
 							<CardHeader className="pb-2">

@@ -50,14 +50,14 @@ export function LiveAgentPage() {
 						<div className="flex h-32 items-center justify-center">
 							<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 						</div>
-					) : !data?.escalations.length ? (
+					) : !(data?.escalations ?? []).length ? (
 						<div className="flex flex-col items-center gap-2 py-12">
 							<AlertCircle size={40} className="text-[var(--muted-foreground)]" />
 							<p className="text-sm text-[var(--muted-foreground)]">No escalations yet.</p>
 						</div>
 					) : (
 						<div className="space-y-2">
-							{data.escalations.map((esc) => (
+							{data?.escalations.map((esc) => (
 								<div key={esc.id} className="flex items-center gap-4 rounded-md border border-[var(--border)] p-4">
 									<div className="min-w-0 flex-1">
 										<p className="font-medium">{esc.chatbot_title || `Conversation #${esc.conversation_id}`}</p>

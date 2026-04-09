@@ -76,11 +76,11 @@ export function AnalyticsPage() {
 					<CardContent>
 						{isLoading ? (
 							<Spinner />
-						) : !data?.by_platform || Object.keys(data.by_platform).length === 0 ? (
+						) : !data?.by_platform || Object.keys(data?.by_platform).length === 0 ? (
 							<p className="text-sm text-[var(--muted-foreground)]">No data yet.</p>
 						) : (
 							<div className="space-y-3">
-								{Object.entries(data.by_platform)
+								{Object.entries(data?.by_platform)
 									.sort(([, a], [, b]) => b - a)
 									.map(([platform, count]) => (
 										<div key={platform} className="flex items-center gap-3">
@@ -91,7 +91,7 @@ export function AnalyticsPage() {
 													<div
 														className="h-6 rounded bg-[var(--sq-primary)]"
 														style={{
-															width: `${Math.max(4, (count / Math.max(...Object.values(data.by_platform))) * 100)}%`,
+															width: `${Math.max(4, (count / Math.max(...Object.values(data?.by_platform))) * 100)}%`,
 														}}
 													/>
 												</div>
@@ -115,11 +115,11 @@ export function AnalyticsPage() {
 					<CardContent>
 						{isLoading ? (
 							<Spinner />
-						) : !data?.by_status || Object.keys(data.by_status).length === 0 ? (
+						) : !data?.by_status || Object.keys(data?.by_status).length === 0 ? (
 							<p className="text-sm text-[var(--muted-foreground)]">No data yet.</p>
 						) : (
 							<div className="space-y-3">
-								{Object.entries(data.by_status)
+								{Object.entries(data?.by_status)
 									.sort(([, a], [, b]) => b - a)
 									.map(([status, count]) => (
 										<div key={status} className="flex items-center justify-between rounded border border-[var(--border)] p-3">
@@ -141,12 +141,12 @@ export function AnalyticsPage() {
 				<CardContent>
 					{isLoading ? (
 						<Spinner />
-					) : !data?.daily.length ? (
+					) : !(data?.daily ?? []).length ? (
 						<p className="text-sm text-[var(--muted-foreground)]">No data yet.</p>
 					) : (
 						<div className="flex h-40 items-end gap-1">
-							{data.daily.map((d) => {
-								const maxCount = Math.max(...data.daily.map((x) => x.count));
+							{data?.daily.map((d) => {
+								const maxCount = Math.max(...data?.daily.map((x) => x.count));
 								const height = maxCount > 0 ? (d.count / maxCount) * 100 : 0;
 								return (
 									<div key={d.date} className="flex flex-1 flex-col items-center gap-1" title={`${d.date}: ${d.count} posts`}>
@@ -154,7 +154,7 @@ export function AnalyticsPage() {
 											className="w-full rounded-t bg-[var(--sq-primary)]"
 											style={{ height: `${Math.max(2, height)}%` }}
 										/>
-										{data.daily.length <= 14 && (
+										{data?.daily.length <= 14 && (
 											<span className="text-[9px] text-[var(--muted-foreground)]">
 												{d.date.slice(5)}
 											</span>

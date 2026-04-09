@@ -69,14 +69,14 @@ export function LabelsPage() {
 						<div className="flex h-20 items-center justify-center">
 							<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 						</div>
-					) : !data?.labels.length ? (
+					) : !(data?.labels ?? []).length ? (
 						<div className="flex flex-col items-center gap-2 py-8">
 							<Tag size={32} className="text-[var(--muted-foreground)]" />
 							<p className="text-sm text-[var(--muted-foreground)]">No labels yet.</p>
 						</div>
 					) : (
 						<div className="space-y-2">
-							{data.labels.map((label) => (
+							{data?.labels.map((label) => (
 								<div key={label.id} className="flex items-center gap-3 rounded-md border border-[var(--border)] p-3">
 									<div className="h-4 w-4 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
 									<span className="flex-1 font-medium text-sm">{label.name}</span>

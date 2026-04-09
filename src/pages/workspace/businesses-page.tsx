@@ -13,7 +13,7 @@ export function BusinessesPage() {
 				<div className="flex h-40 items-center justify-center">
 					<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 				</div>
-			) : !data?.groups.length ? (
+			) : !(data?.groups ?? []).length ? (
 				<Card>
 					<CardContent className="flex flex-col items-center gap-3 py-12">
 						<Building2 size={48} className="text-[var(--muted-foreground)]" />
@@ -23,7 +23,7 @@ export function BusinessesPage() {
 				</Card>
 			) : (
 				<div className="grid gap-4 sm:grid-cols-2">
-					{data.groups.map((g) => (
+					{data?.groups.map((g) => (
 						<Card key={g.id}>
 							<CardContent className="p-4">
 								<p className="font-medium">{g.name}</p>

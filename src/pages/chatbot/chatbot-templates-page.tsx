@@ -15,7 +15,7 @@ export function ChatbotTemplatesPage() {
 				<div className="flex h-40 items-center justify-center">
 					<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 				</div>
-			) : !data?.templates.length ? (
+			) : !(data?.templates ?? []).length ? (
 				<Card>
 					<CardContent className="flex flex-col items-center gap-4 py-12">
 						<BookOpen size={48} className="text-[var(--muted-foreground)]" />
@@ -24,7 +24,7 @@ export function ChatbotTemplatesPage() {
 				</Card>
 			) : (
 				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					{data.templates.map((t) => (
+					{data?.templates.map((t) => (
 						<Card key={t.id}>
 							<CardHeader className="pb-2">
 								<CardTitle className="text-base">{t.title}</CardTitle>

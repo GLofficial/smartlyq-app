@@ -47,14 +47,14 @@ export function AdManagerPage() {
 						<div className="flex h-32 items-center justify-center">
 							<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 						</div>
-					) : !data?.campaigns.length ? (
+					) : !(data?.campaigns ?? []).length ? (
 						<div className="flex flex-col items-center gap-3 py-12">
 							<Megaphone size={48} className="text-[var(--muted-foreground)]" />
 							<p className="text-[var(--muted-foreground)]">No campaigns yet.</p>
 						</div>
 					) : (
 						<div className="space-y-2">
-							{data.campaigns.map((c) => (
+							{data?.campaigns.map((c) => (
 								<div key={c.id} className="flex items-center gap-4 rounded border border-[var(--border)] p-4">
 									<PlatformIcon platform={c.platform || "facebook"} size={20} />
 									<div className="min-w-0 flex-1">

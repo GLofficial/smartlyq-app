@@ -27,11 +27,11 @@ export function AnalystPage() {
 				<Card className="lg:col-span-1">
 					<CardHeader><CardTitle className="text-base">Analyses</CardTitle></CardHeader>
 					<CardContent>
-						{isLoading ? <Spinner /> : !data?.analyses.length ? (
+						{isLoading ? <Spinner /> : !(data?.analyses ?? []).length ? (
 							<p className="text-sm text-[var(--muted-foreground)]">No analyses yet.</p>
 						) : (
 							<div className="space-y-1">
-								{data.analyses.map((a) => (
+								{data?.analyses.map((a) => (
 									<button key={a.id} type="button" onClick={() => { setSelectedId(a.id); setAnswer(""); }}
 										className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-left transition-colors ${selectedId === a.id ? "bg-[color-mix(in_srgb,var(--sq-primary)_10%,transparent)] font-medium" : "hover:bg-[var(--accent)]"}`}>
 										<BarChart3 size={14} /><span className="truncate">{a.title}</span>

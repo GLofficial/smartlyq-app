@@ -11,11 +11,11 @@ export function AdminBlogsPage() {
 			<Card>
 				<CardHeader><CardTitle className="text-lg">Blog Posts ({data?.blogs.length ?? 0})</CardTitle></CardHeader>
 				<CardContent>
-					{isLoading ? <Spinner /> : !data?.blogs.length ? (
+					{isLoading ? <Spinner /> : !(data?.blogs ?? []).length ? (
 						<Empty icon={FileText} text="No blog posts." />
 					) : (
 						<Table headers={["ID", "Title", "Slug", "Status", "Created"]}>
-							{data.blogs.map((b) => (
+							{data?.blogs.map((b) => (
 								<tr key={b.id} className="border-b border-[var(--border)] hover:bg-[var(--accent)]">
 									<td className="py-2">{b.id}</td>
 									<td className="py-2 font-medium">{b.title}</td>

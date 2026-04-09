@@ -19,14 +19,14 @@ export function ArticleGeneratorPage() {
 						<div className="flex h-32 items-center justify-center">
 							<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 						</div>
-					) : !data?.articles.length ? (
+					) : !(data?.articles ?? []).length ? (
 						<div className="flex flex-col items-center gap-3 py-12">
 							<FileSearch size={48} className="text-[var(--muted-foreground)]" />
 							<p className="text-[var(--muted-foreground)]">No articles generated yet.</p>
 						</div>
 					) : (
 						<div className="space-y-2">
-							{data.articles.map((a) => (
+							{data?.articles.map((a) => (
 								<div key={a.id} className="flex items-center gap-4 rounded border border-[var(--border)] p-4 hover:bg-[var(--accent)] transition-colors">
 									<FileText size={18} className="shrink-0 text-[var(--sq-primary)]" />
 									<div className="min-w-0 flex-1">
@@ -40,12 +40,12 @@ export function ArticleGeneratorPage() {
 							))}
 						</div>
 					)}
-					{data && data.pages > 1 && (
+					{data && data?.pages > 1 && (
 						<div className="mt-4 flex items-center justify-between">
-							<p className="text-sm text-[var(--muted-foreground)]">Page {data.page} of {data.pages}</p>
+							<p className="text-sm text-[var(--muted-foreground)]">Page {data?.page} of {data?.pages}</p>
 							<div className="flex gap-2">
 								<Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft size={16} /></Button>
-								<Button variant="outline" size="sm" disabled={page >= data.pages} onClick={() => setPage(p => p + 1)}><ChevronRight size={16} /></Button>
+								<Button variant="outline" size="sm" disabled={page >= data?.pages} onClick={() => setPage(p => p + 1)}><ChevronRight size={16} /></Button>
 							</div>
 						</div>
 					)}

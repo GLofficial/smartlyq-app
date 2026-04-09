@@ -48,14 +48,14 @@ export function UrlShortenerPage() {
 						<div className="flex h-20 items-center justify-center">
 							<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 						</div>
-					) : !data?.urls.length ? (
+					) : !(data?.urls ?? []).length ? (
 						<div className="flex flex-col items-center gap-2 py-8">
 							<Link2 size={32} className="text-[var(--muted-foreground)]" />
 							<p className="text-sm text-[var(--muted-foreground)]">No shortened URLs yet.</p>
 						</div>
 					) : (
 						<div className="space-y-2">
-							{data.urls.map((u) => (
+							{data?.urls.map((u) => (
 								<div key={u.id} className="flex items-center gap-3 rounded-md border border-[var(--border)] p-3">
 									<div className="min-w-0 flex-1">
 										<p className="text-sm font-medium text-[var(--sq-primary)]">{window.location.origin}/l/{u.code}</p>
@@ -70,12 +70,12 @@ export function UrlShortenerPage() {
 							))}
 						</div>
 					)}
-					{data && data.pages > 1 && (
+					{data && data?.pages > 1 && (
 						<div className="mt-4 flex items-center justify-between">
-							<p className="text-sm text-[var(--muted-foreground)]">Page {data.page} of {data.pages}</p>
+							<p className="text-sm text-[var(--muted-foreground)]">Page {data?.page} of {data?.pages}</p>
 							<div className="flex gap-2">
 								<Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft size={16} /></Button>
-								<Button variant="outline" size="sm" disabled={page >= data.pages} onClick={() => setPage(p => p + 1)}><ChevronRight size={16} /></Button>
+								<Button variant="outline" size="sm" disabled={page >= data?.pages} onClick={() => setPage(p => p + 1)}><ChevronRight size={16} /></Button>
 							</div>
 						</div>
 					)}

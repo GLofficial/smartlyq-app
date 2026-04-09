@@ -30,17 +30,17 @@ export function CommentsPage() {
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-lg">
-						{data ? `${data.total} comments` : "Loading..."}
+						{data ? `${data?.total} comments` : "Loading..."}
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
 					{isLoading ? (
 						<Spinner />
-					) : !data?.comments.length ? (
+					) : !(data?.comments ?? []).length ? (
 						<p className="py-8 text-center text-sm text-[var(--muted-foreground)]">No comments found.</p>
 					) : (
 						<div className="space-y-3">
-							{data.comments.map((c) => (
+							{data?.comments.map((c) => (
 								<div key={c.id} className="rounded-md border border-[var(--border)] p-4">
 									<div className="flex items-start gap-3">
 										{c.author_avatar ? (
@@ -82,8 +82,8 @@ export function CommentsPage() {
 						</div>
 					)}
 
-					{data && data.pages > 1 && (
-						<Pagination page={data.page} pages={data.pages} onPage={setPage} />
+					{data && data?.pages > 1 && (
+						<Pagination page={data?.page} pages={data?.pages} onPage={setPage} />
 					)}
 				</CardContent>
 			</Card>

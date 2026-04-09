@@ -13,7 +13,7 @@ export function AdminWhitelabelPage() {
 				<div className="flex h-40 items-center justify-center">
 					<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 				</div>
-			) : !data?.tenants.length ? (
+			) : !(data?.tenants ?? []).length ? (
 				<Card>
 					<CardContent className="flex flex-col items-center gap-4 py-12">
 						<Globe size={48} className="text-[var(--muted-foreground)]" />
@@ -33,7 +33,7 @@ export function AdminWhitelabelPage() {
 							<th className="py-2 text-left font-medium">Created</th>
 						</tr></thead>
 						<tbody>
-							{data.tenants.map((t) => (
+							{data?.tenants.map((t) => (
 								<tr key={t.id} className="border-b border-[var(--border)] hover:bg-[var(--accent)]">
 									<td className="py-2">{t.id}</td>
 									<td className="py-2 font-medium">{t.site_name || t.subdomain}</td>

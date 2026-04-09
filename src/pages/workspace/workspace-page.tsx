@@ -37,11 +37,11 @@ export function WorkspacePage() {
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							{!data?.members.length ? (
+							{!(data?.members ?? []).length ? (
 								<p className="text-sm text-[var(--muted-foreground)]">No members.</p>
 							) : (
 								<div className="space-y-2">
-									{data.members.map((m) => (
+									{data?.members.map((m) => (
 										<div key={m.id} className="flex items-center gap-4 rounded border border-[var(--border)] p-3">
 											<div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--muted)]">
 												<span className="text-sm font-medium">{m.name.charAt(0).toUpperCase()}</span>

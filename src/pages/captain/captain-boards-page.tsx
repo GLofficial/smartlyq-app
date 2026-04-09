@@ -13,7 +13,7 @@ export function CaptainBoardsPage() {
 				<div className="flex h-40 items-center justify-center">
 					<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 				</div>
-			) : !data?.boards.length ? (
+			) : !(data?.boards ?? []).length ? (
 				<Card>
 					<CardContent className="flex flex-col items-center gap-3 py-12">
 						<LayoutGrid size={48} className="text-[var(--muted-foreground)]" />
@@ -25,7 +25,7 @@ export function CaptainBoardsPage() {
 				</Card>
 			) : (
 				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					{data.boards.map((board) => (
+					{data?.boards.map((board) => (
 						<Card key={board.id}>
 							<CardHeader className="pb-2">
 								<div className="flex items-center justify-between">

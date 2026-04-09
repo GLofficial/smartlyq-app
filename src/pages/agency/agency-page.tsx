@@ -13,7 +13,7 @@ export function AgencyPage() {
 				<div className="flex h-40 items-center justify-center">
 					<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 				</div>
-			) : !data?.tenants.length ? (
+			) : !(data?.tenants ?? []).length ? (
 				<Card>
 					<CardContent className="flex flex-col items-center gap-4 py-12">
 						<Building2 size={48} className="text-[var(--muted-foreground)]" />
@@ -22,7 +22,7 @@ export function AgencyPage() {
 				</Card>
 			) : (
 				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					{data.tenants.map((t) => (
+					{data?.tenants.map((t) => (
 						<Card key={t.id}>
 							<CardContent className="p-4 space-y-3">
 								<div className="flex items-center gap-3">

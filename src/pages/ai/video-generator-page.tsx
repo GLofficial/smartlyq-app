@@ -35,11 +35,11 @@ export function VideoGeneratorPage() {
 				<CardContent>
 					{isLoading ? (
 						<div className="flex h-32 items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" /></div>
-					) : !data?.videos.length ? (
+					) : !(data?.videos ?? []).length ? (
 						<div className="flex flex-col items-center gap-3 py-12"><Video size={48} className="text-[var(--muted-foreground)]" /><p className="text-[var(--muted-foreground)]">No videos yet.</p></div>
 					) : (
 						<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-							{data.videos.map((v) => (
+							{data?.videos.map((v) => (
 								<div key={v.id} className="rounded-lg border border-[var(--border)] overflow-hidden">
 									{v.url ? <video src={v.url} controls className="w-full aspect-video bg-black" /> : <div className="flex aspect-video items-center justify-center bg-[var(--muted)]"><Video size={32} className="text-[var(--muted-foreground)]" /></div>}
 									<div className="p-3"><p className="text-sm line-clamp-2">{v.prompt || "Untitled"}</p><p className="mt-1 text-xs text-[var(--muted-foreground)]">{new Date(v.created).toLocaleDateString()}</p></div>

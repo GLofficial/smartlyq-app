@@ -33,7 +33,7 @@ export function BillingPage() {
 						<Receipt size={20} className="text-green-600" />
 						<div>
 							<p className="text-lg font-bold">
-								{isLoading ? "..." : data?.plan ? `$${data.plan.price}/${data.plan.duration}` : "Free"}
+								{isLoading ? "..." : data?.plan ? `$${data?.plan.price}/${data?.plan.duration}` : "Free"}
 							</p>
 							<p className="text-xs text-[var(--muted-foreground)]">Price</p>
 						</div>
@@ -45,7 +45,7 @@ export function BillingPage() {
 						<div>
 							<p className="text-sm font-bold">
 								{isLoading ? "..." : data?.subscription?.expires_at
-									? new Date(data.subscription.expires_at).toLocaleDateString()
+									? new Date(data?.subscription.expires_at).toLocaleDateString()
 									: "N/A"}
 							</p>
 							<p className="text-xs text-[var(--muted-foreground)]">Renews</p>
@@ -63,11 +63,11 @@ export function BillingPage() {
 						<div className="flex h-20 items-center justify-center">
 							<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 						</div>
-					) : !data?.recent_transactions.length ? (
+					) : !(data?.recent_transactions ?? []).length ? (
 						<p className="text-sm text-[var(--muted-foreground)]">No transactions yet.</p>
 					) : (
 						<div className="space-y-2">
-							{data.recent_transactions.map((t) => (
+							{data?.recent_transactions.map((t) => (
 								<div key={t.id} className="flex items-center justify-between rounded border border-[var(--border)] p-3">
 									<div>
 										<p className="text-sm font-medium">{t.description || "Transaction"}</p>

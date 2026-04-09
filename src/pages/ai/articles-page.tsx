@@ -16,11 +16,11 @@ export function ArticlesPage() {
 				<CardContent>
 					{isLoading ? (
 						<div className="flex h-20 items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" /></div>
-					) : !data?.articles.length ? (
+					) : !(data?.articles ?? []).length ? (
 						<div className="flex flex-col items-center gap-2 py-8"><FileText size={32} className="text-[var(--muted-foreground)]" /><p className="text-sm text-[var(--muted-foreground)]">No articles yet.</p></div>
 					) : (
 						<div className="space-y-2">
-							{data.articles.map((a) => (
+							{data?.articles.map((a) => (
 								<div key={a.id} className="flex items-center gap-3 rounded border border-[var(--border)] p-3 hover:bg-[var(--accent)]">
 									{a.featured_media ? (
 										<img src={a.featured_media} alt="" className="h-12 w-16 rounded object-cover" />
@@ -36,12 +36,12 @@ export function ArticlesPage() {
 							))}
 						</div>
 					)}
-					{data && data.pages > 1 && (
+					{data && data?.pages > 1 && (
 						<div className="mt-4 flex items-center justify-between">
-							<p className="text-sm text-[var(--muted-foreground)]">Page {data.page} of {data.pages}</p>
+							<p className="text-sm text-[var(--muted-foreground)]">Page {data?.page} of {data?.pages}</p>
 							<div className="flex gap-2">
 								<Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft size={16} /></Button>
-								<Button variant="outline" size="sm" disabled={page >= data.pages} onClick={() => setPage(p => p + 1)}><ChevronRight size={16} /></Button>
+								<Button variant="outline" size="sm" disabled={page >= data?.pages} onClick={() => setPage(p => p + 1)}><ChevronRight size={16} /></Button>
 							</div>
 						</div>
 					)}

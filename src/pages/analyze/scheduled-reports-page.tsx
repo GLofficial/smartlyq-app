@@ -13,7 +13,7 @@ export function ScheduledReportsPage() {
 				<div className="flex h-40 items-center justify-center">
 					<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 				</div>
-			) : !data?.reports.length ? (
+			) : !(data?.reports ?? []).length ? (
 				<Card>
 					<CardContent className="flex flex-col items-center gap-3 py-12">
 						<CalendarCheck size={48} className="text-[var(--muted-foreground)]" />
@@ -22,7 +22,7 @@ export function ScheduledReportsPage() {
 				</Card>
 			) : (
 				<div className="space-y-3">
-					{data.reports.map((r) => (
+					{data?.reports.map((r) => (
 						<Card key={r.id}>
 							<CardContent className="flex items-center gap-4 p-4">
 								<div className="min-w-0 flex-1">

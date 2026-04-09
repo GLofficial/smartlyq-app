@@ -11,11 +11,11 @@ export function AdminAssistantsPage() {
 			<Card>
 				<CardHeader><CardTitle className="text-lg">AI Assistants ({data?.assistants.length ?? 0})</CardTitle></CardHeader>
 				<CardContent>
-					{isLoading ? <Spinner /> : !data?.assistants.length ? (
+					{isLoading ? <Spinner /> : !(data?.assistants ?? []).length ? (
 						<div className="flex flex-col items-center gap-2 py-8"><Bot size={32} className="text-[var(--muted-foreground)]" /><p className="text-sm text-[var(--muted-foreground)]">No assistants configured.</p></div>
 					) : (
 						<div className="space-y-2">
-							{data.assistants.map((a) => (
+							{data?.assistants.map((a) => (
 								<div key={a.id} className="flex items-center gap-3 rounded border border-[var(--border)] p-3">
 									<Bot size={18} className="text-[var(--sq-primary)]" />
 									<div className="min-w-0 flex-1">

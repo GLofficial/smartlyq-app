@@ -13,7 +13,7 @@ export function BrandsPage() {
 				<div className="flex h-40 items-center justify-center">
 					<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 				</div>
-			) : !data?.brands.length ? (
+			) : !(data?.brands ?? []).length ? (
 				<Card>
 					<CardContent className="flex flex-col items-center gap-3 py-12">
 						<Briefcase size={48} className="text-[var(--muted-foreground)]" />
@@ -23,7 +23,7 @@ export function BrandsPage() {
 				</Card>
 			) : (
 				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					{data.brands.map((b) => (
+					{data?.brands.map((b) => (
 						<Card key={b.id}>
 							<CardContent className="flex items-center gap-3 p-4">
 								{b.logo ? (

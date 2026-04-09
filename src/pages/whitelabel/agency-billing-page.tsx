@@ -55,7 +55,7 @@ export function AgencyBillingPage() {
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
-							{!data?.invoices.length ? (
+							{!(data?.invoices ?? []).length ? (
 								<div className="flex flex-col items-center gap-3 py-12">
 									<Receipt size={48} className="text-[var(--muted-foreground)]" />
 									<p className="text-[var(--muted-foreground)]">No invoices yet.</p>
@@ -73,7 +73,7 @@ export function AgencyBillingPage() {
 											</tr>
 										</thead>
 										<tbody>
-											{data.invoices.map((inv) => (
+											{data?.invoices.map((inv) => (
 												<tr key={inv.id} className="border-b border-[var(--border)] hover:bg-[var(--accent)]">
 													<td className="py-2 font-medium">{inv.tenant_name}</td>
 													<td className="py-2 text-[var(--muted-foreground)]">{inv.period}</td>

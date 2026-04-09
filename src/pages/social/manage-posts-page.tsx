@@ -52,7 +52,7 @@ export function ManagePostsPage() {
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-lg">
-						{data ? `${data.total} posts` : "Loading..."}
+						{data ? `${data?.total} posts` : "Loading..."}
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
@@ -60,13 +60,13 @@ export function ManagePostsPage() {
 						<div className="flex h-32 items-center justify-center">
 							<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 						</div>
-					) : !data?.posts.length ? (
+					) : !(data?.posts ?? []).length ? (
 						<p className="py-8 text-center text-sm text-[var(--muted-foreground)]">
 							No posts found.
 						</p>
 					) : (
 						<div className="space-y-2">
-							{data.posts.map((post) => (
+							{data?.posts.map((post) => (
 								<div
 									key={post.id}
 									className="flex items-center gap-4 rounded-md border border-[var(--border)] p-4 transition-colors hover:bg-[var(--accent)]"
@@ -99,10 +99,10 @@ export function ManagePostsPage() {
 					)}
 
 					{/* Pagination */}
-					{data && data.pages > 1 && (
+					{data && data?.pages > 1 && (
 						<div className="mt-4 flex items-center justify-between">
 							<p className="text-sm text-[var(--muted-foreground)]">
-								Page {data.page} of {data.pages}
+								Page {data?.page} of {data?.pages}
 							</p>
 							<div className="flex gap-2">
 								<Button
@@ -116,7 +116,7 @@ export function ManagePostsPage() {
 								<Button
 									variant="outline"
 									size="sm"
-									disabled={page >= data.pages}
+									disabled={page >= data?.pages}
 									onClick={() => setPage((p) => p + 1)}
 								>
 									<ChevronRight size={16} />

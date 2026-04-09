@@ -11,11 +11,11 @@ export function AdminSkillsPage() {
 			<Card>
 				<CardHeader><CardTitle className="text-lg">Skills ({data?.skills.length ?? 0})</CardTitle></CardHeader>
 				<CardContent>
-					{isLoading ? <Spinner /> : !data?.skills.length ? (
+					{isLoading ? <Spinner /> : !(data?.skills ?? []).length ? (
 						<div className="flex flex-col items-center gap-2 py-8"><Zap size={32} className="text-[var(--muted-foreground)]" /><p className="text-sm text-[var(--muted-foreground)]">No skills configured.</p></div>
 					) : (
 						<div className="space-y-2">
-							{data.skills.map((s) => (
+							{data?.skills.map((s) => (
 								<div key={s.id} className="flex items-center gap-3 rounded border border-[var(--border)] p-3">
 									<Zap size={16} className="text-[var(--sq-primary)]" />
 									<div className="min-w-0 flex-1">

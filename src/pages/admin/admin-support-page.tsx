@@ -18,11 +18,11 @@ export function AdminSupportPage() {
 			<Card>
 				<CardHeader><CardTitle className="text-lg">Support Tickets</CardTitle></CardHeader>
 				<CardContent>
-					{isLoading ? <Spinner /> : !data?.tickets.length ? (
+					{isLoading ? <Spinner /> : !(data?.tickets ?? []).length ? (
 						<div className="flex flex-col items-center gap-2 py-8"><HelpCircle size={32} className="text-[var(--muted-foreground)]" /><p className="text-sm text-[var(--muted-foreground)]">No support tickets.</p></div>
 					) : (
 						<div className="space-y-2">
-							{data.tickets.map((t) => (
+							{data?.tickets.map((t) => (
 								<div key={t.id} className="flex items-center gap-3 rounded border border-[var(--border)] p-3">
 									<div className="min-w-0 flex-1">
 										<p className="font-medium">#{t.id} — {t.subject || "No subject"}</p>

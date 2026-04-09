@@ -29,11 +29,11 @@ export function DeveloperPage() {
 						<div className="flex h-20 items-center justify-center">
 							<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 						</div>
-					) : !data?.api_keys.length ? (
+					) : !(data?.api_keys ?? []).length ? (
 						<p className="text-sm text-[var(--muted-foreground)]">No API keys created yet.</p>
 					) : (
 						<div className="space-y-2">
-							{data.api_keys.map((k) => (
+							{data?.api_keys.map((k) => (
 								<div key={k.id} className="flex items-center gap-3 rounded-md border border-[var(--border)] p-3">
 									<Shield size={16} className={k.status === "active" ? "text-green-500" : "text-gray-400"} />
 									<div className="min-w-0 flex-1">
