@@ -80,26 +80,36 @@ function ModelsSection() {
 	return (
 		<div className="space-y-4">
 			<p className="text-sm text-[var(--muted-foreground)]">{data?.total ?? 0} models</p>
-			{Object.entries(data?.model_groups ?? {}).map(([group, models]) => (
-				<Card key={group}>
-					<CardHeader className="pb-2"><CardTitle className="text-base">{group}</CardTitle></CardHeader>
-					<CardContent>
-						<table className="w-full text-sm">
-							<thead><tr className="border-b border-[var(--border)]">
-								<th className="py-1.5 text-left font-medium">Model</th>
-								<th className="py-1.5 text-right font-medium">Input $/Mtok</th>
-								<th className="py-1.5 text-right font-medium">Output $/Mtok</th>
-								<th className="py-1.5 text-right font-medium">Markup</th>
-								<th className="py-1.5 text-right font-medium">Min</th>
-								<th className="py-1.5 text-center font-medium">Action</th>
-							</tr></thead>
-							<tbody>{models.map((m) => (
-								<ModelRow key={m.id} model={m} />
-							))}</tbody>
-						</table>
-					</CardContent>
-				</Card>
-			))}
+			{Object.entries(data?.model_groups ?? {}).map(([group, models]) => {
+				const isTokenBased = models[0]?.type === "GPT";
+				return (
+					<Card key={group}>
+						<CardHeader className="pb-2"><CardTitle className="text-base">{group}</CardTitle></CardHeader>
+						<CardContent>
+							<table className="w-full text-sm">
+								<thead><tr className="border-b border-[var(--border)]">
+									<th className="py-1.5 text-left font-medium">Model</th>
+									{!isTokenBased && <th className="py-1.5 text-left font-medium">Variant</th>}
+									{isTokenBased ? (
+										<>
+											<th className="py-1.5 text-right font-medium">Input $/Mtok</th>
+											<th className="py-1.5 text-right font-medium">Output $/Mtok</th>
+										</>
+									) : (
+										<th className="py-1.5 text-right font-medium">Vendor $/unit</th>
+									)}
+									<th className="py-1.5 text-right font-medium">Markup</th>
+									<th className="py-1.5 text-right font-medium">Min</th>
+									<th className="py-1.5 text-center font-medium">Action</th>
+								</tr></thead>
+								<tbody>{models.map((m) => (
+									<ModelRow key={m.id} model={m} isTokenBased={isTokenBased} />
+								))}</tbody>
+							</table>
+						</CardContent>
+					</Card>
+				);
+			})}
 		</div>
 	);
 }
@@ -126,15 +136,34 @@ function EndpointsSection() {
 	);
 }
 
-function ModelRow({ model: m }: { model: PricingModel }) {
+function buildVariant(m: PricingModel): string {
+	const parts: string[] = [];
+	if (m.resolution) parts.push(m.resolution);
+	if (m.length) parts.push(m.length);
+	if (m.mode) parts.push(m.mode);
+	if (m.audio) parts.push(`audio: ${m.audio}`);
+	return parts.join(" · ") || "—";
+}
+
+function ModelRow({ model: m, isTokenBased }: { model: PricingModel; isTokenBased: boolean }) {
 	const [editing, setEditing] = useState(false);
 	const [inputCost, setInputCost] = useState(m.input_cost);
 	const [outputCost, setOutputCost] = useState(m.output_cost);
+	const [vendorCost, setVendorCost] = useState(m.vendor_cost);
 	const [markup, setMarkup] = useState(m.markup);
 	const editMutation = useEditModelPricing();
 
 	const handleSave = () => {
-		editMutation.mutate({ id: m.id, input_cost: inputCost, output_cost: outputCost, markup_factor: markup }, {
+		const payload: Parameters<typeof editMutation.mutate>[0] = {
+			id: m.id, markup_factor: markup,
+		};
+		if (isTokenBased) {
+			payload.input_cost = inputCost;
+			payload.output_cost = outputCost;
+		} else {
+			payload.vendor_cost = vendorCost;
+		}
+		editMutation.mutate(payload, {
 			onSuccess: () => { toast.success("Updated."); setEditing(false); },
 			onError: () => toast.error("Failed."),
 		});
@@ -143,12 +172,23 @@ function ModelRow({ model: m }: { model: PricingModel }) {
 	return (
 		<tr className="border-b border-[var(--border)] hover:bg-[var(--accent)]">
 			<td className="py-1.5 font-mono text-xs">{m.model}</td>
-			<td className="py-1.5 text-right">
-				{editing ? <Input type="number" step="0.01" value={inputCost} onChange={(e) => setInputCost(Number.parseFloat(e.target.value))} className="h-7 w-20 text-xs ml-auto" /> : <span>{m.input_cost.toFixed(2)}</span>}
-			</td>
-			<td className="py-1.5 text-right">
-				{editing ? <Input type="number" step="0.01" value={outputCost} onChange={(e) => setOutputCost(Number.parseFloat(e.target.value))} className="h-7 w-20 text-xs ml-auto" /> : <span>{m.output_cost.toFixed(2)}</span>}
-			</td>
+			{!isTokenBased && (
+				<td className="py-1.5 text-xs text-[var(--muted-foreground)]">{buildVariant(m)}</td>
+			)}
+			{isTokenBased ? (
+				<>
+					<td className="py-1.5 text-right">
+						{editing ? <Input type="number" step="0.01" value={inputCost} onChange={(e) => setInputCost(Number.parseFloat(e.target.value))} className="h-7 w-20 text-xs ml-auto" /> : <span>{m.input_cost.toFixed(2)}</span>}
+					</td>
+					<td className="py-1.5 text-right">
+						{editing ? <Input type="number" step="0.01" value={outputCost} onChange={(e) => setOutputCost(Number.parseFloat(e.target.value))} className="h-7 w-20 text-xs ml-auto" /> : <span>{m.output_cost.toFixed(2)}</span>}
+					</td>
+				</>
+			) : (
+				<td className="py-1.5 text-right">
+					{editing ? <Input type="number" step="0.0001" value={vendorCost} onChange={(e) => setVendorCost(Number.parseFloat(e.target.value))} className="h-7 w-24 text-xs ml-auto" /> : <span>${m.vendor_cost.toFixed(4)}</span>}
+				</td>
+			)}
 			<td className="py-1.5 text-right">
 				{editing ? <Input type="number" step="0.01" value={markup} onChange={(e) => setMarkup(Number.parseFloat(e.target.value))} className="h-7 w-16 text-xs ml-auto" /> : <span>{m.markup.toFixed(2)}</span>}
 			</td>

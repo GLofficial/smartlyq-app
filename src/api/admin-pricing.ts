@@ -23,6 +23,10 @@ export interface PricingModel {
 	provider: string;
 	model: string;
 	type: string;
+	resolution: string | null;
+	length: string | null;
+	mode: string | null;
+	audio: string | null;
 	input_cost: number;
 	output_cost: number;
 	vendor_cost: number;
@@ -43,7 +47,7 @@ export function useAdminPricingModels() {
 
 export function useEditModelPricing() {
 	return useMutation({
-		mutationFn: (data: { id: number; input_cost?: number; output_cost?: number; markup_factor?: number }) =>
+		mutationFn: (data: { id: number; input_cost?: number; output_cost?: number; vendor_cost?: number; markup_factor?: number }) =>
 			apiClient.post<{ message: string }>("/api/spa/admin/pricing/models/edit", data),
 		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "pricing", "models"] }),
 	});
