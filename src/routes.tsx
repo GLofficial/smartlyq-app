@@ -18,6 +18,21 @@ const SocialDashboardPage = lazy(() =>
 const ManagePostsPage = lazy(() =>
 	import("@/pages/social/manage-posts-page").then((m) => ({ default: m.ManagePostsPage })),
 );
+const CreatePostPage = lazy(() =>
+	import("@/pages/social/create-post-page").then((m) => ({ default: m.CreatePostPage })),
+);
+const CalendarPage = lazy(() =>
+	import("@/pages/social/calendar-page").then((m) => ({ default: m.CalendarPage })),
+);
+const CommentsPage = lazy(() =>
+	import("@/pages/social/comments-page").then((m) => ({ default: m.CommentsPage })),
+);
+const InboxPage = lazy(() =>
+	import("@/pages/social/inbox-page").then((m) => ({ default: m.InboxPage })),
+);
+const AnalyticsPage = lazy(() =>
+	import("@/pages/social/analytics-page").then((m) => ({ default: m.AnalyticsPage })),
+);
 const NotFoundPage = lazy(() =>
 	import("@/pages/misc/not-found-page").then((m) => ({ default: m.NotFoundPage })),
 );
@@ -66,12 +81,11 @@ export const router = createBrowserRouter([
 			{ path: "/my/captain", element: <Bridge path="/my/ai-captain" title="AI Captain" /> },
 			{ path: "/my/social-media", element: <SuspenseWrap><SocialDashboardPage /></SuspenseWrap> },
 			{ path: "/my/social-media/posts", element: <SuspenseWrap><ManagePostsPage /></SuspenseWrap> },
-			{ path: "/my/social-media/create-post", element: <Bridge path="/my/social-media/create-post" title="Create Post" /> },
-			{ path: "/my/social-media/calendar", element: <Bridge path="/my/social-media/calendar" title="Calendar" /> },
-			{ path: "/my/social-media/comments", element: <Bridge path="/my/social-media/comments" title="Comments" /> },
-			{ path: "/my/social-media/inbox", element: <Bridge path="/my/social-media/inbox" title="Inbox" /> },
-			{ path: "/my/social-media/analytics", element: <Bridge path="/my/social-media/analytics" title="Analytics" /> },
-			{ path: "/my/social-media/*", element: <Bridge path="/my/social-media" title="Social Media" /> },
+			{ path: "/my/social-media/create-post", element: <SuspenseWrap><CreatePostPage /></SuspenseWrap> },
+			{ path: "/my/social-media/calendar", element: <SuspenseWrap><CalendarPage /></SuspenseWrap> },
+			{ path: "/my/social-media/comments", element: <SuspenseWrap><CommentsPage /></SuspenseWrap> },
+			{ path: "/my/social-media/inbox", element: <SuspenseWrap><InboxPage /></SuspenseWrap> },
+			{ path: "/my/social-media/analytics", element: <SuspenseWrap><AnalyticsPage /></SuspenseWrap> },
 			{ path: "/my/chatbot", element: <Bridge path="/my/chatbot" title="Chatbots" /> },
 			{ path: "/my/chatbot/*", element: <Bridge path="/my/chatbot" title="Chatbots" /> },
 			{ path: "/my/ad-manager", element: <Bridge path="/my/ad-manager" title="Ad Manager" /> },
