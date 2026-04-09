@@ -26,6 +26,8 @@ const VideoGeneratorPage = lazy(() => import("@/pages/ai/video-generator-page").
 const AudioPage = lazy(() => import("@/pages/ai/audio-page").then((m) => ({ default: m.AudioPage })));
 const ArticleGeneratorPage = lazy(() => import("@/pages/ai/article-generator-page").then((m) => ({ default: m.ArticleGeneratorPage })));
 const AdManagerPage = lazy(() => import("@/pages/ad-manager/ad-manager-page").then((m) => ({ default: m.AdManagerPage })));
+const AdCreativesPage = lazy(() => import("@/pages/ads/ad-creatives-page").then((m) => ({ default: m.AdCreativesPage })));
+const AdAudiencesPage = lazy(() => import("@/pages/ads/ad-audiences-page").then((m) => ({ default: m.AdAudiencesPage })));
 const IntegrationsPage = lazy(() => import("@/pages/integrations/integrations-page").then((m) => ({ default: m.IntegrationsPage })));
 const BillingPage = lazy(() => import("@/pages/billing/billing-page").then((m) => ({ default: m.BillingPage })));
 const WorkspacePage = lazy(() => import("@/pages/workspace/workspace-page").then((m) => ({ default: m.WorkspacePage })));
@@ -149,6 +151,8 @@ export const router = createBrowserRouter([
 			{ path: "/my/ad-manager/ads", element: <S><AdsPage /></S> },
 			{ path: "/my/ad-manager/audit-log", element: <S><AdAuditLogPage /></S> },
 			{ path: "/my/ad-manager/settings", element: <S><AdSettingsPage /></S> },
+			{ path: "/my/ad-manager/creatives", element: <S><AdCreativesPage /></S> },
+			{ path: "/my/ad-manager/audiences", element: <S><AdAudiencesPage /></S> },
 			{ path: "/my/ad-manager/*", element: <S><AdManagerPage /></S> },
 
 			/* ── Media Library (native) ── */
