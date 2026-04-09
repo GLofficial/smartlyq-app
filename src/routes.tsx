@@ -68,6 +68,16 @@ const AdminKbPage = lazy(() => import("@/pages/admin/admin-kb-page").then((m) =>
 const AdminSkillsPage = lazy(() => import("@/pages/admin/admin-skills-page").then((m) => ({ default: m.AdminSkillsPage })));
 const AdminMonitoringPage = lazy(() => import("@/pages/admin/admin-monitoring-page").then((m) => ({ default: m.AdminMonitoringPage })));
 const AdminBillingDebugPage = lazy(() => import("@/pages/admin/admin-billing-debug-page").then((m) => ({ default: m.AdminBillingDebugPage })));
+const ChatPage = lazy(() => import("@/pages/chat/chat-page").then((m) => ({ default: m.ChatPage })));
+const ContentRewriterPage = lazy(() => import("@/pages/ai/content-rewriter-page").then((m) => ({ default: m.ContentRewriterPage })));
+const EditorPage = lazy(() => import("@/pages/ai/editor-page").then((m) => ({ default: m.EditorPage })));
+const AnalystPage = lazy(() => import("@/pages/ai/analyst-page").then((m) => ({ default: m.AnalystPage })));
+const ArticlesPage = lazy(() => import("@/pages/ai/articles-page").then((m) => ({ default: m.ArticlesPage })));
+const PlansPage = lazy(() => import("@/pages/plans/plans-page").then((m) => ({ default: m.PlansPage })));
+const SuspendedPage = lazy(() => import("@/pages/misc/suspended-page").then((m) => ({ default: m.SuspendedPage })));
+const AdsInsightsPage = lazy(() => import("@/pages/integrations/ads-insights-page").then((m) => ({ default: m.AdsInsightsPage })));
+const GoogleInsightsPage = lazy(() => import("@/pages/integrations/google-insights-page").then((m) => ({ default: m.GoogleInsightsPage })));
+const WoocommercePage = lazy(() => import("@/pages/integrations/woocommerce-page").then((m) => ({ default: m.WoocommercePage })));
 const NotFoundPage = lazy(() => import("@/pages/misc/not-found-page").then((m) => ({ default: m.NotFoundPage })));
 
 function S({ children }: { children: React.ReactNode }) {
@@ -158,13 +168,38 @@ export const router = createBrowserRouter([
 			{ path: "/my/social-media/custom-report", element: <S><ReportsPage /></S> },
 			{ path: "/my/social-media/schedule-report", element: <S><ScheduledReportsPage /></S> },
 
-			/* ── Connect extras ── */
+			/* ── Content / AI (dedicated pages — NOT wrong mappings) ── */
+			{ path: "/my/content-rewriter", element: <S><ContentRewriterPage /></S> },
+			{ path: "/my/editor", element: <S><EditorPage /></S> },
+			{ path: "/my/chat", element: <S><ChatPage /></S> },
+			{ path: "/my/chat/assistants", element: <S><ChatPage /></S> },
+			{ path: "/my/analyst", element: <S><AnalystPage /></S> },
+			{ path: "/my/articles", element: <S><ArticlesPage /></S> },
+			{ path: "/my/audio-to-text", element: <S><AudioPage /></S> },
+			{ path: "/my/image-to-video", element: <S><VideoGeneratorPage /></S> },
+
+			/* ── Plans ── */
+			{ path: "/my/plans", element: <S><PlansPage /></S> },
+			{ path: "/my/suspended", element: <S><SuspendedPage /></S> },
+
+			/* ── Connect ── */
 			{ path: "/my/url-shortener", element: <S><UrlShortenerPage /></S> },
-			{ path: "/my/content-rewriter", element: <S><TemplatesPage /></S> },
-			{ path: "/my/editor", element: <S><TemplatesPage /></S> },
-			{ path: "/my/chat", element: <S><HistoryPage /></S> },
 			{ path: "/my/canva", element: <S><IntegrationsPage /></S> },
 			{ path: "/my/developer", element: <S><DeveloperPage /></S> },
+
+			/* ── Integration insights (ads, analytics, woocommerce) ── */
+			{ path: "/my/integrations/facebook/ads", element: <S><AdsInsightsPage /></S> },
+			{ path: "/my/integrations/facebook-ads/*", element: <S><AdsInsightsPage /></S> },
+			{ path: "/my/integrations/google/ads", element: <S><AdsInsightsPage /></S> },
+			{ path: "/my/integrations/google-ads/*", element: <S><AdsInsightsPage /></S> },
+			{ path: "/my/integrations/tiktok/ads", element: <S><AdsInsightsPage /></S> },
+			{ path: "/my/integrations/tiktok-ads/*", element: <S><AdsInsightsPage /></S> },
+			{ path: "/my/integrations/linkedin/ads", element: <S><AdsInsightsPage /></S> },
+			{ path: "/my/integrations/linkedin-ads/*", element: <S><AdsInsightsPage /></S> },
+			{ path: "/my/integrations/google/projects", element: <S><GoogleInsightsPage /></S> },
+			{ path: "/my/integrations/google/traffic", element: <S><GoogleInsightsPage /></S> },
+			{ path: "/my/integrations/woocommerce/stores", element: <S><WoocommercePage /></S> },
+			{ path: "/my/integrations/woocommerce/insights", element: <S><WoocommercePage /></S> },
 
 			/* ── Workspace extras ── */
 			{ path: "/my/brands", element: <S><BrandsPage /></S> },
