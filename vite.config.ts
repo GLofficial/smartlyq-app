@@ -20,6 +20,7 @@ export default defineConfig({
       },
     },
   },
+  base: "/next/",
   build: {
     outDir: "dist",
     sourcemap: false,

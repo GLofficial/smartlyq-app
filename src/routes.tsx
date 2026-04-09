@@ -78,4 +78,6 @@ export const router = createBrowserRouter([
 			{ path: "*", element: <SuspenseWrap><NotFoundPage /></SuspenseWrap> },
 		],
 	},
-]);
+], {
+	basename: import.meta.env.BASE_URL.replace(/\/$/, ""),
+});
