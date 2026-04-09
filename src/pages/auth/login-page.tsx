@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 import { ENDPOINTS, ROUTES } from "@/lib/constants";
 import type { AuthResponse } from "@/lib/types";
 import { toast } from "sonner";
@@ -15,6 +16,7 @@ export function LoginPage() {
 	const [loading, setLoading] = useState(false);
 	const navigate = useNavigate();
 	const setAuth = useAuthStore((s) => s.setAuth);
+	const setWorkspaces = useWorkspaceStore((s) => s.setWorkspaces);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -28,6 +30,7 @@ export function LoginPage() {
 
 			apiClient.login(data.access_token);
 			setAuth(data.user, data.plan);
+			setWorkspaces(data.workspaces, data.active_workspace_id);
 			navigate(ROUTES.DASHBOARD);
 		} catch (err) {
 			const message = (err as { message?: string })?.message ?? "Login failed";

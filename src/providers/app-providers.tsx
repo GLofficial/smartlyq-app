@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { queryClient } from "@/lib/query-client";
 import { Toaster } from "sonner";
 import { TenantProvider } from "./tenant-provider";
+import { AuthProvider } from "./auth-provider";
 
 interface AppProvidersProps {
 	children: ReactNode;
@@ -11,10 +12,12 @@ interface AppProvidersProps {
 export function AppProviders({ children }: AppProvidersProps) {
 	return (
 		<QueryClientProvider client={queryClient}>
-			<TenantProvider>
-				{children}
-				<Toaster position="top-right" richColors closeButton />
-			</TenantProvider>
+			<AuthProvider>
+				<TenantProvider>
+					{children}
+					<Toaster position="top-right" richColors closeButton />
+				</TenantProvider>
+			</AuthProvider>
 		</QueryClientProvider>
 	);
 }

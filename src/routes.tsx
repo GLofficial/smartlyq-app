@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "@/layouts/app-layout";
 import { AuthLayout } from "@/layouts/auth-layout";
+import { AuthGuard } from "@/components/shared/auth-guard";
 
 // Lazy-loaded pages
 const LoginPage = lazy(() =>
@@ -50,7 +51,11 @@ export const router = createBrowserRouter([
 		],
 	},
 	{
-		element: <AppLayout />,
+		element: (
+			<AuthGuard>
+				<AppLayout />
+			</AuthGuard>
+		),
 		children: [
 			{ path: "/my", element: <SuspenseWrap><DashboardPage /></SuspenseWrap> },
 			{ path: "/my/captain", element: <ComingSoon /> },
