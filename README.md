@@ -17,6 +17,169 @@ Unified React SPA replacing the PHP Bootstrap frontend. Live at `app.smartlyq.co
 | Toasts | Sonner |
 | Linting | Biome |
 
+## Stats
+
+- **137 source files** in `src/`
+- **87 page components** in `src/pages/`
+- **19 API hook files** in `src/api/`
+- **~70 routes** in `routes.tsx`
+- **22 PHP controllers** (3,907 lines) in `smartlyq` repo
+- **~70 API endpoints** under `/api/spa/*`
+
+---
+
+## Pages by Section
+
+### Auth (3 pages)
+- Login, Signup, Reset Password
+
+### Dashboard (1 page)
+- Main dashboard: credits, scheduled posts, chatbots, social accounts, recent activity
+
+### CREATE Section (12 pages)
+| Page | Route |
+|---|---|
+| AI Captain | `/my/captain` |
+| Templates | `/my/templates` |
+| Image Generator | `/my/image-generator` |
+| Video Generator | `/my/text-to-video` + `/my/image-to-video` |
+| Text to Audio | `/my/text-to-audio` |
+| Audio to Text | `/my/audio-to-text` |
+| Content Rewriter | `/my/content-rewriter` |
+| Article Generator | `/my/article-generator` |
+| Articles List | `/my/articles` |
+| Editor | `/my/editor` |
+| Chat | `/my/chat` + `/my/chat/assistants` |
+| Data Analyst | `/my/analyst` |
+
+### PUBLISH Section (9 pages)
+| Page | Route |
+|---|---|
+| Create Post | `/my/social-media/create-post` — 12 platform live previews |
+| Content Calendar | `/my/social-media/calendar` |
+| Manage Posts | `/my/social-media/posts` |
+| Post Queues | `/my/social-media/queues` |
+| Bulk Scheduler | `/my/bulk-scheduler` |
+| Inbox | `/my/social-media/inbox` |
+| Comments | `/my/social-media/comments` |
+| Labels | `/my/social-media/labels` — CRUD with color picker |
+| Social Accounts | `/my/social-media/accounts` |
+
+### ANALYZE Section (4 pages)
+- Analytics, Reports, Custom Reports, Scheduled Reports
+
+### Integration Insights (6 pages)
+- Facebook Ads, Google Ads, TikTok Ads, LinkedIn Ads, Google Analytics, WooCommerce
+
+### AD MANAGER (1 page)
+- Dashboard with campaigns
+
+### CONNECT Section (4 pages)
+- Integrations Hub (OAuth popup), Chatbot (6 sub-pages), URL Shortener, Developer
+
+### WORKSPACE Section (4 pages)
+- Overview + Members, Brands, Business Groups
+
+### Other (8 pages)
+- Billing, Account, History, Media Library, Plans (pricing grid), Agency, Whitelabel, Presentations
+
+### Misc (2 pages)
+- 404, Suspended
+
+### Admin Panel (19 pages)
+- Dashboard, Users, Plans, Pricing, Subscriptions, Transactions, Templates, Assistants, Blogs, Pages, AI Captain (Traces/KB/Skills), Reports, Support, Whitelabel, Monitoring, Billing Debug, Settings (12 tabs)
+
+### Post Previews (12 platforms)
+- Facebook, Instagram, LinkedIn, Twitter/X, TikTok, YouTube, Pinterest, Threads, Bluesky, Reddit, Google Business, Telegram
+
+---
+
+## PHP Backend (in `smartlyq` repo)
+
+### Controllers (22 files, 3,907 lines)
+
+```
+smartlyq/app/Controller/
+├── SpaBootstrapController.php       # bootstrap, login, signup, reset, token, workspaces, dashboard
+├── SpaSocialController.php          # social accounts, calendar, comments, inbox, analytics, createPost
+├── SpaGeneralController.php         # integrations, billing, workspace, media, history, account
+├── SpaChatbotController.php         # chatbot CRUD, analytics, templates, live agent, settings
+├── SpaToolsController.php           # AI templates, images, articles, videos, ad manager, agency
+├── SpaAdminController.php           # admin dashboard, users, plans, subscriptions, transactions
+└── Spa/                             # Focused controllers (SpaAuthTrait shared)
+    ├── SpaAuthTrait.php             # JWT auth, CORS, response helpers
+    ├── AdminSettingsController.php  # 12-tab settings
+    ├── AdminPagesController.php     # pricing, blogs, pages, templates, assistants, support, reports
+    ├── AdminAiCaptainController.php # traces, KB, skills
+    ├── AdminMonitoringController.php# monitoring, billing debug
+    ├── ContentController.php        # chat list, articles list, plans
+    ├── IntegrationInsightsController.php # ads, google analytics, woocommerce
+    ├── LabelsController.php         # CRUD
+    ├── UrlShortenerController.php   # list + create
+    ├── ReportsController.php        # overview + scheduled
+    ├── QueuesController.php, DeveloperController.php, BrandsController.php, BusinessesController.php
+```
+
+### Routes: `Spa.php` (~70 endpoints)
+### Nginx: `default.conf` (modified), `smartlyq-react.conf` (cutover)
+### Scripts: `cutover-react.sh`, `rollback-react.sh`
+### Modified: `Controller.php` (+5 lines), `Api.php` (+1 line)
+
+---
+
+## React File Tree (137 files)
+
+```
+src/
+├── main.tsx, app.tsx, routes.tsx, index.css
+├── api/       19 files — one per domain (admin, chatbot, social, content, integrations, etc.)
+├── components/
+│   ├── shared/  auth-guard, iframe-bridge
+│   ├── shell/   header, sidebar, sidebar-nav-config, sidebar-section
+│   └── ui/      button, card, input
+├── layouts/     admin-layout, app-layout, auth-layout
+├── lib/         api-client, cn, constants, query-client, types
+├── providers/   app-providers, auth-provider, tenant-provider
+├── stores/      auth-store, tenant-store, ui-store, workspace-store
+└── pages/       87 page components
+    ├── admin/       19 pages + settings-field-config
+    ├── ai/          9 pages (templates, generators, rewriter, editor, analyst, articles)
+    ├── social/      12 pages + previews/ (12 platform previews)
+    ├── chatbot/     6 pages
+    ├── integrations/ 4 pages (hub, ads insights, google, woocommerce)
+    ├── auth/        3 pages
+    └── [15 more]    account, billing, chat, dashboard, history, media, plans, workspace, etc.
+```
+
+---
+
+## Architecture Notes
+
+- `Route::post()` in PHP registers for BOTH GET and POST — use `/save` suffix for writes
+- Sidebar config: `sidebar-nav-config.ts` + collapsible `sidebar-section.tsx`
+- Settings: `settings-field-config.ts` defines field type/label/options per tab
+- All files under 500 lines, one component per file
+- OAuth uses popup window (user stays in React app)
+- Captain/Video Editor/Presentations embedded as iframes
+- Cutover NOT automated — user decides when
+
+Unified React SPA replacing the PHP Bootstrap frontend. Live at `app.smartlyq.com/next/`.
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Build | Vite 6 + SWC |
+| Framework | React 19 + TypeScript 5.9 |
+| UI | shadcn/ui (Radix + Tailwind v4) |
+| Routing | React Router 7 |
+| Server State | TanStack React Query 5 |
+| Local State | Zustand 5 |
+| Forms | React Hook Form + Zod |
+| Icons | Lucide React |
+| Toasts | Sonner |
+| Linting | Biome |
+
 ## Progress Tracker
 
 ### Pages Built: 55 native React pages
