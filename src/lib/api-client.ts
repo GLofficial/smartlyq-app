@@ -3,6 +3,7 @@ import type { ApiError } from "./types";
 
 class ApiClient {
 	private baseUrl = "";
+	private refreshPromise: Promise<boolean> | null = null;
 
 	private getToken(): string | null {
 		return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
@@ -110,6 +111,16 @@ class ApiClient {
 	}
 
 	private async tryRefreshToken(): Promise<boolean> {
+		if (this.refreshPromise) return this.refreshPromise;
+		this.refreshPromise = this.doRefreshToken();
+		try {
+			return await this.refreshPromise;
+		} finally {
+			this.refreshPromise = null;
+		}
+	}
+
+	private async doRefreshToken(): Promise<boolean> {
 		try {
 			const response = await fetch(`${this.baseUrl}${ENDPOINTS.TOKEN_REFRESH}`, {
 				method: "POST",
