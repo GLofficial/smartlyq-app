@@ -56,6 +56,18 @@ const AdminSubscriptionsPage = lazy(() => import("@/pages/admin/admin-subscripti
 const AdminTransactionsPage = lazy(() => import("@/pages/admin/admin-transactions-page").then((m) => ({ default: m.AdminTransactionsPage })));
 const AdminWhitelabelPage = lazy(() => import("@/pages/admin/admin-whitelabel-page").then((m) => ({ default: m.AdminWhitelabelPage })));
 const AdminSettingsPage = lazy(() => import("@/pages/admin/admin-settings-page").then((m) => ({ default: m.AdminSettingsPage })));
+const AdminPricingPage = lazy(() => import("@/pages/admin/admin-pricing-page").then((m) => ({ default: m.AdminPricingPage })));
+const AdminBlogsPage = lazy(() => import("@/pages/admin/admin-blogs-page").then((m) => ({ default: m.AdminBlogsPage })));
+const AdminCmsPagesPage = lazy(() => import("@/pages/admin/admin-cms-pages-page").then((m) => ({ default: m.AdminCmsPagesPage })));
+const AdminTemplatesPageAdmin = lazy(() => import("@/pages/admin/admin-templates-page").then((m) => ({ default: m.AdminTemplatesPage })));
+const AdminAssistantsPage = lazy(() => import("@/pages/admin/admin-assistants-page").then((m) => ({ default: m.AdminAssistantsPage })));
+const AdminSupportPage = lazy(() => import("@/pages/admin/admin-support-page").then((m) => ({ default: m.AdminSupportPage })));
+const AdminReportsPage = lazy(() => import("@/pages/admin/admin-reports-page").then((m) => ({ default: m.AdminReportsPage })));
+const AdminTracesPage = lazy(() => import("@/pages/admin/admin-traces-page").then((m) => ({ default: m.AdminTracesPage })));
+const AdminKbPage = lazy(() => import("@/pages/admin/admin-kb-page").then((m) => ({ default: m.AdminKbPage })));
+const AdminSkillsPage = lazy(() => import("@/pages/admin/admin-skills-page").then((m) => ({ default: m.AdminSkillsPage })));
+const AdminMonitoringPage = lazy(() => import("@/pages/admin/admin-monitoring-page").then((m) => ({ default: m.AdminMonitoringPage })));
+const AdminBillingDebugPage = lazy(() => import("@/pages/admin/admin-billing-debug-page").then((m) => ({ default: m.AdminBillingDebugPage })));
 const NotFoundPage = lazy(() => import("@/pages/misc/not-found-page").then((m) => ({ default: m.NotFoundPage })));
 
 function S({ children }: { children: React.ReactNode }) {
@@ -179,7 +191,19 @@ export const router = createBrowserRouter([
 			{ path: "/admin/plans", element: <S><AdminPlansPage /></S> },
 			{ path: "/admin/subscriptions", element: <S><AdminSubscriptionsPage /></S> },
 			{ path: "/admin/transactions", element: <S><AdminTransactionsPage /></S> },
+			{ path: "/admin/pricing", element: <S><AdminPricingPage /></S> },
+			{ path: "/admin/templates", element: <S><AdminTemplatesPageAdmin /></S> },
+			{ path: "/admin/assistants", element: <S><AdminAssistantsPage /></S> },
+			{ path: "/admin/blogs", element: <S><AdminBlogsPage /></S> },
+			{ path: "/admin/pages", element: <S><AdminCmsPagesPage /></S> },
+			{ path: "/admin/ai-captain/traces", element: <S><AdminTracesPage /></S> },
+			{ path: "/admin/ai-captain/kb", element: <S><AdminKbPage /></S> },
+			{ path: "/admin/ai-captain/skills", element: <S><AdminSkillsPage /></S> },
+			{ path: "/admin/reports", element: <S><AdminReportsPage /></S> },
+			{ path: "/admin/support", element: <S><AdminSupportPage /></S> },
 			{ path: "/admin/whitelabel", element: <S><AdminWhitelabelPage /></S> },
+			{ path: "/admin/monitoring", element: <S><AdminMonitoringPage /></S> },
+			{ path: "/admin/billing-debug", element: <S><AdminBillingDebugPage /></S> },
 			{ path: "/admin/settings", element: <S><AdminSettingsPage /></S> },
 		],
 	},
