@@ -1,67 +1,126 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Globe, Palette, Shield } from "lucide-react";
-import { useAgency } from "@/api/tools";
+import { useState, useEffect } from "react";
+import { Globe, Palette, Mail, Key, LayoutGrid } from "lucide-react";
+import { useWhitelabelSettings, type WhitelabelSettings } from "@/api/whitelabel";
+import { cn } from "@/lib/cn";
+import { BrandingTab } from "./tabs/branding-tab";
+import { DomainTab } from "./tabs/domain-tab";
+import { EmailTab } from "./tabs/email-tab";
+import { AiKeysTab } from "./tabs/ai-keys-tab";
+import { ModulesTab } from "./tabs/modules-tab";
+
+const TABS = [
+	{ key: "branding", label: "Branding", icon: Palette },
+	{ key: "domain", label: "Domain", icon: Globe },
+	{ key: "email", label: "Email", icon: Mail },
+	{ key: "ai_keys", label: "AI Keys", icon: Key },
+	{ key: "modules", label: "Modules", icon: LayoutGrid },
+] as const;
+
+type TabKey = (typeof TABS)[number]["key"];
+
+const DEFAULT_BRANDING: WhitelabelSettings["branding"] = {
+	site_name: "",
+	logo_url: "",
+	favicon_url: "",
+	colors: {
+		primary: "#2563eb",
+		secondary: "#64748b",
+		accent: "#f59e0b",
+		bg: "#ffffff",
+		surface: "#f8fafc",
+		text: "#0f172a",
+		muted: "#94a3b8",
+		link: "#2563eb",
+	},
+	terms_url: "",
+	privacy_url: "",
+	cookie_url: "",
+};
+
+const DEFAULT_SMTP: WhitelabelSettings["smtp"] = {
+	enabled: false,
+	host: "",
+	username: "",
+	password: "",
+	port: 587,
+	encryption: "tls",
+	from_email: "",
+	from_name: "",
+	reply_to: "",
+};
 
 export function WhitelabelPage() {
-	const { data, isLoading } = useAgency();
-	const tenants = data?.tenants ?? [];
+	const [activeTab, setActiveTab] = useState<TabKey>("branding");
+	const { data, isLoading } = useWhitelabelSettings();
+
+	const [branding, setBranding] = useState(DEFAULT_BRANDING);
+	const [smtp, setSmtp] = useState(DEFAULT_SMTP);
+	const [aiKeys, setAiKeys] = useState<Record<string, string>>({});
+	const [modules, setModules] = useState<Record<string, boolean>>({});
+
+	useEffect(() => {
+		if (!data) return;
+		if (data.branding) setBranding(data.branding);
+		if (data.smtp) setSmtp(data.smtp);
+		if (data.ai_keys) setAiKeys(data.ai_keys);
+		if (data.modules) setModules(data.modules);
+	}, [data]);
 
 	return (
 		<div className="space-y-6">
-			<div className="flex items-center justify-between">
-				<h1 className="text-2xl font-bold">Whitelabel</h1>
-			</div>
+			<h1 className="text-2xl font-bold">Whitelabel Settings</h1>
 
-			{isLoading ? (
-				<div className="flex h-40 items-center justify-center">
-					<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
+			<div className="flex gap-6">
+				{/* Tab sidebar */}
+				<div className="w-44 shrink-0 space-y-0.5">
+					{TABS.map((tab) => {
+						const Icon = tab.icon;
+						return (
+							<button
+								key={tab.key}
+								type="button"
+								onClick={() => setActiveTab(tab.key)}
+								className={cn(
+									"flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors text-left",
+									activeTab === tab.key
+										? "bg-[var(--sq-primary)] text-white font-medium"
+										: "text-[var(--foreground)] hover:bg-[var(--accent)]",
+								)}
+							>
+								<Icon size={16} />
+								{tab.label}
+							</button>
+						);
+					})}
 				</div>
-			) : !tenants.length ? (
-				<Card>
-					<CardContent className="flex flex-col items-center gap-4 py-12">
-						<Globe size={48} className="text-[var(--muted-foreground)]" />
-						<h2 className="text-lg font-semibold">Launch Your Own Branded Platform</h2>
-						<p className="max-w-md text-center text-sm text-[var(--muted-foreground)]">
-							Create a white-labeled version of SmartlyQ with your own domain, logo, colors, and branding.
-							Your clients will see your brand, not ours.
-						</p>
-						<div className="flex gap-3">
-							<div className="flex items-center gap-2 rounded-lg border border-[var(--border)] p-3">
-								<Globe size={16} className="text-[var(--sq-primary)]" /> Custom Domain
-							</div>
-							<div className="flex items-center gap-2 rounded-lg border border-[var(--border)] p-3">
-								<Palette size={16} className="text-[var(--sq-primary)]" /> Your Branding
-							</div>
-							<div className="flex items-center gap-2 rounded-lg border border-[var(--border)] p-3">
-								<Shield size={16} className="text-[var(--sq-primary)]" /> SSL Included
-							</div>
+
+				{/* Content */}
+				<div className="flex-1 min-w-0">
+					{isLoading ? (
+						<div className="flex h-40 items-center justify-center">
+							<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 						</div>
-					</CardContent>
-				</Card>
-			) : (
-				<div className="grid gap-4 sm:grid-cols-2">
-					{tenants.map((t) => (
-						<Card key={t.id}>
-							<CardHeader className="pb-2">
-								<CardTitle className="text-base">{t.site_name || t.subdomain}</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-2">
-								<p className="text-sm text-[var(--muted-foreground)]">
-									{t.custom_domain || `${t.subdomain}.app.smartlyq.com`}
-								</p>
-								<div className="flex items-center gap-2">
-									<span className={`rounded-full px-2 py-0.5 text-xs font-medium ${t.status === "active" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-										{t.status}
-									</span>
-									{t.license_active && (
-										<span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">Licensed</span>
-									)}
-								</div>
-							</CardContent>
-						</Card>
-					))}
+					) : (
+						<>
+							{activeTab === "branding" && (
+								<BrandingTab branding={branding} onChange={setBranding} />
+							)}
+							{activeTab === "domain" && (
+								<DomainTab domain={data?.domain ?? { subdomain: "", custom_domain: "", domain_verified: false, ssl_active: false }} />
+							)}
+							{activeTab === "email" && (
+								<EmailTab smtp={smtp} onChange={setSmtp} />
+							)}
+							{activeTab === "ai_keys" && (
+								<AiKeysTab keys={aiKeys} onChange={setAiKeys} />
+							)}
+							{activeTab === "modules" && (
+								<ModulesTab modules={modules} onChange={setModules} />
+							)}
+						</>
+					)}
 				</div>
-			)}
+			</div>
 		</div>
 	);
 }
