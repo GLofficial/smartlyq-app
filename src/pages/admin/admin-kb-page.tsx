@@ -11,7 +11,7 @@ export function AdminKbPage() {
 		<div className="space-y-6">
 			<h1 className="text-2xl font-bold">AI Captain Knowledge Base</h1>
 			<Card>
-				<CardHeader><CardTitle className="text-lg">Sources ({data?.sources.length ?? 0})</CardTitle></CardHeader>
+				<CardHeader><CardTitle className="text-lg">Sources ({(data?.sources ?? []).length ?? 0})</CardTitle></CardHeader>
 				<CardContent>
 					{isLoading ? <Spinner /> : !(data?.sources ?? []).length ? (
 						<div className="flex flex-col items-center gap-2 py-8"><BookOpen size={32} className="text-[var(--muted-foreground)]" /><p className="text-sm text-[var(--muted-foreground)]">No knowledge sources.</p></div>

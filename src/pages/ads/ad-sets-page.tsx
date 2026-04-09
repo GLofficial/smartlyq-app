@@ -12,7 +12,7 @@ export function AdSetsPage() {
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-lg">
-						{data ? `${data?.ad_sets.length} ad set${data?.ad_sets.length !== 1 ? "s" : ""}` : "Loading..."}
+						{data ? `${(data?.ad_sets ?? []).length} ad set${(data?.ad_sets ?? []).length !== 1 ? "s" : ""}` : "Loading..."}
 					</CardTitle>
 				</CardHeader>
 				<CardContent>

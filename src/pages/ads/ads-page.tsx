@@ -12,7 +12,7 @@ export function AdsPage() {
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-lg">
-						{data ? `${data?.ads.length} ad${data?.ads.length !== 1 ? "s" : ""}` : "Loading..."}
+						{data ? `${(data?.ads ?? []).length} ad${(data?.ads ?? []).length !== 1 ? "s" : ""}` : "Loading..."}
 					</CardTitle>
 				</CardHeader>
 				<CardContent>

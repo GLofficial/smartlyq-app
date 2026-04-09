@@ -119,7 +119,7 @@ function EndpointsSection() {
 	if (isLoading) return <Spinner />;
 	return (
 		<Card>
-			<CardHeader><CardTitle className="text-lg">API Endpoints ({data?.pricing.length ?? 0})</CardTitle></CardHeader>
+			<CardHeader><CardTitle className="text-lg">API Endpoints ({(data?.pricing ?? []).length ?? 0})</CardTitle></CardHeader>
 			<CardContent>
 				<table className="w-full text-sm">
 					<thead><tr className="border-b border-[var(--border)]"><th className="py-2 text-left font-medium">Endpoint</th><th className="py-2 text-left font-medium">Unit</th><th className="py-2 text-right font-medium">Cost</th><th className="py-2 text-right font-medium">Min</th><th className="py-2 text-right font-medium">Max</th><th className="py-2 text-center font-medium">Active</th></tr></thead>

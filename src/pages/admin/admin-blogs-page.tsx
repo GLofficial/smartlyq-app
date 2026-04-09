@@ -9,7 +9,7 @@ export function AdminBlogsPage() {
 		<div className="space-y-6">
 			<h1 className="text-2xl font-bold">Blogs</h1>
 			<Card>
-				<CardHeader><CardTitle className="text-lg">Blog Posts ({data?.blogs.length ?? 0})</CardTitle></CardHeader>
+				<CardHeader><CardTitle className="text-lg">Blog Posts ({(data?.blogs ?? []).length ?? 0})</CardTitle></CardHeader>
 				<CardContent>
 					{isLoading ? <Spinner /> : !(data?.blogs ?? []).length ? (
 						<Empty icon={FileText} text="No blog posts." />

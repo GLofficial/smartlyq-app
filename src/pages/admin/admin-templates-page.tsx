@@ -9,7 +9,7 @@ export function AdminTemplatesPage() {
 		<div className="space-y-6">
 			<h1 className="text-2xl font-bold">Templates</h1>
 			<Card>
-				<CardHeader><CardTitle className="text-lg">Content Templates ({data?.templates.length ?? 0})</CardTitle></CardHeader>
+				<CardHeader><CardTitle className="text-lg">Content Templates ({(data?.templates ?? []).length ?? 0})</CardTitle></CardHeader>
 				<CardContent>
 					{isLoading ? <Spinner /> : !(data?.templates ?? []).length ? (
 						<div className="flex flex-col items-center gap-2 py-8"><FileText size={32} className="text-[var(--muted-foreground)]" /><p className="text-sm text-[var(--muted-foreground)]">No templates.</p></div>

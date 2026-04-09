@@ -154,7 +154,7 @@ export function AnalyticsPage() {
 											className="w-full rounded-t bg-[var(--sq-primary)]"
 											style={{ height: `${Math.max(2, height)}%` }}
 										/>
-										{data?.daily.length <= 14 && (
+										{(data?.daily ?? []).length <= 14 && (
 											<span className="text-[9px] text-[var(--muted-foreground)]">
 												{d.date.slice(5)}
 											</span>

@@ -9,7 +9,7 @@ export function AdminCmsPagesPage() {
 		<div className="space-y-6">
 			<h1 className="text-2xl font-bold">CMS Pages</h1>
 			<Card>
-				<CardHeader><CardTitle className="text-lg">Pages ({data?.pages.length ?? 0})</CardTitle></CardHeader>
+				<CardHeader><CardTitle className="text-lg">Pages ({(data?.pages ?? []).length ?? 0})</CardTitle></CardHeader>
 				<CardContent>
 					{isLoading ? <Spinner /> : !(data?.pages ?? []).length ? (
 						<div className="flex flex-col items-center gap-2 py-8"><FileText size={32} className="text-[var(--muted-foreground)]" /><p className="text-sm text-[var(--muted-foreground)]">No CMS pages.</p></div>

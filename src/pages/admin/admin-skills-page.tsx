@@ -9,7 +9,7 @@ export function AdminSkillsPage() {
 		<div className="space-y-6">
 			<h1 className="text-2xl font-bold">AI Captain Skills</h1>
 			<Card>
-				<CardHeader><CardTitle className="text-lg">Skills ({data?.skills.length ?? 0})</CardTitle></CardHeader>
+				<CardHeader><CardTitle className="text-lg">Skills ({(data?.skills ?? []).length ?? 0})</CardTitle></CardHeader>
 				<CardContent>
 					{isLoading ? <Spinner /> : !(data?.skills ?? []).length ? (
 						<div className="flex flex-col items-center gap-2 py-8"><Zap size={32} className="text-[var(--muted-foreground)]" /><p className="text-sm text-[var(--muted-foreground)]">No skills configured.</p></div>

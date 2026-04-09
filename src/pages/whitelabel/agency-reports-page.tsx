@@ -12,7 +12,7 @@ export function AgencyReportsPage() {
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-lg">
-						{data ? `${data?.reports.length} report${data?.reports.length !== 1 ? "s" : ""}` : "Loading..."}
+						{data ? `${(data?.reports ?? []).length} report${(data?.reports ?? []).length !== 1 ? "s" : ""}` : "Loading..."}
 					</CardTitle>
 				</CardHeader>
 				<CardContent>

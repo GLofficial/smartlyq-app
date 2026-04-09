@@ -33,7 +33,7 @@ export function WorkspacePage() {
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2 text-lg">
 								<Users size={18} />
-								Members ({data?.members.length ?? 0})
+								Members ({(data?.members ?? []).length ?? 0})
 							</CardTitle>
 						</CardHeader>
 						<CardContent>

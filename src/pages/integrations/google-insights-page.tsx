@@ -26,7 +26,7 @@ export function GoogleInsightsPage() {
 				</Card>
 			) : (
 				<Card>
-					<CardHeader><CardTitle className="text-lg">Properties ({data?.properties.length})</CardTitle></CardHeader>
+					<CardHeader><CardTitle className="text-lg">Properties ({(data?.properties ?? []).length})</CardTitle></CardHeader>
 					<CardContent>
 						<div className="space-y-2">
 							{data?.properties.map((p) => (

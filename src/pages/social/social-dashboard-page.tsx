@@ -75,7 +75,7 @@ export function SocialDashboardPage() {
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2 text-lg">
 							<Users size={18} />
-							Accounts ({data?.accounts.length ?? 0})
+							Accounts ({(data?.accounts ?? []).length ?? 0})
 						</CardTitle>
 					</CardHeader>
 					<CardContent>

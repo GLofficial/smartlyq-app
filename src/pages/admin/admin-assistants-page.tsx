@@ -9,7 +9,7 @@ export function AdminAssistantsPage() {
 		<div className="space-y-6">
 			<h1 className="text-2xl font-bold">Assistants</h1>
 			<Card>
-				<CardHeader><CardTitle className="text-lg">AI Assistants ({data?.assistants.length ?? 0})</CardTitle></CardHeader>
+				<CardHeader><CardTitle className="text-lg">AI Assistants ({(data?.assistants ?? []).length ?? 0})</CardTitle></CardHeader>
 				<CardContent>
 					{isLoading ? <Spinner /> : !(data?.assistants ?? []).length ? (
 						<div className="flex flex-col items-center gap-2 py-8"><Bot size={32} className="text-[var(--muted-foreground)]" /><p className="text-sm text-[var(--muted-foreground)]">No assistants configured.</p></div>

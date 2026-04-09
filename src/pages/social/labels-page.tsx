@@ -63,7 +63,7 @@ export function LabelsPage() {
 
 			{/* Labels list */}
 			<Card>
-				<CardHeader><CardTitle className="text-lg">Your Labels ({data?.labels.length ?? 0})</CardTitle></CardHeader>
+				<CardHeader><CardTitle className="text-lg">Your Labels ({(data?.labels ?? []).length ?? 0})</CardTitle></CardHeader>
 				<CardContent>
 					{isLoading ? (
 						<div className="flex h-20 items-center justify-center">
