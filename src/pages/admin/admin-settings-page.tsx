@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Save, Settings } from "lucide-react";
 import { useAdminSettings, useSaveAdminSettings } from "@/api/admin-settings";
+import { TAB_FIELDS, type FieldDef } from "./settings-field-config";
 import { toast } from "sonner";
 import { cn } from "@/lib/cn";
 
@@ -28,7 +29,6 @@ export function AdminSettingsPage() {
 	const saveMutation = useSaveAdminSettings();
 	const [values, setValues] = useState<Record<string, string>>({});
 
-	// Sync fetched settings into local state
 	useEffect(() => {
 		if (data?.settings) setValues(data.settings);
 	}, [data?.settings]);
@@ -41,25 +41,27 @@ export function AdminSettingsPage() {
 			{ tab: activeTab, values },
 			{
 				onSuccess: (d) => toast.success(d.message),
-				onError: () => toast.error("Failed to save settings."),
+				onError: () => toast.error("Failed to save."),
 			},
 		);
 	};
 
+	const fields = TAB_FIELDS[activeTab] ?? [];
+
 	return (
 		<div className="space-y-6">
-			<h1 className="text-2xl font-bold">Settings</h1>
+			<h1 className="text-2xl font-bold">Site Settings</h1>
 
 			<div className="flex gap-6">
 				{/* Tab sidebar */}
-				<div className="w-48 shrink-0 space-y-0.5">
+				<div className="w-44 shrink-0 space-y-0.5">
 					{TABS.map((tab) => (
 						<button
 							key={tab.key}
 							type="button"
 							onClick={() => setActiveTab(tab.key)}
 							className={cn(
-								"flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors text-left",
+								"flex w-full items-center rounded-md px-3 py-2 text-sm transition-colors text-left",
 								activeTab === tab.key
 									? "bg-[var(--sq-primary)] text-white font-medium"
 									: "text-[var(--foreground)] hover:bg-[var(--accent)]",
@@ -70,13 +72,13 @@ export function AdminSettingsPage() {
 					))}
 				</div>
 
-				{/* Settings form */}
-				<div className="flex-1">
+				{/* Form */}
+				<div className="flex-1 min-w-0">
 					<Card>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2 text-lg">
 								<Settings size={18} />
-								{TABS.find((t) => t.key === activeTab)?.label ?? "Settings"}
+								{TABS.find((t) => t.key === activeTab)?.label}
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
@@ -84,22 +86,19 @@ export function AdminSettingsPage() {
 								<div className="flex h-32 items-center justify-center">
 									<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 								</div>
-							) : Object.keys(values).length === 0 ? (
-								<p className="text-sm text-[var(--muted-foreground)]">
-									No settings found for this tab.
-								</p>
+							) : fields.length === 0 ? (
+								<p className="text-sm text-[var(--muted-foreground)]">No fields for this tab.</p>
 							) : (
-								<div className="space-y-4">
-									{Object.entries(values).map(([key, val]) => (
-										<SettingField
-											key={key}
-											name={key}
-											value={val}
-											onChange={(v) => update(key, v)}
-										/>
-									))}
+								<div className="space-y-5">
+									<div className="grid grid-cols-2 gap-x-4 gap-y-5">
+										{fields.map((f) => (
+											<div key={f.key} className={f.half ? "col-span-1" : "col-span-2"}>
+												<SettingField field={f} value={values[f.key] ?? ""} onChange={(v) => update(f.key, v)} />
+											</div>
+										))}
+									</div>
 									<Button onClick={handleSave} disabled={saveMutation.isPending}>
-										<Save size={16} /> {saveMutation.isPending ? "Saving..." : "Save Settings"}
+										<Save size={16} /> {saveMutation.isPending ? "Saving..." : "Update details"}
 									</Button>
 								</div>
 							)}
@@ -111,30 +110,36 @@ export function AdminSettingsPage() {
 	);
 }
 
-function SettingField({
-	name,
-	value,
-	onChange,
-}: {
-	name: string;
-	value: string;
-	onChange: (v: string) => void;
-}) {
-	const label = name
-		.replace(/_/g, " ")
-		.replace(/\b\w/g, (c) => c.toUpperCase());
-
-	const isSecret = name.includes("secret") || name.includes("password") || name.includes("apikey");
-
+function SettingField({ field, value, onChange }: { field: FieldDef; value: string; onChange: (v: string) => void }) {
 	return (
-		<div className="space-y-1">
-			<label className="text-sm font-medium">{label}</label>
-			<Input
-				type={isSecret ? "password" : "text"}
-				value={value}
-				onChange={(e) => onChange(e.target.value)}
-				placeholder={isSecret ? "••••••••" : `Enter ${label.toLowerCase()}`}
-			/>
+		<div className="space-y-1.5">
+			<label className="text-sm font-medium text-[var(--foreground)]">{field.label}</label>
+			{field.type === "select" && field.options ? (
+				<select
+					value={value}
+					onChange={(e) => onChange(e.target.value)}
+					className="flex h-10 w-full rounded-md border border-[var(--input)] bg-[var(--background)] px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+				>
+					{field.options.map((opt) => (
+						<option key={opt.value} value={opt.value}>{opt.label}</option>
+					))}
+				</select>
+			) : field.type === "textarea" ? (
+				<textarea
+					value={value}
+					onChange={(e) => onChange(e.target.value)}
+					placeholder={field.placeholder}
+					rows={3}
+					className="flex w-full rounded-md border border-[var(--input)] bg-[var(--background)] px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] resize-none"
+				/>
+			) : (
+				<Input
+					type={field.type === "password" ? "password" : "text"}
+					value={value}
+					onChange={(e) => onChange(e.target.value)}
+					placeholder={field.placeholder}
+				/>
+			)}
 		</div>
 	);
 }
