@@ -33,6 +33,11 @@ const MediaLibraryPage = lazy(() => import("@/pages/media/media-library-page").t
 const AccountPage = lazy(() => import("@/pages/account/account-page").then((m) => ({ default: m.AccountPage })));
 const HistoryPage = lazy(() => import("@/pages/history/history-page").then((m) => ({ default: m.HistoryPage })));
 const AgencyPage = lazy(() => import("@/pages/agency/agency-page").then((m) => ({ default: m.AgencyPage })));
+const ChatbotCreatePage = lazy(() => import("@/pages/chatbot/chatbot-create-page").then((m) => ({ default: m.ChatbotCreatePage })));
+const ChatbotSettingsPage = lazy(() => import("@/pages/chatbot/chatbot-settings-page").then((m) => ({ default: m.ChatbotSettingsPage })));
+const SignupPage = lazy(() => import("@/pages/auth/signup-page").then((m) => ({ default: m.SignupPage })));
+const ResetPage = lazy(() => import("@/pages/auth/reset-page").then((m) => ({ default: m.ResetPage })));
+const WhitelabelPage = lazy(() => import("@/pages/whitelabel/whitelabel-page").then((m) => ({ default: m.WhitelabelPage })));
 const AdminDashboardPage = lazy(() => import("@/pages/admin/admin-dashboard-page").then((m) => ({ default: m.AdminDashboardPage })));
 const AdminUsersPage = lazy(() => import("@/pages/admin/admin-users-page").then((m) => ({ default: m.AdminUsersPage })));
 const AdminPlansPage = lazy(() => import("@/pages/admin/admin-plans-page").then((m) => ({ default: m.AdminPlansPage })));
@@ -55,8 +60,8 @@ export const router = createBrowserRouter([
 		element: <AuthLayout />,
 		children: [
 			{ path: "/login", element: <S><LoginPage /></S> },
-			{ path: "/signup", element: <Bridge path="/signup" title="Sign Up" /> },
-			{ path: "/reset", element: <Bridge path="/reset" title="Reset Password" /> },
+			{ path: "/signup", element: <S><SignupPage /></S> },
+			{ path: "/reset", element: <S><ResetPage /></S> },
 		],
 	},
 	{
@@ -80,11 +85,11 @@ export const router = createBrowserRouter([
 
 			/* ── Chatbot (native + iframe for create) ── */
 			{ path: "/my/chatbot", element: <S><ChatbotListPage /></S> },
-			{ path: "/my/chatbot/create", element: <Bridge path="/my/chatbot/create" title="Create Chatbot" /> },
+			{ path: "/my/chatbot/create", element: <S><ChatbotCreatePage /></S> },
 			{ path: "/my/chatbot/live-agent", element: <S><LiveAgentPage /></S> },
 			{ path: "/my/chatbot/templates", element: <S><ChatbotTemplatesPage /></S> },
 			{ path: "/my/chatbot/analytics", element: <S><ChatbotAnalyticsPage /></S> },
-			{ path: "/my/chatbot/settings", element: <Bridge path="/my/chatbot/settings" title="Chatbot Settings" /> },
+			{ path: "/my/chatbot/settings", element: <S><ChatbotSettingsPage /></S> },
 			{ path: "/my/chatbot/*", element: <Bridge path="/my/chatbot" title="Chatbot" /> },
 
 			/* ── AI Tools (all native) ── */
@@ -122,7 +127,7 @@ export const router = createBrowserRouter([
 			/* ── Agency + Whitelabel (native) ── */
 			{ path: "/my/agency", element: <S><AgencyPage /></S> },
 			{ path: "/my/agency/*", element: <S><AgencyPage /></S> },
-			{ path: "/my/whitelabel", element: <Bridge path="/my/whitelabel" title="Whitelabel" /> },
+			{ path: "/my/whitelabel", element: <S><WhitelabelPage /></S> },
 
 			/* ── 404 ── */
 			{ path: "*", element: <S><NotFoundPage /></S> },
