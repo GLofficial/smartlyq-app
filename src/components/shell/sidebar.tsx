@@ -45,6 +45,10 @@ import { cn } from "@/lib/cn";
 import { useUiStore } from "@/stores/ui-store";
 import { useTenantStore } from "@/stores/tenant-store";
 import { useAuthStore } from "@/stores/auth-store";
+import { useWorkspaceStore } from "@/stores/workspace-store";
+import { apiClient } from "@/lib/api-client";
+import { STORAGE_KEYS } from "@/lib/constants";
+import { toast } from "sonner";
 
 interface NavChild {
 	label: string;
@@ -171,6 +175,7 @@ export function Sidebar() {
 	const branding = useTenantStore((s) => s.branding);
 	const user = useAuthStore((s) => s.user);
 	const isAdmin = user?.role === 1;
+	const workspaces = useWorkspaceStore((s) => s.workspaces);
 
 	return (
 		<aside
@@ -228,9 +233,12 @@ export function Sidebar() {
 				)}
 			</nav>
 
-			{/* Admin link */}
-			{isAdmin && (
-				<div className="border-t border-[var(--sidebar-border)] p-2">
+			{/* Workspace switcher + Admin */}
+			<div className="border-t border-[var(--sidebar-border)] p-2 space-y-1">
+				{!collapsed && workspaces.length > 1 && (
+					<WorkspaceSwitcher />
+				)}
+				{isAdmin && (
 					<NavLink
 						path="/admin"
 						icon={Shield}
@@ -238,8 +246,8 @@ export function Sidebar() {
 						collapsed={collapsed}
 						active={location.pathname.startsWith("/admin")}
 					/>
-				</div>
-			)}
+				)}
+			</div>
 		</aside>
 	);
 }
@@ -338,5 +346,53 @@ function NavLink({
 			<Icon size={small ? 15 : 18} />
 			{!collapsed && <span>{label}</span>}
 		</Link>
+	);
+}
+
+function WorkspaceSwitcher() {
+	const workspaces = useWorkspaceStore((s) => s.workspaces);
+	const activeId = useWorkspaceStore((s) => s.activeWorkspaceId);
+	const setActiveWorkspace = useWorkspaceStore((s) => s.setActiveWorkspace);
+
+	const handleSwitch = async (wsId: number) => {
+		if (wsId === activeId) return;
+		try {
+			const res = await apiClient.post<{ access_token: string }>("/api/spa/workspace/switch", {
+				workspace_id: wsId,
+			});
+			localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, res.access_token);
+			setActiveWorkspace(wsId);
+			window.location.reload();
+		} catch {
+			toast.error("Failed to switch workspace.");
+		}
+	};
+
+	return (
+		<div className="px-2 py-1">
+			<p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
+				Workspace
+			</p>
+			<div className="space-y-0.5">
+				{workspaces.map((ws) => (
+					<button
+						key={ws.id}
+						type="button"
+						onClick={() => handleSwitch(ws.id)}
+						className={cn(
+							"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors",
+							ws.id === activeId
+								? "bg-[color-mix(in_srgb,var(--sidebar-primary)_10%,transparent)] text-[var(--sidebar-primary)] font-medium"
+								: "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]",
+						)}
+					>
+						<div className="flex h-5 w-5 items-center justify-center rounded bg-[var(--sidebar-accent)] text-[10px] font-bold">
+							{ws.name.charAt(0).toUpperCase()}
+						</div>
+						<span className="truncate">{ws.name}</span>
+					</button>
+				))}
+			</div>
+		</div>
 	);
 }

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { LogOut, Moon, Sun, User } from "lucide-react";
+import { LogOut, Moon, Sun, User, Coins } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
 import { useUiStore } from "@/stores/ui-store";
 import { apiClient } from "@/lib/api-client";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 
 export function Header() {
 	const user = useAuthStore((s) => s.user);
+	const plan = useAuthStore((s) => s.plan);
 	const clearAuth = useAuthStore((s) => s.clearAuth);
 	const theme = useUiStore((s) => s.theme);
 	const setTheme = useUiStore((s) => s.setTheme);
@@ -20,38 +21,54 @@ export function Header() {
 	};
 
 	return (
-		<header className="flex h-16 items-center justify-between border-b border-[var(--border)] bg-[var(--card)] px-6">
-			<div className="flex items-center gap-4">
-				<h1 className="text-lg font-semibold text-[var(--foreground)]">
-					{/* Page title will be set by each page */}
-				</h1>
-			</div>
+		<header className="flex h-14 items-center justify-between border-b border-[var(--border)] bg-[var(--card)] px-6">
+			<div />
 
-			<div className="flex items-center gap-3">
+			<div className="flex items-center gap-2">
+				{/* Credits badge */}
+				{plan?.features && (
+					<Link to={ROUTES.BILLING}>
+						<div className="flex items-center gap-1.5 rounded-full bg-[color-mix(in_srgb,var(--sq-primary)_10%,transparent)] px-3 py-1.5 text-xs font-medium text-[var(--sq-primary)] hover:bg-[color-mix(in_srgb,var(--sq-primary)_15%,transparent)] transition-colors">
+							<Coins size={14} />
+							<span>{plan.features.credits ?? 0} credits</span>
+						</div>
+					</Link>
+				)}
+
+				{/* Plan badge */}
+				{plan && (
+					<Link to={ROUTES.BILLING}>
+						<span className="rounded-full bg-[var(--muted)] px-2.5 py-1 text-xs font-medium text-[var(--muted-foreground)]">
+							{plan.name}
+						</span>
+					</Link>
+				)}
+
 				{/* Theme toggle */}
 				<Button
 					variant="ghost"
 					size="icon"
 					onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+					className="h-8 w-8"
 				>
-					{theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+					{theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
 				</Button>
 
-				{/* User info */}
+				{/* User */}
 				{user && (
-					<div className="flex items-center gap-3">
+					<>
 						<span className="text-sm text-[var(--muted-foreground)] hidden sm:inline">
 							{user.name}
 						</span>
 						<Link to={ROUTES.ACCOUNT}>
-							<Button variant="ghost" size="icon">
-								<User size={18} />
+							<Button variant="ghost" size="icon" className="h-8 w-8">
+								<User size={16} />
 							</Button>
 						</Link>
-						<Button variant="ghost" size="icon" onClick={handleLogout}>
-							<LogOut size={18} />
+						<Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleLogout}>
+							<LogOut size={16} />
 						</Button>
-					</div>
+					</>
 				)}
 			</div>
 		</header>
