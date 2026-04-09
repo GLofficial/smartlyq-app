@@ -15,7 +15,7 @@ export function useAdminSettings(tab: string) {
 export function useSaveAdminSettings() {
 	return useMutation({
 		mutationFn: (data: { tab: string; values: Record<string, string> }) =>
-			apiClient.post<{ message: string }>("/api/spa/admin/settings", data),
+			apiClient.post<{ message: string }>("/api/spa/admin/settings/save", data),
 		onSuccess: (_d, vars) =>
 			queryClient.invalidateQueries({ queryKey: ["admin", "settings", vars.tab] }),
 	});

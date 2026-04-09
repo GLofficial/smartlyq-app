@@ -24,7 +24,7 @@ export function ChatbotSettingsPage() {
 	const handleSave = async () => {
 		setSaving(true);
 		try {
-			await apiClient.post("/api/spa/chatbot/settings", settings);
+			await apiClient.post("/api/spa/chatbot/settings/save", settings);
 			toast.success("Settings saved.");
 		} catch {
 			toast.error("Failed to save settings.");
