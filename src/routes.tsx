@@ -12,6 +12,12 @@ const LoginPage = lazy(() =>
 const DashboardPage = lazy(() =>
 	import("@/pages/dashboard/dashboard-page").then((m) => ({ default: m.DashboardPage })),
 );
+const SocialDashboardPage = lazy(() =>
+	import("@/pages/social/social-dashboard-page").then((m) => ({ default: m.SocialDashboardPage })),
+);
+const ManagePostsPage = lazy(() =>
+	import("@/pages/social/manage-posts-page").then((m) => ({ default: m.ManagePostsPage })),
+);
 const NotFoundPage = lazy(() =>
 	import("@/pages/misc/not-found-page").then((m) => ({ default: m.NotFoundPage })),
 );
@@ -58,7 +64,13 @@ export const router = createBrowserRouter([
 
 			/* ── Iframe bridges (legacy PHP pages inside React shell) ── */
 			{ path: "/my/captain", element: <Bridge path="/my/ai-captain" title="AI Captain" /> },
-			{ path: "/my/social-media", element: <Bridge path="/my/social-media" title="Social Media" /> },
+			{ path: "/my/social-media", element: <SuspenseWrap><SocialDashboardPage /></SuspenseWrap> },
+			{ path: "/my/social-media/posts", element: <SuspenseWrap><ManagePostsPage /></SuspenseWrap> },
+			{ path: "/my/social-media/create-post", element: <Bridge path="/my/social-media/create-post" title="Create Post" /> },
+			{ path: "/my/social-media/calendar", element: <Bridge path="/my/social-media/calendar" title="Calendar" /> },
+			{ path: "/my/social-media/comments", element: <Bridge path="/my/social-media/comments" title="Comments" /> },
+			{ path: "/my/social-media/inbox", element: <Bridge path="/my/social-media/inbox" title="Inbox" /> },
+			{ path: "/my/social-media/analytics", element: <Bridge path="/my/social-media/analytics" title="Analytics" /> },
 			{ path: "/my/social-media/*", element: <Bridge path="/my/social-media" title="Social Media" /> },
 			{ path: "/my/chatbot", element: <Bridge path="/my/chatbot" title="Chatbots" /> },
 			{ path: "/my/chatbot/*", element: <Bridge path="/my/chatbot" title="Chatbots" /> },
