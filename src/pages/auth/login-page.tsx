@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { apiClient } from "@/lib/api-client";
-import { useAuthStore } from "@/stores/auth-store";
-import { useWorkspaceStore } from "@/stores/workspace-store";
 import { ENDPOINTS, ROUTES } from "@/lib/constants";
 import type { AuthResponse } from "@/lib/types";
 import { toast } from "sonner";
@@ -14,9 +12,6 @@ export function LoginPage() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
-	const navigate = useNavigate();
-	const setAuth = useAuthStore((s) => s.setAuth);
-	const setWorkspaces = useWorkspaceStore((s) => s.setWorkspaces);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -28,10 +23,10 @@ export function LoginPage() {
 				password,
 			});
 
+			// Store JWT then reload — bootstrap will pick up the token and hydrate
 			apiClient.login(data.access_token);
-			setAuth(data.user, data.plan);
-			setWorkspaces(data.workspaces, data.active_workspace_id);
-			navigate(ROUTES.DASHBOARD);
+			const base = import.meta.env.BASE_URL || "/";
+			window.location.href = `${base}my`;
 		} catch (err) {
 			const message = (err as { message?: string })?.message ?? "Login failed";
 			toast.error(message);
