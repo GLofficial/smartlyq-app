@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ImagePlus, ChevronLeft, ChevronRight, Wand2 } from "lucide-react";
 import { useImages } from "@/api/tools";
+import { apiClient } from "@/lib/api-client";
+import { queryClient } from "@/lib/query-client";
 import { toast } from "sonner";
 
 export function ImageGeneratorPage() {
@@ -12,11 +14,20 @@ export function ImageGeneratorPage() {
 	const [prompt, setPrompt] = useState("");
 	const [generating, setGenerating] = useState(false);
 
-	const handleGenerate = () => {
+	const handleGenerate = async () => {
 		if (!prompt.trim()) { toast.error("Enter a prompt."); return; }
 		setGenerating(true);
-		toast.info("Image generation coming soon — backend integration pending.");
-		setTimeout(() => setGenerating(false), 1500);
+		try {
+			const res = await apiClient.post<{ message: string; image_url: string }>("/api/spa/generate/image", { prompt });
+			toast.success(res.message);
+			setPrompt("");
+			// Refresh gallery
+			queryClient.invalidateQueries({ queryKey: ["images"] });
+		} catch (err) {
+			toast.error((err as { message?: string })?.message ?? "Generation failed.");
+		} finally {
+			setGenerating(false);
+		}
 	};
 
 	return (
