@@ -1,4 +1,4 @@
-# SmartlyQ Unified React App
+awa# SmartlyQ Unified React App
 
 Unified React SPA replacing the PHP Bootstrap frontend. Live at `app.smartlyq.com/next/`.
 
@@ -109,3 +109,162 @@ Unified React SPA replacing the PHP Bootstrap frontend. Live at `app.smartlyq.co
 - Settings field definitions in `settings-field-config.ts` (type, label, options per tab)
 - All files under 500 lines
 - One component per file, one API file per domain
+
+## Complete File Tree (113 source files)
+
+```
+src/
+├── main.tsx                              # Entry point
+├── app.tsx                               # Root component
+├── routes.tsx                            # All route definitions
+├── index.css                             # Global styles + CSS variables
+├── vite-env.d.ts
+│
+├── api/                                  # TanStack Query hooks (one per domain)
+│   ├── admin.ts                          # Admin dashboard
+│   ├── admin-ai-captain.ts              # AI Captain traces/kb/skills
+│   ├── admin-monitoring.ts              # Monitoring + billing debug
+│   ├── admin-pages.ts                   # Pricing/blogs/pages/templates/assistants/support/reports
+│   ├── admin-settings.ts               # Settings read/write
+│   ├── brands.ts                        # Brand voices
+│   ├── businesses.ts                    # Business groups
+│   ├── chatbot.ts                       # Chatbot CRUD + analytics
+│   ├── dashboard.ts                     # Dashboard stats
+│   ├── developer.ts                     # API keys
+│   ├── general.ts                       # Integrations/billing/workspace/media/history/account
+│   ├── labels.ts                        # Post labels CRUD
+│   ├── queues.ts                        # Post queues
+│   ├── reports.ts                       # Reports + scheduled reports
+│   ├── social.ts                        # Social hub/posts/calendar/comments/inbox/analytics
+│   ├── tools.ts                         # Templates/images/articles/videos/ad-manager/agency
+│   └── url-shortener.ts                 # URL shortener CRUD
+│
+├── components/
+│   ├── shared/
+│   │   ├── auth-guard.tsx               # Route protection (redirect to login)
+│   │   └── iframe-bridge.tsx            # Legacy PHP page embed (chatbot edit only)
+│   ├── shell/
+│   │   ├── header.tsx                   # Top bar: credits, plan, theme, user
+│   │   ├── sidebar.tsx                  # Main sidebar with workspace switcher
+│   │   ├── sidebar-nav-config.ts        # Navigation structure definition
+│   │   └── sidebar-section.tsx          # Collapsible section component
+│   └── ui/
+│       ├── button.tsx                   # shadcn Button
+│       ├── card.tsx                     # shadcn Card
+│       └── input.tsx                    # shadcn Input
+│
+├── hooks/                               # (reserved for custom hooks)
+│
+├── layouts/
+│   ├── admin-layout.tsx                 # Admin panel: sidebar + outlet
+│   ├── app-layout.tsx                   # Main app: sidebar + header + outlet
+│   └── auth-layout.tsx                  # Auth: centered card
+│
+├── lib/
+│   ├── api-client.ts                    # Fetch wrapper with JWT + 401 refresh
+│   ├── cn.ts                            # clsx + twMerge utility
+│   ├── constants.ts                     # API paths, route paths, storage keys
+│   ├── query-client.ts                  # TanStack Query config
+│   └── types.ts                         # Shared TypeScript interfaces
+│
+├── pages/
+│   ├── account/account-page.tsx         # Profile + password change
+│   ├── ad-manager/ad-manager-page.tsx   # Campaign list with stats
+│   ├── admin/                           # 19 admin pages
+│   │   ├── admin-assistants-page.tsx
+│   │   ├── admin-billing-debug-page.tsx
+│   │   ├── admin-blogs-page.tsx
+│   │   ├── admin-cms-pages-page.tsx
+│   │   ├── admin-dashboard-page.tsx
+│   │   ├── admin-kb-page.tsx
+│   │   ├── admin-monitoring-page.tsx
+│   │   ├── admin-plans-page.tsx
+│   │   ├── admin-pricing-page.tsx
+│   │   ├── admin-reports-page.tsx
+│   │   ├── admin-settings-page.tsx
+│   │   ├── admin-skills-page.tsx
+│   │   ├── admin-subscriptions-page.tsx
+│   │   ├── admin-support-page.tsx
+│   │   ├── admin-templates-page.tsx
+│   │   ├── admin-traces-page.tsx
+│   │   ├── admin-transactions-page.tsx
+│   │   ├── admin-users-page.tsx
+│   │   ├── admin-whitelabel-page.tsx
+│   │   └── settings-field-config.ts     # Field definitions per settings tab
+│   ├── agency/agency-page.tsx
+│   ├── ai/                              # AI tools (5 pages)
+│   │   ├── article-generator-page.tsx
+│   │   ├── audio-page.tsx
+│   │   ├── image-generator-page.tsx
+│   │   ├── templates-page.tsx
+│   │   └── video-generator-page.tsx
+│   ├── analyze/                         # Reports (2 pages)
+│   │   ├── reports-page.tsx
+│   │   └── scheduled-reports-page.tsx
+│   ├── auth/                            # Auth (3 pages)
+│   │   ├── login-page.tsx
+│   │   ├── reset-page.tsx
+│   │   └── signup-page.tsx
+│   ├── billing/billing-page.tsx
+│   ├── captain/captain-page.tsx         # AI Captain iframe embed
+│   ├── chatbot/                         # Chatbot (6 pages)
+│   │   ├── chatbot-analytics-page.tsx
+│   │   ├── chatbot-create-page.tsx
+│   │   ├── chatbot-list-page.tsx
+│   │   ├── chatbot-settings-page.tsx
+│   │   ├── chatbot-templates-page.tsx
+│   │   └── live-agent-page.tsx
+│   ├── connect/                         # Connect tools (2 pages)
+│   │   ├── developer-page.tsx
+│   │   └── url-shortener-page.tsx
+│   ├── dashboard/dashboard-page.tsx
+│   ├── history/history-page.tsx
+│   ├── integrations/integrations-page.tsx
+│   ├── media/media-library-page.tsx
+│   ├── misc/not-found-page.tsx
+│   ├── presentations/presentations-page.tsx
+│   ├── social/                          # Social media (12+ pages)
+│   │   ├── analytics-page.tsx
+│   │   ├── calendar-page.tsx
+│   │   ├── comments-page.tsx
+│   │   ├── create-post-editor.tsx
+│   │   ├── create-post-page.tsx
+│   │   ├── inbox-page.tsx
+│   │   ├── labels-page.tsx
+│   │   ├── manage-posts-page.tsx
+│   │   ├── platform-icon.tsx
+│   │   ├── previews/                    # 12 platform live previews
+│   │   │   ├── bluesky-preview.tsx
+│   │   │   ├── facebook-preview.tsx
+│   │   │   ├── google-business-preview.tsx
+│   │   │   ├── instagram-preview.tsx
+│   │   │   ├── linkedin-preview.tsx
+│   │   │   ├── pinterest-preview.tsx
+│   │   │   ├── preview-panel.tsx
+│   │   │   ├── reddit-preview.tsx
+│   │   │   ├── telegram-preview.tsx
+│   │   │   ├── threads-preview.tsx
+│   │   │   ├── tiktok-preview.tsx
+│   │   │   ├── twitter-preview.tsx
+│   │   │   ├── types.ts
+│   │   │   └── youtube-preview.tsx
+│   │   ├── queues-page.tsx
+│   │   └── social-dashboard-page.tsx
+│   ├── video-editor/video-editor-page.tsx
+│   ├── whitelabel/whitelabel-page.tsx
+│   └── workspace/
+│       ├── brands-page.tsx
+│       ├── businesses-page.tsx
+│       └── workspace-page.tsx
+│
+├── providers/
+│   ├── app-providers.tsx                # Compose all providers
+│   ├── auth-provider.tsx                # JWT bootstrap on mount
+│   └── tenant-provider.tsx              # CSS variable injection
+│
+└── stores/
+    ├── auth-store.ts                    # JWT, user, plan
+    ├── tenant-store.ts                  # White-label branding
+    ├── ui-store.ts                      # Sidebar, theme
+    └── workspace-store.ts               # Active workspace
+```
