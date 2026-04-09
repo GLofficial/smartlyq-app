@@ -110,6 +110,65 @@ Unified React SPA replacing the PHP Bootstrap frontend. Live at `app.smartlyq.co
 - All files under 500 lines
 - One component per file, one API file per domain
 
+## PHP Backend Files (in `smartlyq` repo)
+
+All SPA-related PHP files created/modified for the React frontend.
+These live in the main `smartlyq` repo, NOT in `smartlyq-app`.
+
+### New Files (20 files, 3,720 lines total)
+
+```
+smartlyq/
+├── app/
+│   ├── Controller/
+│   │   ├── SpaBootstrapController.php       # 846 lines — bootstrap, login, signup, reset, token, workspaces, dashboard, social hub/posts
+│   │   ├── SpaSocialController.php          # 457 lines — accounts, calendar, comments, inbox, analytics, createPost (triggers publish engine)
+│   │   ├── SpaGeneralController.php         # 431 lines — integrations, billing, workspace, media, history, account, accountUpdate, password, deletePost, deleteChatbot
+│   │   ├── SpaChatbotController.php         # 392 lines — list, analytics, templates, liveAgent, createData, save (triggers training), settings
+│   │   ├── SpaToolsController.php           # 291 lines — templates, images, articles, videos, adManager, agency
+│   │   ├── SpaAdminController.php           # 284 lines — dashboard, users, plans, subscriptions, transactions, whitelabel
+│   │   └── Spa/                             # Focused controllers (use SpaAuthTrait)
+│   │       ├── SpaAuthTrait.php             #  89 lines — shared JWT auth, CORS, response helpers
+│   │       ├── AdminSettingsController.php  # 136 lines — settings get/save/tabs (12 tabs with field definitions)
+│   │       ├── AdminPagesController.php     # 150 lines — pricing, blogs, pages, templates, assistants, support, reports
+│   │       ├── AdminAiCaptainController.php # 105 lines — traces, knowledgeBase, skills
+│   │       ├── AdminMonitoringController.php#  89 lines — monitoring, billingDebug
+│   │       ├── LabelsController.php         #  71 lines — list, save, delete
+│   │       ├── UrlShortenerController.php   #  65 lines — list, create
+│   │       ├── ReportsController.php        #  63 lines — overview, scheduled
+│   │       ├── QueuesController.php         #  33 lines — list
+│   │       ├── DeveloperController.php      #  33 lines — list
+│   │       ├── BrandsController.php         #  32 lines — list
+│   │       └── BusinessesController.php     #  31 lines — list
+│   └── Route/
+│       └── Spa.php                          # 122 lines — all /api/spa/* route definitions (~60 endpoints)
+│
+└── docker/
+    └── nginx/
+        ├── default.conf                     # Modified: added /next/ location block for React SPA
+        └── smartlyq-react.conf              # Production Nginx config (for cutover)
+```
+
+### Modified Files (2 files)
+
+```
+smartlyq/
+├── app/
+│   ├── Controller/
+│   │   └── Controller.php                   # Added wantsJson() + JSON mode for redirect() (5 lines)
+│   └── Route/
+│       └── Api.php                          # Added: require_once Spa.php (1 line)
+```
+
+### Cutover Scripts
+
+```
+smartlyq/
+└── scripts/
+    ├── cutover-react.sh                     # Switch Nginx from PHP to React as default
+    └── rollback-react.sh                    # Revert to PHP frontend
+```
+
 ## Complete File Tree (113 source files)
 
 ```
