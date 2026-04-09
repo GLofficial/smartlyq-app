@@ -1,0 +1,79 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+	--sq-primary: #377dee;
+	--sq-secondary: #6b7280;
+	--sq-accent: #377dee;
+	--sq-bg: #f8fafc;
+	--sq-surface: #ffffff;
+	--sq-text: #111827;
+	--sq-muted: #6b7280;
+	--sq-link: #377dee;
+
+	--background: var(--sq-bg);
+	--foreground: var(--sq-text);
+	--card: var(--sq-surface);
+	--card-foreground: var(--sq-text);
+	--popover: var(--sq-surface);
+	--popover-foreground: var(--sq-text);
+	--primary: var(--sq-primary);
+	--primary-foreground: #ffffff;
+	--secondary: var(--sq-secondary);
+	--secondary-foreground: #ffffff;
+	--muted: #f1f5f9;
+	--muted-foreground: var(--sq-muted);
+	--accent: #f1f5f9;
+	--accent-foreground: var(--sq-text);
+	--destructive: #ef4444;
+	--destructive-foreground: #ffffff;
+	--border: #e2e8f0;
+	--input: #e2e8f0;
+	--ring: var(--sq-primary);
+	--radius: 0.5rem;
+
+	--sidebar-background: #ffffff;
+	--sidebar-foreground: var(--sq-text);
+	--sidebar-primary: var(--sq-primary);
+	--sidebar-primary-foreground: #ffffff;
+	--sidebar-accent: #f1f5f9;
+	--sidebar-accent-foreground: var(--sq-text);
+	--sidebar-border: #e2e8f0;
+	--sidebar-ring: var(--sq-primary);
+}
+
+.dark {
+	--sq-bg: #0f172a;
+	--sq-surface: #1e293b;
+	--sq-text: #f1f5f9;
+	--sq-muted: #94a3b8;
+
+	--background: var(--sq-bg);
+	--foreground: var(--sq-text);
+	--card: var(--sq-surface);
+	--card-foreground: var(--sq-text);
+	--popover: var(--sq-surface);
+	--popover-foreground: var(--sq-text);
+	--muted: #1e293b;
+	--muted-foreground: var(--sq-muted);
+	--accent: #1e293b;
+	--accent-foreground: var(--sq-text);
+	--border: #334155;
+	--input: #334155;
+
+	--sidebar-background: #1e293b;
+	--sidebar-foreground: var(--sq-text);
+	--sidebar-accent: #334155;
+	--sidebar-accent-foreground: var(--sq-text);
+	--sidebar-border: #334155;
+}
+
+body {
+	font-family: "Inter", system-ui, -apple-system, sans-serif;
+	background-color: var(--background);
+	color: var(--foreground);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
