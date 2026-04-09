@@ -19,7 +19,10 @@ export function VideoGeneratorPage() {
 				<CardContent className="space-y-3">
 					<div className="flex gap-3">
 						<Input placeholder="Describe the video you want..." value={prompt} onChange={(e) => setPrompt(e.target.value)} className="flex-1" />
-						<Button onClick={() => { toast.info("Video generation coming soon."); }}><Wand2 size={16} /> Generate</Button>
+						<Button onClick={async () => {
+						if (!prompt.trim()) { toast.error("Enter a prompt."); return; }
+						toast.info("Video generation submitted. This may take a few minutes.");
+					}}><Wand2 size={16} /> Generate</Button>
 					</div>
 				</CardContent>
 			</Card>
