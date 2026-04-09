@@ -38,6 +38,9 @@ const ChatbotSettingsPage = lazy(() => import("@/pages/chatbot/chatbot-settings-
 const SignupPage = lazy(() => import("@/pages/auth/signup-page").then((m) => ({ default: m.SignupPage })));
 const ResetPage = lazy(() => import("@/pages/auth/reset-page").then((m) => ({ default: m.ResetPage })));
 const WhitelabelPage = lazy(() => import("@/pages/whitelabel/whitelabel-page").then((m) => ({ default: m.WhitelabelPage })));
+const CaptainPage = lazy(() => import("@/pages/captain/captain-page").then((m) => ({ default: m.CaptainPage })));
+const VideoEditorPage = lazy(() => import("@/pages/video-editor/video-editor-page").then((m) => ({ default: m.VideoEditorPage })));
+const PresentationsPage = lazy(() => import("@/pages/presentations/presentations-page").then((m) => ({ default: m.PresentationsPage })));
 const AdminDashboardPage = lazy(() => import("@/pages/admin/admin-dashboard-page").then((m) => ({ default: m.AdminDashboardPage })));
 const AdminUsersPage = lazy(() => import("@/pages/admin/admin-users-page").then((m) => ({ default: m.AdminUsersPage })));
 const AdminPlansPage = lazy(() => import("@/pages/admin/admin-plans-page").then((m) => ({ default: m.AdminPlansPage })));
@@ -70,8 +73,8 @@ export const router = createBrowserRouter([
 			/* ── Dashboard ── */
 			{ path: "/my", element: <S><DashboardPage /></S> },
 
-			/* ── AI Captain (iframe — separate React app) ── */
-			{ path: "/my/captain", element: <Bridge path="/my/ai-captain" title="AI Captain" /> },
+			/* ── AI Captain (embedded inside shell) ── */
+			{ path: "/my/captain", element: <S><CaptainPage /></S> },
 
 			/* ── Social Media (all native) ── */
 			{ path: "/my/social-media", element: <S><SocialDashboardPage /></S> },
@@ -106,9 +109,9 @@ export const router = createBrowserRouter([
 			/* ── Media Library (native) ── */
 			{ path: "/my/media", element: <S><MediaLibraryPage /></S> },
 
-			/* ── Video Editor + Presentations (iframe — separate apps) ── */
-			{ path: "/my/video-editor", element: <Bridge path="/my/video-editor" title="Video Editor" /> },
-			{ path: "/my/presentations", element: <Bridge path="/my/presentations" title="Presentations" /> },
+			/* ── Video Editor + Presentations (embedded inside shell) ── */
+			{ path: "/my/video-editor", element: <S><VideoEditorPage /></S> },
+			{ path: "/my/presentations", element: <S><PresentationsPage /></S> },
 
 			/* ── Integrations (native) ── */
 			{ path: "/my/integrations", element: <S><IntegrationsPage /></S> },
