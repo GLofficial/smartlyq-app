@@ -37,12 +37,14 @@ import {
 	Folders,
 	UserCog,
 	Receipt,
+	Shield,
 	Wallet,
 	ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useUiStore } from "@/stores/ui-store";
 import { useTenantStore } from "@/stores/tenant-store";
+import { useAuthStore } from "@/stores/auth-store";
 
 interface NavChild {
 	label: string;
@@ -167,6 +169,8 @@ export function Sidebar() {
 	const collapsed = useUiStore((s) => s.sidebarCollapsed);
 	const toggleSidebar = useUiStore((s) => s.toggleSidebar);
 	const branding = useTenantStore((s) => s.branding);
+	const user = useAuthStore((s) => s.user);
+	const isAdmin = user?.role === 1;
 
 	return (
 		<aside
@@ -223,6 +227,19 @@ export function Sidebar() {
 					),
 				)}
 			</nav>
+
+			{/* Admin link */}
+			{isAdmin && (
+				<div className="border-t border-[var(--sidebar-border)] p-2">
+					<NavLink
+						path="/admin"
+						icon={Shield}
+						label="Admin Panel"
+						collapsed={collapsed}
+						active={location.pathname.startsWith("/admin")}
+					/>
+				</div>
+			)}
 		</aside>
 	);
 }

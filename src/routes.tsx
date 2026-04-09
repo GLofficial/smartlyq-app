@@ -4,6 +4,7 @@ import { AppLayout } from "@/layouts/app-layout";
 import { AuthLayout } from "@/layouts/auth-layout";
 import { AuthGuard } from "@/components/shared/auth-guard";
 import { IframeBridge } from "@/components/shared/iframe-bridge";
+import { AdminLayout } from "@/layouts/admin-layout";
 
 // ── All pages lazy-loaded ──
 const LoginPage = lazy(() => import("@/pages/auth/login-page").then((m) => ({ default: m.LoginPage })));
@@ -32,6 +33,12 @@ const MediaLibraryPage = lazy(() => import("@/pages/media/media-library-page").t
 const AccountPage = lazy(() => import("@/pages/account/account-page").then((m) => ({ default: m.AccountPage })));
 const HistoryPage = lazy(() => import("@/pages/history/history-page").then((m) => ({ default: m.HistoryPage })));
 const AgencyPage = lazy(() => import("@/pages/agency/agency-page").then((m) => ({ default: m.AgencyPage })));
+const AdminDashboardPage = lazy(() => import("@/pages/admin/admin-dashboard-page").then((m) => ({ default: m.AdminDashboardPage })));
+const AdminUsersPage = lazy(() => import("@/pages/admin/admin-users-page").then((m) => ({ default: m.AdminUsersPage })));
+const AdminPlansPage = lazy(() => import("@/pages/admin/admin-plans-page").then((m) => ({ default: m.AdminPlansPage })));
+const AdminSubscriptionsPage = lazy(() => import("@/pages/admin/admin-subscriptions-page").then((m) => ({ default: m.AdminSubscriptionsPage })));
+const AdminTransactionsPage = lazy(() => import("@/pages/admin/admin-transactions-page").then((m) => ({ default: m.AdminTransactionsPage })));
+const AdminWhitelabelPage = lazy(() => import("@/pages/admin/admin-whitelabel-page").then((m) => ({ default: m.AdminWhitelabelPage })));
 const NotFoundPage = lazy(() => import("@/pages/misc/not-found-page").then((m) => ({ default: m.NotFoundPage })));
 
 function S({ children }: { children: React.ReactNode }) {
@@ -119,6 +126,18 @@ export const router = createBrowserRouter([
 
 			/* ── 404 ── */
 			{ path: "*", element: <S><NotFoundPage /></S> },
+		],
+	},
+	/* ── Admin Panel (separate layout, role=1 guard) ── */
+	{
+		element: <AuthGuard><AdminLayout /></AuthGuard>,
+		children: [
+			{ path: "/admin", element: <S><AdminDashboardPage /></S> },
+			{ path: "/admin/users", element: <S><AdminUsersPage /></S> },
+			{ path: "/admin/plans", element: <S><AdminPlansPage /></S> },
+			{ path: "/admin/subscriptions", element: <S><AdminSubscriptionsPage /></S> },
+			{ path: "/admin/transactions", element: <S><AdminTransactionsPage /></S> },
+			{ path: "/admin/whitelabel", element: <S><AdminWhitelabelPage /></S> },
 		],
 	},
 ], {
