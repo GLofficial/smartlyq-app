@@ -18,14 +18,42 @@ export function useSaveGlobals() {
 	});
 }
 
+export interface PricingModel {
+	id: number;
+	provider: string;
+	model: string;
+	type: string;
+	input_cost: number;
+	output_cost: number;
+	vendor_cost: number;
+	markup: number;
+	min_charge: number;
+}
+
 export function useAdminPricingModels() {
 	return useQuery({
 		queryKey: ["admin", "pricing", "models"],
 		queryFn: () =>
 			apiClient.get<{
-				model_groups: Record<string, { id: number; provider: string; type: string; name: string; model: string }[]>;
+				model_groups: Record<string, PricingModel[]>;
 				total: number;
 			}>("/api/spa/admin/pricing/models"),
+	});
+}
+
+export function useEditModelPricing() {
+	return useMutation({
+		mutationFn: (data: { id: number; input_cost?: number; output_cost?: number; markup_factor?: number }) =>
+			apiClient.post<{ message: string }>("/api/spa/admin/pricing/models/edit", data),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "pricing", "models"] }),
+	});
+}
+
+export function useEditPlan() {
+	return useMutation({
+		mutationFn: (data: { id: number; fields: Record<string, unknown> }) =>
+			apiClient.post<{ message: string }>("/api/spa/admin/pricing/plans/edit", data),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "plans"] }),
 	});
 }
 

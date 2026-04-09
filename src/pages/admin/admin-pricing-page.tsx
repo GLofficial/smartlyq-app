@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings, Cpu, Globe, Save } from "lucide-react";
-import { useAdminPricingGlobals, useSaveGlobals, useAdminPricingModels, useAdminPricingEndpoints } from "@/api/admin-pricing";
+import { Settings, Cpu, Globe, Save, Pencil, Check, X } from "lucide-react";
+import { useAdminPricingGlobals, useSaveGlobals, useAdminPricingModels, useAdminPricingEndpoints, useEditModelPricing, type PricingModel } from "@/api/admin-pricing";
 import { toast } from "sonner";
 
 const TABS = [
@@ -85,11 +85,16 @@ function ModelsSection() {
 					<CardHeader className="pb-2"><CardTitle className="text-base">{group}</CardTitle></CardHeader>
 					<CardContent>
 						<table className="w-full text-sm">
-							<thead><tr className="border-b border-[var(--border)]"><th className="py-1.5 text-left font-medium">Model</th><th className="py-1.5 text-left font-medium">Name</th><th className="py-1.5 text-left font-medium">Provider</th></tr></thead>
+							<thead><tr className="border-b border-[var(--border)]">
+								<th className="py-1.5 text-left font-medium">Model</th>
+								<th className="py-1.5 text-right font-medium">Input $/Mtok</th>
+								<th className="py-1.5 text-right font-medium">Output $/Mtok</th>
+								<th className="py-1.5 text-right font-medium">Markup</th>
+								<th className="py-1.5 text-right font-medium">Min</th>
+								<th className="py-1.5 text-center font-medium">Action</th>
+							</tr></thead>
 							<tbody>{models.map((m) => (
-								<tr key={m.id} className="border-b border-[var(--border)] hover:bg-[var(--accent)]">
-									<td className="py-1.5 font-mono text-xs">{m.model}</td><td className="py-1.5">{m.name}</td><td className="py-1.5 text-[var(--muted-foreground)]">{m.provider}</td>
-								</tr>
+								<ModelRow key={m.id} model={m} />
 							))}</tbody>
 						</table>
 					</CardContent>
@@ -118,6 +123,47 @@ function EndpointsSection() {
 				</table>
 			</CardContent>
 		</Card>
+	);
+}
+
+function ModelRow({ model: m }: { model: PricingModel }) {
+	const [editing, setEditing] = useState(false);
+	const [inputCost, setInputCost] = useState(m.input_cost);
+	const [outputCost, setOutputCost] = useState(m.output_cost);
+	const [markup, setMarkup] = useState(m.markup);
+	const editMutation = useEditModelPricing();
+
+	const handleSave = () => {
+		editMutation.mutate({ id: m.id, input_cost: inputCost, output_cost: outputCost, markup_factor: markup }, {
+			onSuccess: () => { toast.success("Updated."); setEditing(false); },
+			onError: () => toast.error("Failed."),
+		});
+	};
+
+	return (
+		<tr className="border-b border-[var(--border)] hover:bg-[var(--accent)]">
+			<td className="py-1.5 font-mono text-xs">{m.model}</td>
+			<td className="py-1.5 text-right">
+				{editing ? <Input type="number" step="0.01" value={inputCost} onChange={(e) => setInputCost(Number.parseFloat(e.target.value))} className="h-7 w-20 text-xs ml-auto" /> : <span>{m.input_cost.toFixed(2)}</span>}
+			</td>
+			<td className="py-1.5 text-right">
+				{editing ? <Input type="number" step="0.01" value={outputCost} onChange={(e) => setOutputCost(Number.parseFloat(e.target.value))} className="h-7 w-20 text-xs ml-auto" /> : <span>{m.output_cost.toFixed(2)}</span>}
+			</td>
+			<td className="py-1.5 text-right">
+				{editing ? <Input type="number" step="0.01" value={markup} onChange={(e) => setMarkup(Number.parseFloat(e.target.value))} className="h-7 w-16 text-xs ml-auto" /> : <span>{m.markup.toFixed(2)}</span>}
+			</td>
+			<td className="py-1.5 text-right text-[var(--muted-foreground)]">{m.min_charge}</td>
+			<td className="py-1.5 text-center">
+				{editing ? (
+					<div className="flex gap-1 justify-center">
+						<Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleSave}><Check size={12} /></Button>
+						<Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditing(false)}><X size={12} /></Button>
+					</div>
+				) : (
+					<Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditing(true)}><Pencil size={12} /></Button>
+				)}
+			</td>
+		</tr>
 	);
 }
 
