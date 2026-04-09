@@ -1,357 +1,94 @@
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import {
-	LayoutDashboard,
-	Share2,
-	MessageSquare,
-	Plug,
-	Megaphone,
-	CreditCard,
-	Settings,
-	Building2,
-	Image,
-	Video,
-	Presentation,
-	FileText,
-	History,
-	PanelLeftClose,
-	PanelLeft,
-	Sparkles,
-	CalendarDays,
-	PenSquare,
-	ListTodo,
-	MessagesSquare,
-	Inbox,
-	BarChart3,
-	Users,
-	Bot,
-	Plus,
-	BookOpen,
-	Wand2,
-	ImagePlus,
-	VideoIcon,
-	AudioLines,
-	FileSearch,
-	ChevronDown,
-	ChevronRight,
-	Folders,
-	UserCog,
-	Receipt,
-	Shield,
-	Wallet,
-	ClipboardList,
-} from "lucide-react";
+import { Link } from "react-router-dom";
+import { PanelLeftClose, PanelLeft, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useUiStore } from "@/stores/ui-store";
 import { useTenantStore } from "@/stores/tenant-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
+import { NAV_GROUPS, ADMIN_GROUP } from "./sidebar-nav-config";
+import { SidebarSection } from "./sidebar-section";
 import { apiClient } from "@/lib/api-client";
 import { STORAGE_KEYS } from "@/lib/constants";
 import { toast } from "sonner";
 
-interface NavChild {
-	label: string;
-	path: string;
-	icon: React.ElementType;
-}
-
-interface NavSection {
-	label: string;
-	icon: React.ElementType;
-	path?: string;
-	children?: NavChild[];
-}
-
-const NAV_SECTIONS: NavSection[] = [
-	{
-		label: "Dashboard",
-		icon: LayoutDashboard,
-		path: "/my",
-	},
-	{
-		label: "AI Captain",
-		icon: Sparkles,
-		path: "/my/captain",
-	},
-	{
-		label: "Social Media",
-		icon: Share2,
-		children: [
-			{ label: "Dashboard", path: "/my/social-media", icon: LayoutDashboard },
-			{ label: "Create Post", path: "/my/social-media/create-post", icon: PenSquare },
-			{ label: "Manage Posts", path: "/my/social-media/posts", icon: ListTodo },
-			{ label: "Calendar", path: "/my/social-media/calendar", icon: CalendarDays },
-			{ label: "Comments", path: "/my/social-media/comments", icon: MessagesSquare },
-			{ label: "Inbox", path: "/my/social-media/inbox", icon: Inbox },
-			{ label: "Analytics", path: "/my/social-media/analytics", icon: BarChart3 },
-			{ label: "Accounts", path: "/my/social-media/accounts", icon: Users },
-		],
-	},
-	{
-		label: "Chatbot",
-		icon: Bot,
-		children: [
-			{ label: "My Chatbots", path: "/my/chatbot", icon: Bot },
-			{ label: "Create New", path: "/my/chatbot/create", icon: Plus },
-			{ label: "Live Agent", path: "/my/chatbot/live-agent", icon: MessageSquare },
-			{ label: "Templates", path: "/my/chatbot/templates", icon: BookOpen },
-			{ label: "Analytics", path: "/my/chatbot/analytics", icon: BarChart3 },
-			{ label: "Settings", path: "/my/chatbot/settings", icon: Settings },
-		],
-	},
-	{
-		label: "AI Tools",
-		icon: Wand2,
-		children: [
-			{ label: "Templates", path: "/my/templates", icon: FileText },
-			{ label: "Image Generator", path: "/my/image-generator", icon: ImagePlus },
-			{ label: "Video Generator", path: "/my/text-to-video", icon: VideoIcon },
-			{ label: "Text to Audio", path: "/my/text-to-audio", icon: AudioLines },
-			{ label: "Article Generator", path: "/my/article-generator", icon: FileSearch },
-		],
-	},
-	{
-		label: "Ad Manager",
-		icon: Megaphone,
-		children: [
-			{ label: "Dashboard", path: "/my/ad-manager", icon: LayoutDashboard },
-			{ label: "Campaigns", path: "/my/ad-manager/campaigns", icon: Folders },
-			{ label: "Creatives", path: "/my/ad-manager/creatives", icon: Image },
-			{ label: "Audiences", path: "/my/ad-manager/audiences", icon: Users },
-			{ label: "Analytics", path: "/my/ad-manager/analytics", icon: BarChart3 },
-		],
-	},
-	{
-		label: "Media Library",
-		icon: Image,
-		path: "/my/media",
-	},
-	{
-		label: "Video Editor",
-		icon: Video,
-		path: "/my/video-editor",
-	},
-	{
-		label: "Presentations",
-		icon: Presentation,
-		path: "/my/presentations",
-	},
-	{
-		label: "Integrations",
-		icon: Plug,
-		path: "/my/integrations",
-	},
-	{
-		label: "Billing",
-		icon: CreditCard,
-		children: [
-			{ label: "Overview", path: "/my/billing", icon: Wallet },
-			{ label: "Payments", path: "/my/billing/payments", icon: Receipt },
-			{ label: "Subscriptions", path: "/my/billing/subscriptions", icon: ClipboardList },
-		],
-	},
-	{
-		label: "Workspace",
-		icon: Building2,
-		path: "/my/workspace",
-	},
-	{
-		label: "Account",
-		icon: UserCog,
-		path: "/my/account",
-	},
-	{
-		label: "History",
-		icon: History,
-		path: "/my/history",
-	},
-];
-
 export function Sidebar() {
-	const location = useLocation();
 	const collapsed = useUiStore((s) => s.sidebarCollapsed);
 	const toggleSidebar = useUiStore((s) => s.toggleSidebar);
 	const branding = useTenantStore((s) => s.branding);
 	const user = useAuthStore((s) => s.user);
+	const plan = useAuthStore((s) => s.plan);
 	const isAdmin = user?.role === 1;
 	const workspaces = useWorkspaceStore((s) => s.workspaces);
+	const activeWsId = useWorkspaceStore((s) => s.activeWorkspaceId);
 
 	return (
 		<aside
 			className={cn(
 				"flex h-screen flex-col border-r border-[var(--sidebar-border)] bg-[var(--sidebar-background)] transition-all duration-200",
-				collapsed ? "w-16" : "w-64",
+				collapsed ? "w-14" : "w-56",
 			)}
 		>
-			{/* Logo */}
-			<div className="flex h-14 items-center justify-between px-3 border-b border-[var(--sidebar-border)]">
+			{/* Logo + workspace */}
+			<div className="flex items-center justify-between px-3 py-3 border-b border-[var(--sidebar-border)]">
 				{!collapsed && (
-					<Link to="/my" className="flex items-center gap-2">
-						{branding.logo_url ? (
-							<img src={branding.logo_url} alt={branding.site_name} className="h-7 w-auto" />
-						) : (
-							<span className="text-lg font-bold text-[var(--sidebar-foreground)] truncate">
-								{branding.site_name}
-							</span>
-						)}
-					</Link>
+					<WorkspaceDropdown
+						workspaces={workspaces}
+						activeId={activeWsId}
+						branding={branding}
+					/>
 				)}
 				<button
 					type="button"
 					onClick={toggleSidebar}
-					className="p-1.5 rounded-md hover:bg-[var(--sidebar-accent)] text-[var(--sidebar-foreground)]"
+					className="p-1 rounded-md hover:bg-[var(--sidebar-accent)] text-[var(--sidebar-foreground)]"
 				>
-					{collapsed ? <PanelLeft size={18} /> : <PanelLeftClose size={18} />}
+					{collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
 				</button>
 			</div>
 
 			{/* Navigation */}
-			<nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
-				{NAV_SECTIONS.map((section) =>
-					section.children ? (
-						<ExpandableSection
-							key={section.label}
-							section={section}
-							collapsed={collapsed}
-							currentPath={location.pathname}
-						/>
-					) : (
-						<NavLink
-							key={section.path}
-							path={section.path!}
-							icon={section.icon}
-							label={section.label}
-							collapsed={collapsed}
-							active={
-								section.path === "/my"
-									? location.pathname === "/my"
-									: location.pathname.startsWith(section.path!)
-							}
-						/>
-					),
-				)}
+			<nav className="flex-1 overflow-y-auto px-1.5 py-1">
+				{NAV_GROUPS.map((group) => (
+					<SidebarSection key={group.label || "top"} group={group} collapsed={collapsed} />
+				))}
+				{isAdmin && <SidebarSection group={ADMIN_GROUP} collapsed={collapsed} />}
 			</nav>
 
-			{/* Workspace switcher + Admin */}
-			<div className="border-t border-[var(--sidebar-border)] p-2 space-y-1">
-				{!collapsed && workspaces.length > 1 && (
-					<WorkspaceSwitcher />
-				)}
-				{isAdmin && (
-					<NavLink
-						path="/admin"
-						icon={Shield}
-						label="Admin Panel"
-						collapsed={collapsed}
-						active={location.pathname.startsWith("/admin")}
-					/>
-				)}
-			</div>
+			{/* User info — bottom */}
+			{!collapsed && user && (
+				<div className="border-t border-[var(--sidebar-border)] px-3 py-2.5">
+					<div className="flex items-center gap-2.5">
+						<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--sq-primary)] text-xs font-bold text-white">
+							{user.name.charAt(0).toUpperCase()}
+						</div>
+						<div className="min-w-0 flex-1">
+							<p className="truncate text-[13px] font-medium text-[var(--sidebar-foreground)]">
+								{user.name}
+							</p>
+							<p className="truncate text-[11px] text-[var(--muted-foreground)]">
+								{plan?.name ?? "Free"} Plan
+							</p>
+						</div>
+						<div className="flex h-5 items-center rounded bg-[color-mix(in_srgb,var(--sq-primary)_12%,transparent)] px-1.5">
+							<span className="text-[10px] font-semibold text-[var(--sq-primary)]">●</span>
+						</div>
+					</div>
+				</div>
+			)}
 		</aside>
 	);
 }
 
-function ExpandableSection({
-	section,
-	collapsed,
-	currentPath,
+function WorkspaceDropdown({
+	workspaces,
+	activeId,
+	branding,
 }: {
-	section: NavSection;
-	collapsed: boolean;
-	currentPath: string;
+	workspaces: { id: number; name: string }[];
+	activeId: number | null;
+	branding: { site_name: string; logo_url: string | null };
 }) {
-	const isChildActive = section.children?.some((c) => currentPath.startsWith(c.path)) ?? false;
-	const [open, setOpen] = useState(isChildActive);
-
-	const Icon = section.icon;
-
-	if (collapsed) {
-		// In collapsed mode, show just the icon linking to the first child
-		const firstPath = section.children?.[0]?.path ?? "/my";
-		return (
-			<NavLink
-				path={firstPath}
-				icon={section.icon}
-				label={section.label}
-				collapsed
-				active={isChildActive}
-			/>
-		);
-	}
-
-	return (
-		<div>
-			<button
-				type="button"
-				onClick={() => setOpen(!open)}
-				className={cn(
-					"flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-					isChildActive
-						? "text-[var(--sidebar-primary)]"
-						: "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]",
-				)}
-			>
-				<Icon size={18} />
-				<span className="flex-1 text-left">{section.label}</span>
-				{open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-			</button>
-			{open && (
-				<div className="ml-4 mt-0.5 space-y-0.5 border-l border-[var(--sidebar-border)] pl-3">
-					{section.children?.map((child) => (
-						<NavLink
-							key={child.path}
-							path={child.path}
-							icon={child.icon}
-							label={child.label}
-							collapsed={false}
-							active={currentPath === child.path || currentPath.startsWith(child.path + "/")}
-							small
-						/>
-					))}
-				</div>
-			)}
-		</div>
-	);
-}
-
-function NavLink({
-	path,
-	icon: Icon,
-	label,
-	collapsed,
-	active,
-	small,
-}: {
-	path: string;
-	icon: React.ElementType;
-	label: string;
-	collapsed: boolean;
-	active: boolean;
-	small?: boolean;
-}) {
-	return (
-		<Link
-			to={path}
-			className={cn(
-				"flex items-center gap-3 rounded-md transition-colors",
-				small ? "px-2 py-1.5 text-[13px]" : "px-3 py-2 text-sm font-medium",
-				active
-					? "bg-[color-mix(in_srgb,var(--sidebar-primary)_10%,transparent)] text-[var(--sidebar-primary)]"
-					: "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]",
-				collapsed && "justify-center px-2",
-			)}
-			title={collapsed ? label : undefined}
-		>
-			<Icon size={small ? 15 : 18} />
-			{!collapsed && <span>{label}</span>}
-		</Link>
-	);
-}
-
-function WorkspaceSwitcher() {
-	const workspaces = useWorkspaceStore((s) => s.workspaces);
-	const activeId = useWorkspaceStore((s) => s.activeWorkspaceId);
+	const activeWs = workspaces.find((w) => w.id === activeId);
 	const setActiveWorkspace = useWorkspaceStore((s) => s.setActiveWorkspace);
 
 	const handleSwitch = async (wsId: number) => {
@@ -368,31 +105,54 @@ function WorkspaceSwitcher() {
 		}
 	};
 
+	if (workspaces.length <= 1) {
+		return (
+			<Link to="/my" className="flex items-center gap-2 min-w-0">
+				{branding.logo_url ? (
+					<img src={branding.logo_url} alt="" className="h-6 w-auto" />
+				) : (
+					<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--sq-primary)] text-[11px] font-bold text-white">
+						{(activeWs?.name ?? branding.site_name).charAt(0).toUpperCase()}
+					</div>
+				)}
+				<span className="truncate text-sm font-semibold text-[var(--sidebar-foreground)]">
+					{activeWs?.name ?? branding.site_name}
+				</span>
+			</Link>
+		);
+	}
+
 	return (
-		<div className="px-2 py-1">
-			<p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
-				Workspace
-			</p>
-			<div className="space-y-0.5">
+		<details className="group min-w-0 flex-1">
+			<summary className="flex cursor-pointer items-center gap-2 list-none rounded-md px-1 py-0.5 hover:bg-[var(--sidebar-accent)]">
+				<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--sq-primary)] text-[11px] font-bold text-white">
+					{(activeWs?.name ?? "W").charAt(0).toUpperCase()}
+				</div>
+				<span className="truncate text-sm font-semibold text-[var(--sidebar-foreground)]">
+					{activeWs?.name ?? "Workspace"}
+				</span>
+				<ChevronDown size={14} className="shrink-0 text-[var(--muted-foreground)] transition-transform group-open:rotate-180" />
+			</summary>
+			<div className="mt-1 space-y-0.5 rounded-md border border-[var(--border)] bg-[var(--card)] p-1 shadow-md">
 				{workspaces.map((ws) => (
 					<button
 						key={ws.id}
 						type="button"
 						onClick={() => handleSwitch(ws.id)}
 						className={cn(
-							"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors",
+							"flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs transition-colors",
 							ws.id === activeId
-								? "bg-[color-mix(in_srgb,var(--sidebar-primary)_10%,transparent)] text-[var(--sidebar-primary)] font-medium"
-								: "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]",
+								? "bg-[color-mix(in_srgb,var(--sq-primary)_10%,transparent)] text-[var(--sq-primary)] font-medium"
+								: "text-[var(--foreground)] hover:bg-[var(--accent)]",
 						)}
 					>
-						<div className="flex h-5 w-5 items-center justify-center rounded bg-[var(--sidebar-accent)] text-[10px] font-bold">
+						<div className="flex h-5 w-5 items-center justify-center rounded bg-[var(--muted)] text-[9px] font-bold">
 							{ws.name.charAt(0).toUpperCase()}
 						</div>
 						<span className="truncate">{ws.name}</span>
 					</button>
 				))}
 			</div>
-		</div>
+		</details>
 	);
 }

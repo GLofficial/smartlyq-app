@@ -33,6 +33,14 @@ const MediaLibraryPage = lazy(() => import("@/pages/media/media-library-page").t
 const AccountPage = lazy(() => import("@/pages/account/account-page").then((m) => ({ default: m.AccountPage })));
 const HistoryPage = lazy(() => import("@/pages/history/history-page").then((m) => ({ default: m.HistoryPage })));
 const AgencyPage = lazy(() => import("@/pages/agency/agency-page").then((m) => ({ default: m.AgencyPage })));
+const LabelsPage = lazy(() => import("@/pages/social/labels-page").then((m) => ({ default: m.LabelsPage })));
+const QueuesPage = lazy(() => import("@/pages/social/queues-page").then((m) => ({ default: m.QueuesPage })));
+const ReportsPage = lazy(() => import("@/pages/analyze/reports-page").then((m) => ({ default: m.ReportsPage })));
+const ScheduledReportsPage = lazy(() => import("@/pages/analyze/scheduled-reports-page").then((m) => ({ default: m.ScheduledReportsPage })));
+const UrlShortenerPage = lazy(() => import("@/pages/connect/url-shortener-page").then((m) => ({ default: m.UrlShortenerPage })));
+const BrandsPage = lazy(() => import("@/pages/workspace/brands-page").then((m) => ({ default: m.BrandsPage })));
+const BusinessesPage = lazy(() => import("@/pages/workspace/businesses-page").then((m) => ({ default: m.BusinessesPage })));
+const DeveloperPage = lazy(() => import("@/pages/connect/developer-page").then((m) => ({ default: m.DeveloperPage })));
 const ChatbotCreatePage = lazy(() => import("@/pages/chatbot/chatbot-create-page").then((m) => ({ default: m.ChatbotCreatePage })));
 const ChatbotSettingsPage = lazy(() => import("@/pages/chatbot/chatbot-settings-page").then((m) => ({ default: m.ChatbotSettingsPage })));
 const SignupPage = lazy(() => import("@/pages/auth/signup-page").then((m) => ({ default: m.SignupPage })));
@@ -126,6 +134,31 @@ export const router = createBrowserRouter([
 			{ path: "/my/account", element: <S><AccountPage /></S> },
 			{ path: "/my/history", element: <S><HistoryPage /></S> },
 			{ path: "/my/documents", element: <S><HistoryPage /></S> },
+
+			/* ── Publish extras ── */
+			{ path: "/my/social-media/labels", element: <S><LabelsPage /></S> },
+			{ path: "/my/social-media/queues", element: <S><QueuesPage /></S> },
+			{ path: "/my/bulk-scheduler", element: <S><QueuesPage /></S> },
+
+			/* ── Analyze ── */
+			{ path: "/my/social-media/report", element: <S><ReportsPage /></S> },
+			{ path: "/my/social-media/custom-report", element: <S><ReportsPage /></S> },
+			{ path: "/my/social-media/schedule-report", element: <S><ScheduledReportsPage /></S> },
+
+			/* ── Connect extras ── */
+			{ path: "/my/url-shortener", element: <S><UrlShortenerPage /></S> },
+			{ path: "/my/content-rewriter", element: <S><TemplatesPage /></S> },
+			{ path: "/my/editor", element: <S><TemplatesPage /></S> },
+			{ path: "/my/chat", element: <S><HistoryPage /></S> },
+			{ path: "/my/canva", element: <S><IntegrationsPage /></S> },
+			{ path: "/my/developer", element: <S><DeveloperPage /></S> },
+
+			/* ── Workspace extras ── */
+			{ path: "/my/brands", element: <S><BrandsPage /></S> },
+			{ path: "/my/businesses", element: <S><BusinessesPage /></S> },
+			{ path: "/my/business-details", element: <S><BusinessesPage /></S> },
+			{ path: "/my/campaigns", element: <S><BrandsPage /></S> },
+			{ path: "/my/workspace/members", element: <S><WorkspacePage /></S> },
 
 			/* ── Agency + Whitelabel (native) ── */
 			{ path: "/my/agency", element: <S><AgencyPage /></S> },

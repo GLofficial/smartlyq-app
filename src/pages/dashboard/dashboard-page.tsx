@@ -30,7 +30,7 @@ export function DashboardPage() {
 				<StatCard
 					icon={CreditCard}
 					label="Credits"
-					value={isLoading ? "..." : String(data?.credits ?? 0)}
+					value={isLoading ? "..." : Math.round(data?.credits ?? 0).toLocaleString()}
 				/>
 				<StatCard
 					icon={Calendar}
