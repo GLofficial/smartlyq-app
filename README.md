@@ -1,4 +1,4 @@
-awa# SmartlyQ Unified React App
+# SmartlyQ Unified React App
 
 Unified React SPA replacing the PHP Bootstrap frontend. Live at `app.smartlyq.com/next/`.
 
