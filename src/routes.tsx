@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "@/layouts/app-layout";
 import { AuthLayout } from "@/layouts/auth-layout";
 import { AuthGuard } from "@/components/shared/auth-guard";
+import { IframeBridge } from "@/components/shared/iframe-bridge";
 
 // Lazy-loaded pages
 const LoginPage = lazy(() =>
@@ -27,14 +28,9 @@ function SuspenseWrap({ children }: { children: React.ReactNode }) {
 	return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
 }
 
-/** Placeholder for pages not yet migrated */
-function ComingSoon() {
-	return (
-		<div className="flex h-[50vh] flex-col items-center justify-center gap-2">
-			<h2 className="text-xl font-semibold text-[var(--foreground)]">Coming Soon</h2>
-			<p className="text-[var(--muted-foreground)]">This page is being migrated to the new UI.</p>
-		</div>
-	);
+/** Iframe bridge shortcut */
+function Bridge({ path, title }: { path: string; title: string }) {
+	return <IframeBridge path={path} title={title} />;
 }
 
 export const router = createBrowserRouter([
@@ -46,8 +42,8 @@ export const router = createBrowserRouter([
 		element: <AuthLayout />,
 		children: [
 			{ path: "/login", element: <SuspenseWrap><LoginPage /></SuspenseWrap> },
-			{ path: "/signup", element: <SuspenseWrap><ComingSoon /></SuspenseWrap> },
-			{ path: "/reset", element: <SuspenseWrap><ComingSoon /></SuspenseWrap> },
+			{ path: "/signup", element: <SuspenseWrap><Bridge path="/signup" title="Sign Up" /></SuspenseWrap> },
+			{ path: "/reset", element: <SuspenseWrap><Bridge path="/reset" title="Reset Password" /></SuspenseWrap> },
 		],
 	},
 	{
@@ -57,29 +53,32 @@ export const router = createBrowserRouter([
 			</AuthGuard>
 		),
 		children: [
+			/* ── Native React pages ── */
 			{ path: "/my", element: <SuspenseWrap><DashboardPage /></SuspenseWrap> },
-			{ path: "/my/captain", element: <ComingSoon /> },
-			{ path: "/my/social-media", element: <ComingSoon /> },
-			{ path: "/my/social-media/*", element: <ComingSoon /> },
-			{ path: "/my/chatbot", element: <ComingSoon /> },
-			{ path: "/my/chatbot/*", element: <ComingSoon /> },
-			{ path: "/my/ad-manager", element: <ComingSoon /> },
-			{ path: "/my/ad-manager/*", element: <ComingSoon /> },
-			{ path: "/my/templates", element: <ComingSoon /> },
-			{ path: "/my/media", element: <ComingSoon /> },
-			{ path: "/my/video-editor", element: <ComingSoon /> },
-			{ path: "/my/presentations", element: <ComingSoon /> },
-			{ path: "/my/integrations", element: <ComingSoon /> },
-			{ path: "/my/integrations/*", element: <ComingSoon /> },
-			{ path: "/my/history", element: <ComingSoon /> },
-			{ path: "/my/documents", element: <ComingSoon /> },
-			{ path: "/my/billing", element: <ComingSoon /> },
-			{ path: "/my/billing/*", element: <ComingSoon /> },
-			{ path: "/my/workspace", element: <ComingSoon /> },
-			{ path: "/my/account", element: <ComingSoon /> },
-			{ path: "/my/agency", element: <ComingSoon /> },
-			{ path: "/my/agency/*", element: <ComingSoon /> },
-			{ path: "/my/whitelabel", element: <ComingSoon /> },
+
+			/* ── Iframe bridges (legacy PHP pages inside React shell) ── */
+			{ path: "/my/captain", element: <Bridge path="/my/ai-captain" title="AI Captain" /> },
+			{ path: "/my/social-media", element: <Bridge path="/my/social-media" title="Social Media" /> },
+			{ path: "/my/social-media/*", element: <Bridge path="/my/social-media" title="Social Media" /> },
+			{ path: "/my/chatbot", element: <Bridge path="/my/chatbot" title="Chatbots" /> },
+			{ path: "/my/chatbot/*", element: <Bridge path="/my/chatbot" title="Chatbots" /> },
+			{ path: "/my/ad-manager", element: <Bridge path="/my/ad-manager" title="Ad Manager" /> },
+			{ path: "/my/ad-manager/*", element: <Bridge path="/my/ad-manager" title="Ad Manager" /> },
+			{ path: "/my/templates", element: <Bridge path="/my/templates" title="Templates" /> },
+			{ path: "/my/media", element: <Bridge path="/my/media" title="Media Library" /> },
+			{ path: "/my/video-editor", element: <Bridge path="/my/video-editor" title="Video Editor" /> },
+			{ path: "/my/presentations", element: <Bridge path="/my/presentations" title="Presentations" /> },
+			{ path: "/my/integrations", element: <Bridge path="/my/integrations" title="Integrations" /> },
+			{ path: "/my/integrations/*", element: <Bridge path="/my/integrations" title="Integrations" /> },
+			{ path: "/my/history", element: <Bridge path="/my/history" title="History" /> },
+			{ path: "/my/documents", element: <Bridge path="/my/documents" title="Documents" /> },
+			{ path: "/my/billing", element: <Bridge path="/my/billing" title="Billing" /> },
+			{ path: "/my/billing/*", element: <Bridge path="/my/billing" title="Billing" /> },
+			{ path: "/my/workspace", element: <Bridge path="/my/workspace" title="Workspace" /> },
+			{ path: "/my/account", element: <Bridge path="/my/account" title="Account" /> },
+			{ path: "/my/agency", element: <Bridge path="/my/agency" title="Agency" /> },
+			{ path: "/my/agency/*", element: <Bridge path="/my/agency" title="Agency" /> },
+			{ path: "/my/whitelabel", element: <Bridge path="/my/whitelabel" title="Whitelabel" /> },
 			{ path: "*", element: <SuspenseWrap><NotFoundPage /></SuspenseWrap> },
 		],
 	},
