@@ -1,0 +1,22 @@
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
+import { queryClient } from "@/lib/query-client";
+
+export function useAdminSettings(tab: string) {
+	return useQuery({
+		queryKey: ["admin", "settings", tab],
+		queryFn: () =>
+			apiClient.get<{ settings: Record<string, string>; tab: string }>(
+				`/api/spa/admin/settings?tab=${tab}`,
+			),
+	});
+}
+
+export function useSaveAdminSettings() {
+	return useMutation({
+		mutationFn: (data: { tab: string; values: Record<string, string> }) =>
+			apiClient.post<{ message: string }>("/api/spa/admin/settings", data),
+		onSuccess: (_d, vars) =>
+			queryClient.invalidateQueries({ queryKey: ["admin", "settings", vars.tab] }),
+	});
+}

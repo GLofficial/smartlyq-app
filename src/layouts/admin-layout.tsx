@@ -2,7 +2,7 @@ import { Link, Outlet, useLocation, Navigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/auth-store";
 import {
 	LayoutDashboard, Users, CreditCard, ClipboardList,
-	Receipt, Globe, ArrowLeft, Shield,
+	Receipt, Globe, ArrowLeft, Shield, Settings,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -13,6 +13,7 @@ const ADMIN_NAV = [
 	{ label: "Subscriptions", path: "/admin/subscriptions", icon: ClipboardList },
 	{ label: "Transactions", path: "/admin/transactions", icon: Receipt },
 	{ label: "Whitelabel", path: "/admin/whitelabel", icon: Globe },
+	{ label: "Settings", path: "/admin/settings", icon: Settings },
 ];
 
 export function AdminLayout() {

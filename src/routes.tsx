@@ -55,6 +55,7 @@ const AdminPlansPage = lazy(() => import("@/pages/admin/admin-plans-page").then(
 const AdminSubscriptionsPage = lazy(() => import("@/pages/admin/admin-subscriptions-page").then((m) => ({ default: m.AdminSubscriptionsPage })));
 const AdminTransactionsPage = lazy(() => import("@/pages/admin/admin-transactions-page").then((m) => ({ default: m.AdminTransactionsPage })));
 const AdminWhitelabelPage = lazy(() => import("@/pages/admin/admin-whitelabel-page").then((m) => ({ default: m.AdminWhitelabelPage })));
+const AdminSettingsPage = lazy(() => import("@/pages/admin/admin-settings-page").then((m) => ({ default: m.AdminSettingsPage })));
 const NotFoundPage = lazy(() => import("@/pages/misc/not-found-page").then((m) => ({ default: m.NotFoundPage })));
 
 function S({ children }: { children: React.ReactNode }) {
@@ -179,6 +180,7 @@ export const router = createBrowserRouter([
 			{ path: "/admin/subscriptions", element: <S><AdminSubscriptionsPage /></S> },
 			{ path: "/admin/transactions", element: <S><AdminTransactionsPage /></S> },
 			{ path: "/admin/whitelabel", element: <S><AdminWhitelabelPage /></S> },
+			{ path: "/admin/settings", element: <S><AdminSettingsPage /></S> },
 		],
 	},
 ], {
