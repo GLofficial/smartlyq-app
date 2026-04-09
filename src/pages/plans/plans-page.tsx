@@ -4,7 +4,6 @@ import { Check, Star } from "lucide-react";
 import { useAvailablePlans } from "@/api/content";
 import { useAuthStore } from "@/stores/auth-store";
 import { cn } from "@/lib/cn";
-import { toast } from "sonner";
 
 export function PlansPage() {
 	const { data, isLoading } = useAvailablePlans();
@@ -59,7 +58,7 @@ export function PlansPage() {
 									{isCurrent ? (
 										<Button variant="outline" className="w-full" disabled>Current Plan</Button>
 									) : (
-										<Button className="w-full" onClick={() => toast.info("Plan upgrade coming soon.")}>
+										<Button className="w-full" onClick={() => window.open(`/my/billing?upgrade=${plan.id}`, '_self')}>
 											{plan.price === 0 ? "Get Started" : "Upgrade"}
 										</Button>
 									)}

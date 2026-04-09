@@ -2,6 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageSquare, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChatList } from "@/api/content";
+import { apiClient } from "@/lib/api-client";
+import { queryClient } from "@/lib/query-client";
+import { toast } from "sonner";
 
 export function ChatPage() {
 	const { data, isLoading } = useChatList();
@@ -10,7 +13,13 @@ export function ChatPage() {
 		<div className="space-y-6">
 			<div className="flex items-center justify-between">
 				<h1 className="text-2xl font-bold">Chat</h1>
-				<Button><Plus size={16} /> New Chat</Button>
+				<Button onClick={async () => {
+					try {
+						await apiClient.post("/api/spa/chat/create");
+						queryClient.invalidateQueries({ queryKey: ["chat"] });
+						toast.success("New chat created.");
+					} catch { toast.error("Failed to create chat."); }
+				}}><Plus size={16} /> New Chat</Button>
 			</div>
 
 			<Card>

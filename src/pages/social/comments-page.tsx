@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, MessageCircle, CheckCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ChevronLeft, ChevronRight, MessageCircle, CheckCircle, Send } from "lucide-react";
 import { useSocialComments } from "@/api/social";
 import { PlatformIcon } from "./platform-icon";
+import { apiClient } from "@/lib/api-client";
+import { queryClient } from "@/lib/query-client";
+import { toast } from "sonner";
 
 export function CommentsPage() {
 	const [filter, setFilter] = useState<string>("");
@@ -63,11 +67,13 @@ export function CommentsPage() {
 													on: {c.post_title}
 												</p>
 											)}
-											{c.has_reply && c.our_reply && (
+											{c.has_reply && c.our_reply ? (
 												<div className="mt-2 rounded bg-[var(--muted)] p-2 text-sm">
 													<span className="font-medium">Your reply: </span>
 													{c.our_reply}
 												</div>
+											) : (
+												<ReplyInput commentId={c.id} />
 											)}
 										</div>
 									</div>
@@ -89,6 +95,30 @@ function Spinner() {
 	return (
 		<div className="flex h-32 items-center justify-center">
 			<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
+		</div>
+	);
+}
+
+function ReplyInput({ commentId }: { commentId: number }) {
+	const [reply, setReply] = useState("");
+	const [sending, setSending] = useState(false);
+
+	const handleReply = async () => {
+		if (!reply.trim()) return;
+		setSending(true);
+		try {
+			await apiClient.post("/api/spa/comments/reply", { comment_id: commentId, reply });
+			toast.success("Reply sent.");
+			setReply("");
+			queryClient.invalidateQueries({ queryKey: ["social", "comments"] });
+		} catch { toast.error("Failed to send reply."); }
+		finally { setSending(false); }
+	};
+
+	return (
+		<div className="mt-2 flex gap-2">
+			<Input placeholder="Write a reply..." value={reply} onChange={(e) => setReply(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleReply()} className="flex-1 h-8 text-xs" />
+			<Button size="sm" variant="outline" className="h-8" disabled={sending} onClick={handleReply}><Send size={12} /></Button>
 		</div>
 	);
 }
