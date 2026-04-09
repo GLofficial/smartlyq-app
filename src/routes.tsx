@@ -15,6 +15,10 @@ const CalendarPage = lazy(() => import("@/pages/social/calendar-page").then((m) 
 const CommentsPage = lazy(() => import("@/pages/social/comments-page").then((m) => ({ default: m.CommentsPage })));
 const InboxPage = lazy(() => import("@/pages/social/inbox-page").then((m) => ({ default: m.InboxPage })));
 const AnalyticsPage = lazy(() => import("@/pages/social/analytics-page").then((m) => ({ default: m.AnalyticsPage })));
+const ChatbotListPage = lazy(() => import("@/pages/chatbot/chatbot-list-page").then((m) => ({ default: m.ChatbotListPage })));
+const ChatbotAnalyticsPage = lazy(() => import("@/pages/chatbot/chatbot-analytics-page").then((m) => ({ default: m.ChatbotAnalyticsPage })));
+const ChatbotTemplatesPage = lazy(() => import("@/pages/chatbot/chatbot-templates-page").then((m) => ({ default: m.ChatbotTemplatesPage })));
+const LiveAgentPage = lazy(() => import("@/pages/chatbot/live-agent-page").then((m) => ({ default: m.LiveAgentPage })));
 const NotFoundPage = lazy(() => import("@/pages/misc/not-found-page").then((m) => ({ default: m.NotFoundPage })));
 
 function PageLoader() {
@@ -62,12 +66,12 @@ export const router = createBrowserRouter([
 			{ path: "/my/social-media/analytics", element: <S><AnalyticsPage /></S> },
 			{ path: "/my/social-media/accounts", element: <Bridge path="/my/social-media/accounts" title="Social Accounts" /> },
 
-			/* ── Chatbot ── */
-			{ path: "/my/chatbot", element: <Bridge path="/my/chatbot" title="My Chatbots" /> },
+			/* ── Chatbot (native React) ── */
+			{ path: "/my/chatbot", element: <S><ChatbotListPage /></S> },
 			{ path: "/my/chatbot/create", element: <Bridge path="/my/chatbot/create" title="Create Chatbot" /> },
-			{ path: "/my/chatbot/live-agent", element: <Bridge path="/my/chatbot/live-agent" title="Live Agent" /> },
-			{ path: "/my/chatbot/templates", element: <Bridge path="/my/chatbot/templates" title="Chatbot Templates" /> },
-			{ path: "/my/chatbot/analytics", element: <Bridge path="/my/chatbot/analytics" title="Chatbot Analytics" /> },
+			{ path: "/my/chatbot/live-agent", element: <S><LiveAgentPage /></S> },
+			{ path: "/my/chatbot/templates", element: <S><ChatbotTemplatesPage /></S> },
+			{ path: "/my/chatbot/analytics", element: <S><ChatbotAnalyticsPage /></S> },
 			{ path: "/my/chatbot/settings", element: <Bridge path="/my/chatbot/settings" title="Chatbot Settings" /> },
 			{ path: "/my/chatbot/*", element: <Bridge path="/my/chatbot" title="Chatbot" /> },
 
