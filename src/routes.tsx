@@ -43,10 +43,14 @@ const BusinessesPage = lazy(() => import("@/pages/workspace/businesses-page").th
 const DeveloperPage = lazy(() => import("@/pages/connect/developer-page").then((m) => ({ default: m.DeveloperPage })));
 const ChatbotCreatePage = lazy(() => import("@/pages/chatbot/chatbot-create-page").then((m) => ({ default: m.ChatbotCreatePage })));
 const ChatbotSettingsPage = lazy(() => import("@/pages/chatbot/chatbot-settings-page").then((m) => ({ default: m.ChatbotSettingsPage })));
+const ChatbotHistoryPage = lazy(() => import("@/pages/chatbot/chatbot-history-page").then((m) => ({ default: m.ChatbotHistoryPage })));
 const SignupPage = lazy(() => import("@/pages/auth/signup-page").then((m) => ({ default: m.SignupPage })));
 const ResetPage = lazy(() => import("@/pages/auth/reset-page").then((m) => ({ default: m.ResetPage })));
 const WhitelabelPage = lazy(() => import("@/pages/whitelabel/whitelabel-page").then((m) => ({ default: m.WhitelabelPage })));
+const AgencyBillingPage = lazy(() => import("@/pages/whitelabel/agency-billing-page").then((m) => ({ default: m.AgencyBillingPage })));
+const AgencyReportsPage = lazy(() => import("@/pages/whitelabel/agency-reports-page").then((m) => ({ default: m.AgencyReportsPage })));
 const CaptainPage = lazy(() => import("@/pages/captain/captain-page").then((m) => ({ default: m.CaptainPage })));
+const CaptainBoardsPage = lazy(() => import("@/pages/captain/captain-boards-page").then((m) => ({ default: m.CaptainBoardsPage })));
 const VideoEditorPage = lazy(() => import("@/pages/video-editor/video-editor-page").then((m) => ({ default: m.VideoEditorPage })));
 const PresentationsPage = lazy(() => import("@/pages/presentations/presentations-page").then((m) => ({ default: m.PresentationsPage })));
 const AdminDashboardPage = lazy(() => import("@/pages/admin/admin-dashboard-page").then((m) => ({ default: m.AdminDashboardPage })));
@@ -75,6 +79,10 @@ const AnalystPage = lazy(() => import("@/pages/ai/analyst-page").then((m) => ({ 
 const ArticlesPage = lazy(() => import("@/pages/ai/articles-page").then((m) => ({ default: m.ArticlesPage })));
 const PlansPage = lazy(() => import("@/pages/plans/plans-page").then((m) => ({ default: m.PlansPage })));
 const SuspendedPage = lazy(() => import("@/pages/misc/suspended-page").then((m) => ({ default: m.SuspendedPage })));
+const AdSetsPage = lazy(() => import("@/pages/ads/ad-sets-page").then((m) => ({ default: m.AdSetsPage })));
+const AdsPage = lazy(() => import("@/pages/ads/ads-page").then((m) => ({ default: m.AdsPage })));
+const AdAuditLogPage = lazy(() => import("@/pages/ads/ad-audit-log-page").then((m) => ({ default: m.AdAuditLogPage })));
+const AdSettingsPage = lazy(() => import("@/pages/ads/ad-settings-page").then((m) => ({ default: m.AdSettingsPage })));
 const AdsInsightsPage = lazy(() => import("@/pages/integrations/ads-insights-page").then((m) => ({ default: m.AdsInsightsPage })));
 const GoogleInsightsPage = lazy(() => import("@/pages/integrations/google-insights-page").then((m) => ({ default: m.GoogleInsightsPage })));
 const WoocommercePage = lazy(() => import("@/pages/integrations/woocommerce-page").then((m) => ({ default: m.WoocommercePage })));
@@ -106,6 +114,7 @@ export const router = createBrowserRouter([
 
 			/* ── AI Captain (embedded inside shell) ── */
 			{ path: "/my/captain", element: <S><CaptainPage /></S> },
+			{ path: "/my/ai-captain/boards", element: <S><CaptainBoardsPage /></S> },
 
 			/* ── Social Media (all native) ── */
 			{ path: "/my/social-media", element: <S><SocialDashboardPage /></S> },
@@ -124,6 +133,7 @@ export const router = createBrowserRouter([
 			{ path: "/my/chatbot/templates", element: <S><ChatbotTemplatesPage /></S> },
 			{ path: "/my/chatbot/analytics", element: <S><ChatbotAnalyticsPage /></S> },
 			{ path: "/my/chatbot/settings", element: <S><ChatbotSettingsPage /></S> },
+			{ path: "/my/chatbot/history", element: <S><ChatbotHistoryPage /></S> },
 			{ path: "/my/chatbot/*", element: <Bridge path="/my/chatbot" title="Chatbot" /> },
 
 			/* ── AI Tools (all native) ── */
@@ -135,6 +145,10 @@ export const router = createBrowserRouter([
 
 			/* ── Ad Manager (native) ── */
 			{ path: "/my/ad-manager", element: <S><AdManagerPage /></S> },
+			{ path: "/my/ad-manager/ad-sets", element: <S><AdSetsPage /></S> },
+			{ path: "/my/ad-manager/ads", element: <S><AdsPage /></S> },
+			{ path: "/my/ad-manager/audit-log", element: <S><AdAuditLogPage /></S> },
+			{ path: "/my/ad-manager/settings", element: <S><AdSettingsPage /></S> },
 			{ path: "/my/ad-manager/*", element: <S><AdManagerPage /></S> },
 
 			/* ── Media Library (native) ── */
@@ -210,6 +224,8 @@ export const router = createBrowserRouter([
 
 			/* ── Agency + Whitelabel (native) ── */
 			{ path: "/my/agency", element: <S><AgencyPage /></S> },
+			{ path: "/my/agency/billing", element: <S><AgencyBillingPage /></S> },
+			{ path: "/my/agency/reports", element: <S><AgencyReportsPage /></S> },
 			{ path: "/my/agency/*", element: <S><AgencyPage /></S> },
 			{ path: "/my/whitelabel", element: <S><WhitelabelPage /></S> },
 
