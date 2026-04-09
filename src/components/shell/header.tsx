@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 export function Header() {
 	const user = useAuthStore((s) => s.user);
 	const plan = useAuthStore((s) => s.plan);
+	const credits = useAuthStore((s) => s.credits);
 	const clearAuth = useAuthStore((s) => s.clearAuth);
 	const theme = useUiStore((s) => s.theme);
 	const setTheme = useUiStore((s) => s.setTheme);
@@ -25,12 +26,12 @@ export function Header() {
 			<div />
 
 			<div className="flex items-center gap-2">
-				{/* Credits badge */}
-				{plan?.features && (
+				{/* Credits badge — shows remaining user credits, not plan allowance */}
+				{plan && (
 					<Link to={ROUTES.BILLING}>
 						<div className="flex items-center gap-1.5 rounded-full bg-[color-mix(in_srgb,var(--sq-primary)_10%,transparent)] px-3 py-1.5 text-xs font-medium text-[var(--sq-primary)] hover:bg-[color-mix(in_srgb,var(--sq-primary)_15%,transparent)] transition-colors">
 							<Coins size={14} />
-							<span>{plan.features.credits ?? 0} credits</span>
+							<span>{Math.round(credits).toLocaleString()}</span>
 						</div>
 					</Link>
 				)}

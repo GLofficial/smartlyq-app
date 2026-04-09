@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				setBranding(data.tenant, data.is_whitelabel);
 
 				if (data.user && data.plan) {
-					setAuth(data.user, data.plan);
+					setAuth(data.user, data.plan, data.credits ?? 0);
 					setWorkspaces(data.workspaces, data.active_workspace_id);
 				} else {
 					// Token was sent but user is null — token is invalid

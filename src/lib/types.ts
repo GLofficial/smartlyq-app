@@ -62,6 +62,7 @@ export interface BootstrapResponse {
 	tenant: TenantBranding | null;
 	user: User | null;
 	plan: Plan | null;
+	credits: number;
 	workspaces: Workspace[];
 	active_workspace_id: number | null;
 	is_whitelabel: boolean;

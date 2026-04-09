@@ -5,9 +5,11 @@ import { STORAGE_KEYS } from "@/lib/constants";
 interface AuthState {
 	user: User | null;
 	plan: Plan | null;
+	credits: number;
 	isAuthenticated: boolean;
 	isLoading: boolean;
-	setAuth: (user: User, plan: Plan) => void;
+	setAuth: (user: User, plan: Plan, credits?: number) => void;
+	setCredits: (credits: number) => void;
 	clearAuth: () => void;
 	setLoading: (loading: boolean) => void;
 }
@@ -15,9 +17,11 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
 	user: null,
 	plan: null,
+	credits: 0,
 	isAuthenticated: !!localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN),
 	isLoading: true,
-	setAuth: (user, plan) => set({ user, plan, isAuthenticated: true, isLoading: false }),
+	setAuth: (user, plan, credits) => set({ user, plan, credits: credits ?? 0, isAuthenticated: true, isLoading: false }),
+	setCredits: (credits) => set({ credits }),
 	clearAuth: () => {
 		localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
 		set({ user: null, plan: null, isAuthenticated: false, isLoading: false });
