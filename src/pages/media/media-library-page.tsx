@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import {
 	Image, Video, AudioLines, FileText, FileSpreadsheet, FileIcon, LayoutGrid, List, Search,
 	Upload, MoreHorizontal, Trash2, Pencil, Download, ChevronLeft, ChevronRight, X,
-	ShoppingCart, FolderInput, FolderX,
+	ShoppingCart, FolderInput, FolderX, Eye,
 } from "lucide-react";
 import {
 	useMediaList, useMediaUpload, useMediaDelete, useMediaRename, useMediaMove, useMediaQuota, useMediaFolders,
@@ -168,9 +168,24 @@ function FileCard({ file, onPreview }: { file: MediaFile; onPreview: (f: MediaFi
 		expiresIn = daysLeft > 0 ? daysLeft : 0;
 	}
 
+	const handleDownload = async (e: React.MouseEvent) => {
+		e.stopPropagation();
+		try {
+			const res = await fetch(file.url);
+			const blob = await res.blob();
+			const a = document.createElement("a");
+			a.href = URL.createObjectURL(blob);
+			a.download = file.file_name || file.name || "download";
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+			URL.revokeObjectURL(a.href);
+		} catch { window.open(file.url, "_blank"); }
+	};
+
 	return (
 		<div className="group relative">
-			<div onClick={() => onPreview(file)} className="cursor-pointer">
+			<div className="relative cursor-pointer" onClick={() => onPreview(file)}>
 				<div className="aspect-square overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--muted)] transition-all group-hover:border-[var(--sq-primary)]">
 					{isImage ? <img src={file.preview_url || file.url} alt={file.name} className="h-full w-full object-cover" loading="lazy" />
 					: isVideo && file.preview_url && !file.preview_url.endsWith(".mp4") && !file.preview_url.endsWith(".MP4") && file.preview_url !== file.url ? <img src={file.preview_url} alt={file.name} className="h-full w-full object-cover" loading="lazy" />
@@ -179,6 +194,15 @@ function FileCard({ file, onPreview }: { file: MediaFile; onPreview: (f: MediaFi
 						{isVideo ? <Video size={28} className="text-red-500" /> : isAudio ? <AudioLines size={28} className="text-purple-500" /> : <DocIcon size={28} className="text-blue-500" />}
 						{isDoc && ext && <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{ext}</span>}
 					</div>}
+					{/* Hover overlay with Preview + Download buttons */}
+					<div className="absolute inset-0 flex items-center justify-center gap-3 rounded-lg bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+						<button onClick={(e) => { e.stopPropagation(); onPreview(file); }} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-md hover:bg-white transition-colors" title="Preview">
+							<Eye size={18} className="text-gray-700" />
+						</button>
+						<button onClick={handleDownload} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-md hover:bg-white transition-colors" title="Download">
+							<Download size={18} className="text-gray-700" />
+						</button>
+					</div>
 					<span className={`absolute left-2 top-2 rounded px-1.5 py-0.5 text-[10px] font-bold text-white ${isImage ? "bg-green-600" : isVideo ? "bg-red-600" : isAudio ? "bg-purple-600" : "bg-blue-600"}`}>{file.type.toUpperCase()}</span>
 					{expiresIn !== null && (
 						<span className={`absolute right-2 top-2 rounded px-1.5 py-0.5 text-[10px] font-bold text-white ${expiresIn <= 3 ? "bg-red-600" : expiresIn <= 7 ? "bg-orange-500" : "bg-yellow-500"}`}>
