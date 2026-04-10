@@ -29,8 +29,8 @@ export function useAdminPlanSave() {
 
 export function useAdminPlanDelete() {
 	return useMutation({
-		mutationFn: (id: number) =>
-			apiClient.post<{ message: string }>("/api/spa/admin/plans/delete", { id }),
+		mutationFn: (data: { id: number; hard?: boolean }) =>
+			apiClient.post<{ message: string }>("/api/spa/admin/plans/delete", data),
 		onSuccess: invalidatePlans,
 	});
 }

@@ -49,7 +49,7 @@ export function PlanCard({ plan, currency, isCurrent, onCheckout, checkoutLoadin
 
 				{/* Credit Tier Selector — fixed height for alignment */}
 				<div className="h-16 mt-2">
-					{plan.tiers.length > 0 && (
+					{plan.tiers.length > 0 ? (
 						<>
 							<p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">Credit Tier</p>
 							<select
@@ -64,7 +64,12 @@ export function PlanCard({ plan, currency, isCurrent, onCheckout, checkoutLoadin
 								))}
 							</select>
 						</>
-					)}
+					) : isFreePlan ? (
+						<>
+							<p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">Credit Tier</p>
+							<div className="mt-1 rounded-md border border-[var(--input)] px-3 py-2 text-sm text-[var(--muted-foreground)]">Pay-as-you-go  {sym}0.020  /credit</div>
+						</>
+					) : null}
 				</div>
 
 				{/* Credits Display */}

@@ -45,10 +45,10 @@ export function AdminPlansPage() {
 	};
 
 	const handleDelete = (id: number) => {
-		if (!confirm("Deactivate this plan?")) return;
-		deleteMut.mutate(id, {
-			onSuccess: () => { toast.success("Plan deactivated."); queryClient.invalidateQueries({ queryKey: ["admin", "plans"] }); },
-			onError: () => toast.error("Failed."),
+		const hard = confirm("Permanently delete this plan? (Cancel = just deactivate)");
+		deleteMut.mutate({ id, hard }, {
+			onSuccess: (d) => { toast.success(d.message); queryClient.invalidateQueries({ queryKey: ["admin", "plans"] }); },
+			onError: (e) => toast.error((e as { error?: string })?.error ?? "Failed."),
 		});
 	};
 
