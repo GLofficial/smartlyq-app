@@ -50,6 +50,7 @@ import {
   ArrowUpDown,
   Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -115,20 +116,30 @@ export function CrmProjectsPage() {
   // --- Create project ---
   function handleCreate() {
     if (!newName.trim()) return;
-    saveProject.mutate({
-      name: newName.trim(),
-      deal_id: newDealId !== "none" ? Number(newDealId) : undefined,
-    });
-    setNewName("");
-    setNewDealId("none");
-    setCreateOpen(false);
+    saveProject.mutate(
+      {
+        name: newName.trim(),
+        deal_id: newDealId !== "none" ? Number(newDealId) : undefined,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Project created");
+          setNewName("");
+          setNewDealId("none");
+          setCreateOpen(false);
+        },
+        onError: () => toast.error("Failed to create project"),
+      },
+    );
   }
 
   // --- Delete project ---
   function handleDelete() {
     if (!deleteTarget) return;
-    deleteProjectMut.mutate(deleteTarget.id);
-    setDeleteTarget(null);
+    deleteProjectMut.mutate(deleteTarget.id, {
+      onSuccess: () => { toast.success("Project deleted"); setDeleteTarget(null); },
+      onError: () => toast.error("Failed to delete project"),
+    });
   }
 
   if (isLoading) {
