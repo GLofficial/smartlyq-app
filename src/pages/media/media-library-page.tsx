@@ -28,8 +28,9 @@ export function MediaLibraryPage() {
 	const [searchInput, setSearchInput] = useState("");
 	const [page, setPage] = useState(1);
 	const [view, setView] = useState<"grid" | "list">("grid");
-	const { data, isLoading } = useMediaList(folder, type, search, page);
-	const { data: quota } = useMediaQuota();
+	const { data, isLoading, error } = useMediaList(folder, type, search, page);
+	const { data: quota, error: quotaError } = useMediaQuota();
+	console.log('[MediaLibrary]', { data, isLoading, error, quota, quotaError, folder, type, search, page });
 	const uploadMut = useMediaUpload();
 	const fileRef = useRef<HTMLInputElement>(null);
 	const [dragOver, setDragOver] = useState(false);
