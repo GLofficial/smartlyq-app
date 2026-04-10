@@ -96,10 +96,8 @@ function NavLink({
 	collapsed: boolean;
 }) {
 	const location = useLocation();
-	const active =
-		item.path === "/my"
-			? location.pathname === "/my"
-			: location.pathname === item.path || location.pathname.startsWith(item.path + "/");
+	const fullPath = location.pathname + location.search;
+	const active = item.path.includes("?") ? fullPath === item.path || fullPath.startsWith(item.path + "&") : location.pathname === item.path;
 
 	const Icon = item.icon;
 

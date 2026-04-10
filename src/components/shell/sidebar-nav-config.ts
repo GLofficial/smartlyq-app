@@ -184,7 +184,7 @@ export const NAV_GROUPS: NavGroup[] = [
 		path: "/my/workspace",
 		items: [
 			{ label: "Overview", path: "/my/workspace", icon: Building2 },
-			{ label: "Members", path: "/my/workspace/members", icon: Users },
+			{ label: "Members", path: "/my/workspace?tab=Members", icon: Users },
 			{ label: "Brands", path: "/my/brands", icon: Briefcase },
 			{ label: "Business Groups", path: "/my/businesses", icon: Building2 },
 			{ label: "Media Library", path: "/my/media", icon: FolderOpen },
