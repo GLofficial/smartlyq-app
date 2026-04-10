@@ -33,6 +33,7 @@ const AdAnalyticsPage = lazy(() => import("@/pages/ads/ad-analytics-page").then(
 const IntegrationsPage = lazy(() => import("@/pages/integrations/integrations-page").then((m) => ({ default: m.IntegrationsPage })));
 const BillingPage = lazy(() => import("@/pages/billing/billing-page").then((m) => ({ default: m.BillingPage })));
 const WorkspacePage = lazy(() => import("@/pages/workspace/workspace-page").then((m) => ({ default: m.WorkspacePage })));
+const MembersPage = lazy(() => import("@/pages/workspace/members-page").then((m) => ({ default: m.MembersPage })));
 const MediaLibraryPage = lazy(() => import("@/pages/media/media-library-page").then((m) => ({ default: m.MediaLibraryPage })));
 const AccountPage = lazy(() => import("@/pages/account/account-page").then((m) => ({ default: m.AccountPage })));
 const HistoryPage = lazy(() => import("@/pages/history/history-page").then((m) => ({ default: m.HistoryPage })));
@@ -228,7 +229,7 @@ export const router = createBrowserRouter([
 			{ path: "/my/businesses", element: <S><BusinessesPage /></S> },
 			{ path: "/my/business-details", element: <S><BusinessesPage /></S> },
 			{ path: "/my/campaigns", element: <S><BrandsPage /></S> },
-			{ path: "/my/workspace/members", element: <S><WorkspacePage /></S> },
+			{ path: "/my/workspace/members", element: <S><MembersPage /></S> },
 
 			/* ── Agency + Whitelabel (native) ── */
 			{ path: "/my/agency", element: <S><AgencyPage /></S> },
