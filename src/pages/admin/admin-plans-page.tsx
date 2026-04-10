@@ -47,14 +47,15 @@ export function AdminPlansPage() {
 
 	const confirmDialog = useConfirm();
 	const handleDelete = async (id: number) => {
-		const hard = await confirmDialog({
+		const result = await confirmDialog({
 			title: "Delete Plan",
-			message: "Permanently delete this plan? If users are on it, the plan will be deactivated instead.",
-			confirmLabel: "Delete Permanently",
-			cancelLabel: "Just Deactivate",
+			message: "Are you sure you want to permanently delete this plan? If users are on it, it cannot be deleted.",
+			confirmLabel: "Delete",
+			cancelLabel: "Cancel",
 			variant: "destructive",
 		});
-		deleteMut.mutate({ id, hard }, {
+		if (result !== true) return;
+		deleteMut.mutate({ id, hard: true }, {
 			onSuccess: (d) => { toast.success(d.message); queryClient.invalidateQueries({ queryKey: ["admin", "plans"] }); },
 			onError: (e) => toast.error((e as { error?: string })?.error ?? "Failed."),
 		});

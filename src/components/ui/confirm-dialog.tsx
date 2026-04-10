@@ -11,7 +11,7 @@ interface ConfirmOptions {
 }
 
 interface ConfirmContextType {
-	confirm: (options: ConfirmOptions) => Promise<boolean>;
+	confirm: (options: ConfirmOptions) => Promise<boolean | null>;
 }
 
 const ConfirmContext = createContext<ConfirmContextType | null>(null);
@@ -23,15 +23,15 @@ export function useConfirm() {
 }
 
 export function ConfirmProvider({ children }: { children: ReactNode }) {
-	const [state, setState] = useState<{ options: ConfirmOptions; resolve: (v: boolean) => void } | null>(null);
+	const [state, setState] = useState<{ options: ConfirmOptions; resolve: (v: boolean | null) => void } | null>(null);
 
-	const confirm = useCallback((options: ConfirmOptions): Promise<boolean> => {
+	const confirm = useCallback((options: ConfirmOptions): Promise<boolean | null> => {
 		return new Promise((resolve) => {
 			setState({ options, resolve });
 		});
 	}, []);
 
-	const handleClose = (result: boolean) => {
+	const handleResult = (result: boolean | null) => {
 		state?.resolve(result);
 		setState(null);
 	};
@@ -40,18 +40,18 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 		<ConfirmContext.Provider value={{ confirm }}>
 			{children}
 			{state && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => handleClose(false)}>
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => handleResult(null)}>
 					<Card className="w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
 						<CardContent className="p-6 space-y-4">
 							<h3 className="text-lg font-semibold">{state.options.title}</h3>
 							<p className="text-sm text-[var(--muted-foreground)]">{state.options.message}</p>
 							<div className="flex justify-end gap-3">
-								<Button variant="outline" onClick={() => handleClose(false)}>
+								<Button variant="outline" onClick={() => handleResult(null)}>
 									{state.options.cancelLabel ?? "Cancel"}
 								</Button>
 								<Button
 									variant={state.options.variant === "destructive" ? "destructive" : "default"}
-									onClick={() => handleClose(true)}
+									onClick={() => handleResult(true)}
 								>
 									{state.options.confirmLabel ?? "Confirm"}
 								</Button>
