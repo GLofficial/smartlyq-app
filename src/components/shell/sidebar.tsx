@@ -58,9 +58,13 @@ export function Sidebar() {
 			{!collapsed && user && (
 				<div className="border-t border-[var(--sidebar-border)] px-3 py-2.5">
 					<div className="flex items-center gap-2.5">
-						<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--sq-primary)] text-xs font-bold text-white">
-							{user.name.charAt(0).toUpperCase()}
-						</div>
+						{user.avatar_url ? (
+							<img src={user.avatar_url} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+						) : (
+							<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--sq-primary)] text-xs font-bold text-white">
+								{user.name.charAt(0).toUpperCase()}
+							</div>
+						)}
 						<div className="min-w-0 flex-1">
 							<p className="truncate text-[13px] font-medium text-[var(--sidebar-foreground)]">
 								{user.name}

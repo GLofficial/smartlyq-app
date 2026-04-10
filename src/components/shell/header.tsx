@@ -62,9 +62,13 @@ export function Header() {
 							{user.name}
 						</span>
 						<Link to={ROUTES.ACCOUNT}>
-							<Button variant="ghost" size="icon" className="h-8 w-8">
-								<User size={16} />
-							</Button>
+							{user.avatar_url ? (
+								<img src={user.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover hover:ring-2 hover:ring-[var(--sq-primary)] transition-shadow" />
+							) : (
+								<Button variant="ghost" size="icon" className="h-8 w-8">
+									<User size={16} />
+								</Button>
+							)}
 						</Link>
 						<Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleLogout}>
 							<LogOut size={16} />
