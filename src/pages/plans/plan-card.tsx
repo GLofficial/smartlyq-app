@@ -41,43 +41,47 @@ export function PlanCard({ plan, currency, isCurrent, onCheckout, checkoutLoadin
 				</div>
 			)}
 			<CardContent className="flex flex-1 flex-col p-6 pt-8">
-				{/* Header */}
-				<h3 className="text-xl font-bold">{plan.name}</h3>
-				{plan.title && <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">{plan.title}</p>}
+				{/* Header — fixed height for alignment */}
+				<div className="h-14">
+					<h3 className="text-xl font-bold">{plan.name}</h3>
+					{plan.title && <p className="mt-0.5 text-xs text-[var(--muted-foreground)] line-clamp-2">{plan.title}</p>}
+				</div>
 
-				{/* Credit Tier Selector */}
-				{plan.tiers.length > 0 && (
-					<div className="mt-4">
-						<p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">Credit Tier</p>
-						<select
-							value={selectedTier?.id ?? ""}
-							onChange={(e) => setSelectedTier(plan.tiers.find(t => t.id === Number(e.target.value)) ?? null)}
-							className="mt-1 w-full rounded-md border border-[var(--input)] bg-[var(--background)] px-3 py-2 text-sm"
-						>
-							{plan.tiers.map(t => (
-								<option key={t.id} value={t.id}>
-									{t.credits.toLocaleString()} credits/mo ({sym}{t.price_per_credit.toFixed(3)}/cr)
-								</option>
-							))}
-						</select>
-					</div>
-				)}
+				{/* Credit Tier Selector — fixed height for alignment */}
+				<div className="h-16 mt-2">
+					{plan.tiers.length > 0 && (
+						<>
+							<p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">Credit Tier</p>
+							<select
+								value={selectedTier?.id ?? ""}
+								onChange={(e) => setSelectedTier(plan.tiers.find(t => t.id === Number(e.target.value)) ?? null)}
+								className="mt-1 w-full rounded-md border border-[var(--input)] bg-[var(--background)] px-3 py-2 text-sm"
+							>
+								{plan.tiers.map(t => (
+									<option key={t.id} value={t.id}>
+										{t.credits.toLocaleString()} credits/mo ({sym}{t.price_per_credit.toFixed(3)}/cr)
+									</option>
+								))}
+							</select>
+						</>
+					)}
+				</div>
 
 				{/* Credits Display */}
-				<div className={cn("mt-4 rounded-lg py-3 text-center", plan.highlight ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white" : "bg-[var(--muted)]")}>
+				<div className={cn("rounded-lg py-3 text-center", plan.highlight ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white" : "bg-[var(--muted)]")}>
 					<p className="text-3xl font-bold">{displayCredits.toLocaleString()}</p>
 					<p className="text-xs opacity-80">AI Credits/{isPrepaid ? "pack" : isLifetime ? "mo" : "mo"}</p>
 				</div>
 
 				{/* Price */}
-				<div className="mt-4 text-center">
+				<div className="mt-4 h-14 text-center">
 					<span className="text-3xl font-bold">{sym}{Math.round(displayPrice)}</span>
 					{durationLabel && <span className="ml-1 text-sm text-[var(--muted-foreground)]">{durationLabel}</span>}
 					{isLifetime && <p className="text-xs text-[var(--muted-foreground)]">(replenished monthly, forever)</p>}
 				</div>
 
 				{/* CTA */}
-				<div className="mt-4">
+				<div>
 					{isCurrent ? (
 						<Button variant="outline" className="w-full" disabled>Current Plan</Button>
 					) : (
