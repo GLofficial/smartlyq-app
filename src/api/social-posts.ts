@@ -53,3 +53,11 @@ export function useReplyComment() {
 		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["social", "comments"] }),
 	});
 }
+
+export function useInboxReply() {
+	return useMutation({
+		mutationFn: (data: { conversation_id: number; message: string }) =>
+			apiClient.post<{ message: string }>("/api/spa/social/inbox/reply", data),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["social", "inbox"] }),
+	});
+}

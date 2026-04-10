@@ -53,3 +53,10 @@ export function useMediaFolderCreate() {
 export function useMediaFolderDelete() {
 	return useMutation({ mutationFn: (id: number) => apiClient.post<{ message: string }>("/api/spa/media/folders/delete", { id }), onSuccess: inv });
 }
+
+export function useMediaQuota() {
+	return useQuery({
+		queryKey: ["media", "quota"],
+		queryFn: () => apiClient.get<{ used_bytes: number; used_mb: number; limit_mb: number | null; percentage: number }>("/api/spa/media/quota"),
+	});
+}

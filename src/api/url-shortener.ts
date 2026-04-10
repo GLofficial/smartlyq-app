@@ -27,3 +27,19 @@ export function useCreateShortUrl() {
 		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["url-shortener"] }),
 	});
 }
+
+export function useEditShortUrl() {
+	return useMutation({
+		mutationFn: (data: { id: number; url: string }) =>
+			apiClient.post<{ message: string }>("/api/spa/url-shortener/edit", data),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["url-shortener"] }),
+	});
+}
+
+export function useDeleteShortUrl() {
+	return useMutation({
+		mutationFn: (id: number) =>
+			apiClient.post<{ message: string }>("/api/spa/url-shortener/delete", { id }),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["url-shortener"] }),
+	});
+}

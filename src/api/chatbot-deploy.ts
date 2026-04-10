@@ -42,3 +42,11 @@ export function useSaveDomains() {
 			apiClient.post<{ message: string }>("/api/spa/chatbot/domains/save", data),
 	});
 }
+
+export function useChatbotScrape() {
+	return useMutation({
+		mutationFn: (data: { bot_id: number; url: string }) =>
+			apiClient.post<{ message: string; id: number; text_length: number }>("/api/spa/chatbot/scrape", data),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["chatbot"] }),
+	});
+}
