@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
-import { Pencil, Check, X, Plus, Copy, Trash2 } from "lucide-react";
+import { Pencil, Check, X, Plus, Copy, Trash2, FileEdit } from "lucide-react";
+import { AdminPlanEditor } from "./admin-plan-editor";
 import { apiClient } from "@/lib/api-client";
 import { queryClient } from "@/lib/query-client";
 import { useEditPlan } from "@/api/admin-pricing";
@@ -18,6 +19,7 @@ export function AdminPlansPage() {
 	});
 	const [activeGroup, setActiveGroup] = useState(0);
 	const [editingPlan, setEditingPlan] = useState<number | null>(null);
+	const [editorPlanId, setEditorPlanId] = useState<number | null | "new">(null);
 	const [editValues, setEditValues] = useState<Record<string, unknown>>({});
 	const [showCreate, setShowCreate] = useState(false);
 	const [newName, setNewName] = useState("");
@@ -78,13 +80,18 @@ export function AdminPlansPage() {
 
 	if (isLoading) return <div className="flex h-40 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" /></div>;
 
+	// Full plan editor mode
+	if (editorPlanId !== null) {
+		return <AdminPlanEditor planId={editorPlanId === "new" ? null : editorPlanId} onClose={() => { setEditorPlanId(null); queryClient.invalidateQueries({ queryKey: ["admin", "plans"] }); }} />;
+	}
+
 	return (
 		<div className="space-y-6">
 			<div className="flex items-center justify-between">
 				<h1 className="text-2xl font-bold">Plans and Pricing</h1>
 				<div className="flex items-center gap-3">
 					<span className="text-sm text-[var(--muted-foreground)]">{plans.length} plans</span>
-					<Button size="sm" onClick={() => setShowCreate(!showCreate)}><Plus size={14} /> New Plan</Button>
+					<Button size="sm" onClick={() => setEditorPlanId("new")}><Plus size={14} /> Add New Plan</Button>
 				</div>
 			</div>
 
@@ -165,7 +172,8 @@ export function AdminPlansPage() {
 														</div>
 													) : (
 														<div className="flex gap-1">
-																<Button variant="default" size="sm" onClick={() => startEdit(plan)}><Pencil size={12} /></Button>
+																<Button variant="default" size="sm" onClick={() => setEditorPlanId(planId)} title="Full Editor"><FileEdit size={12} /></Button>
+																<Button variant="outline" size="sm" onClick={() => startEdit(plan)} title="Quick Edit"><Pencil size={12} /></Button>
 																<Button variant="ghost" size="icon" className="h-8 w-8" title="Duplicate" onClick={() => handleDuplicate(planId)}><Copy size={14} /></Button>
 																<Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" title="Deactivate" onClick={() => handleDelete(planId)}><Trash2 size={14} /></Button>
 															</div>
