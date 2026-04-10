@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { UserCog, Mail, Shield, Calendar, Save } from "lucide-react";
+import { UserCog, Mail, Shield, Calendar, Save, Camera, Trash2, Key, Plus, XCircle, Copy } from "lucide-react";
 import { useAccount } from "@/api/general";
+import { useUploadAvatar, useDeleteAvatar, useApiKeys, useApiKeyCreate, useApiKeyRevoke } from "@/api/account";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 
@@ -88,6 +89,7 @@ export function AccountPage() {
 					</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-4">
+					<AvatarUpload currentUrl={user?.avatar_url} />
 					<div className="space-y-2">
 						<label className="text-sm font-medium">Name</label>
 						<Input value={name} onChange={(e) => setName(e.target.value)} />
@@ -136,6 +138,108 @@ export function AccountPage() {
 					</Button>
 				</CardContent>
 			</Card>
+
+			<ApiKeysCard />
 		</div>
+	);
+}
+
+function AvatarUpload({ currentUrl }: { currentUrl?: string | null }) {
+	const fileRef = useRef<HTMLInputElement>(null);
+	const uploadMut = useUploadAvatar();
+	const deleteMut = useDeleteAvatar();
+
+	const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		e.target.value = "";
+		uploadMut.mutate(file, {
+			onSuccess: () => toast.success("Avatar updated."),
+			onError: () => toast.error("Upload failed."),
+		});
+	};
+
+	return (
+		<div className="flex items-center gap-4">
+			{currentUrl ? (
+				<img src={currentUrl} alt="" className="h-16 w-16 rounded-full object-cover" />
+			) : (
+				<div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)]"><Camera size={24} /></div>
+			)}
+			<div className="flex gap-2">
+				<Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={uploadMut.isPending}>
+					<Camera size={14} /> {uploadMut.isPending ? "Uploading..." : "Change Photo"}
+				</Button>
+				{currentUrl && (
+					<Button size="sm" variant="ghost" className="text-red-500" onClick={() => deleteMut.mutate(undefined, { onSuccess: () => toast.success("Removed.") })} disabled={deleteMut.isPending}>
+						<Trash2 size={14} /> Remove
+					</Button>
+				)}
+			</div>
+			<input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+		</div>
+	);
+}
+
+function ApiKeysCard() {
+	const { data, isLoading } = useApiKeys();
+	const createMut = useApiKeyCreate();
+	const revokeMut = useApiKeyRevoke();
+	const [showCreate, setShowCreate] = useState(false);
+	const [keyName, setKeyName] = useState("");
+	const [newKey, setNewKey] = useState("");
+
+	const handleCreate = () => {
+		if (!keyName.trim()) { toast.error("Name required"); return; }
+		createMut.mutate({ name: keyName.trim() }, {
+			onSuccess: (d) => { setNewKey(d.key); setKeyName(""); setShowCreate(false); toast.success("Key created. Copy it now — it won't be shown again."); },
+			onError: (e) => toast.error((e as { error?: string })?.error ?? "Failed"),
+		});
+	};
+
+	return (
+		<Card>
+			<CardHeader className="flex-row items-center justify-between">
+				<CardTitle className="flex items-center gap-2 text-lg"><Key size={18} /> API Keys</CardTitle>
+				<Button size="sm" variant="outline" onClick={() => setShowCreate(!showCreate)}><Plus size={14} /> New Key</Button>
+			</CardHeader>
+			<CardContent className="space-y-3">
+				{newKey && (
+					<div className="rounded border border-green-200 bg-green-50 p-3">
+						<p className="text-xs font-medium text-green-700 mb-1">New key (copy now):</p>
+						<div className="flex items-center gap-2">
+							<code className="flex-1 text-xs break-all">{newKey}</code>
+							<Button size="sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(newKey); toast.success("Copied!"); }}><Copy size={14} /></Button>
+						</div>
+					</div>
+				)}
+				{showCreate && (
+					<div className="flex gap-2">
+						<Input placeholder="Key name" value={keyName} onChange={(e) => setKeyName(e.target.value)} className="max-w-xs" />
+						<Button size="sm" onClick={handleCreate} disabled={createMut.isPending}>{createMut.isPending ? "..." : "Create"}</Button>
+						<Button size="sm" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+					</div>
+				)}
+				{isLoading ? <p className="text-sm text-[var(--muted-foreground)]">Loading...</p> : !(data?.keys ?? []).length ? (
+					<p className="text-sm text-[var(--muted-foreground)]">No API keys yet.</p>
+				) : (
+					<div className="space-y-2">
+						{data!.keys.map((k) => (
+							<div key={k.id} className="flex items-center justify-between rounded border border-[var(--border)] px-3 py-2">
+								<div>
+									<p className="text-sm font-medium">{k.name}</p>
+									<p className="text-xs text-[var(--muted-foreground)]">{k.prefix}••• · {k.status} · {new Date(k.created_at).toLocaleDateString()}</p>
+								</div>
+								{k.status === "active" && (
+									<Button size="sm" variant="ghost" className="text-red-500" onClick={() => { if (confirm("Revoke this key?")) revokeMut.mutate(k.id, { onSuccess: () => toast.success("Revoked.") }); }}>
+										<XCircle size={14} /> Revoke
+									</Button>
+								)}
+							</div>
+						))}
+					</div>
+				)}
+			</CardContent>
+		</Card>
 	);
 }

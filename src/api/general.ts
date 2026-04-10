@@ -103,7 +103,7 @@ export function useAccount() {
 		queryKey: ["account"],
 		queryFn: () =>
 			apiClient.get<{
-				user: { id: number; name: string; email: string; role: number; created_at: string | null };
+				user: { id: number; name: string; email: string; role: number; avatar_url: string | null; created_at: string | null };
 			}>("/api/spa/account"),
 	});
 }

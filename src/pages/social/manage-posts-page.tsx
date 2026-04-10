@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Check, X, RotateCw, Trash2 } from "lucide-react";
 import { useSocialPosts } from "@/api/social";
+import { useApprovePost, useRejectPost, useRetryPost, useDeletePost } from "@/api/social-posts";
 import { PlatformIcon } from "./platform-icon";
+import { toast } from "sonner";
 
 const STATUSES = [
 	{ value: "", label: "All" },
@@ -93,6 +95,7 @@ export function ManagePostsPage() {
 										</div>
 									</div>
 									<StatusBadge status={post.status} />
+									<PostActions postId={post.id} status={post.status} />
 								</div>
 							))}
 						</div>
@@ -126,6 +129,40 @@ export function ManagePostsPage() {
 					)}
 				</CardContent>
 			</Card>
+		</div>
+	);
+}
+
+function PostActions({ postId, status }: { postId: number; status: string }) {
+	const approveMut = useApprovePost();
+	const rejectMut = useRejectPost();
+	const retryMut = useRetryPost();
+	const deleteMut = useDeletePost();
+
+	return (
+		<div className="flex shrink-0 gap-1">
+			{(status === "draft" || status === "scheduled") && (
+				<Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" title="Approve"
+					onClick={() => approveMut.mutate(postId, { onSuccess: () => toast.success("Approved"), onError: (e) => toast.error((e as { error?: string })?.error ?? "Failed") })}>
+					<Check size={14} />
+				</Button>
+			)}
+			{(status === "draft" || status === "scheduled") && (
+				<Button variant="ghost" size="icon" className="h-7 w-7 text-orange-500" title="Reject"
+					onClick={() => { if (confirm("Reject this post?")) rejectMut.mutate({ post_id: postId }, { onSuccess: () => toast.success("Rejected"), onError: (e) => toast.error((e as { error?: string })?.error ?? "Failed") }); }}>
+					<X size={14} />
+				</Button>
+			)}
+			{(status === "failed" || status === "partially_published") && (
+				<Button variant="ghost" size="icon" className="h-7 w-7 text-blue-600" title="Retry"
+					onClick={() => retryMut.mutate(postId, { onSuccess: () => toast.success("Queued for retry"), onError: (e) => toast.error((e as { error?: string })?.error ?? "Failed") })}>
+					<RotateCw size={14} />
+				</Button>
+			)}
+			<Button variant="ghost" size="icon" className="h-7 w-7 text-red-500" title="Delete"
+				onClick={() => { if (confirm("Delete this post?")) deleteMut.mutate(postId, { onSuccess: () => toast.success("Deleted"), onError: (e) => toast.error((e as { error?: string })?.error ?? "Failed") }); }}>
+				<Trash2 size={14} />
+			</Button>
 		</div>
 	);
 }
