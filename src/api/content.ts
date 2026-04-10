@@ -25,7 +25,8 @@ export function useAvailablePlans() {
 		queryKey: ["plans", "available"],
 		queryFn: () =>
 			apiClient.get<{
-				plans: { id: number; name: string; title: string; price: number; duration: string; credits: number; description: string; highlight: boolean }[];
+				plans: { id: number; name: string; title: string; price: number; duration: string; credits: number; description: string; highlight: boolean; tiers: { id: number; name: string; credits: number; price_per_credit: number; price: number; is_default: boolean }[] }[];
+				currency: string;
 			}>("/api/spa/plans/available"),
 	});
 }
