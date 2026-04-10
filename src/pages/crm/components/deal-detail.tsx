@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import {
   type ApiDeal,
   useCrmDealGet,
+  useCrmDealDelete,
   useCrmProjects,
   useCrmProjectSave,
   useCrmCommunicationAdd,
@@ -40,7 +41,18 @@ import {
   Send,
   RefreshCw,
   Unlink,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -58,6 +70,7 @@ interface DealDetailProps {
 
 export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
   const { data: detailData, isLoading } = useCrmDealGet(deal.id);
+  const deleteDeal = useCrmDealDelete();
   const saveProject = useCrmProjectSave();
   const { data: projectsData } = useCrmProjects();
   const addComm = useCrmCommunicationAdd();
@@ -70,6 +83,7 @@ export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("none");
   const [commMessage, setCommMessage] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const availableProjects = projectsData?.projects ?? [];
 
@@ -149,9 +163,20 @@ export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
             </span>
           )}
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-[var(--muted-foreground)] hover:text-red-500"
+            onClick={() => setDeleteOpen(true)}
+            title="Delete this deal"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Body */}
@@ -315,11 +340,11 @@ export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
 
             <Separator />
 
-            {/* Communication history */}
+            {/* Activity history */}
             <section>
               <h3 className="text-xs font-semibold uppercase text-[var(--muted-foreground)] flex items-center gap-1.5 mb-3">
                 <MessageSquare className="w-3.5 h-3.5" />
-                Communication
+                Activity
               </h3>
               {communications.length > 0 && (
                 <div className="space-y-3 mb-3">
@@ -343,7 +368,7 @@ export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
                 </div>
               )}
               {communications.length === 0 && (
-                <p className="text-xs text-[var(--muted-foreground)] mb-3">No communications yet.</p>
+                <p className="text-xs text-[var(--muted-foreground)] mb-3">No activity yet.</p>
               )}
               <div className="flex gap-2">
                 <Input
@@ -402,6 +427,35 @@ export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete deal confirmation */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this deal?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the deal "{deal.client_name}" and all its activity history. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                deleteDeal.mutate(deal.id, {
+                  onSuccess: () => {
+                    toast.success("Deal deleted");
+                    onClose();
+                  },
+                  onError: () => toast.error("Failed to delete deal"),
+                });
+              }}
+            >
+              Delete Deal
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
