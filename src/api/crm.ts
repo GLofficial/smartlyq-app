@@ -306,7 +306,7 @@ export function useCrmProjects() {
 
 export function useCrmProjectSave() {
   return useMutation({
-    mutationFn: (body: { id?: number; name: string; deal_id?: number }) =>
+    mutationFn: (body: { id?: number; name?: string; deal_id?: number }) =>
       apiClient.post<ApiSaveResponse>("/api/spa/crm/projects/save", body),
     onSuccess: () => { inv("projects"); inv("deals"); },
   });

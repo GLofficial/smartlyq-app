@@ -3,8 +3,8 @@ import { toast } from "sonner";
 import {
   type ApiDeal,
   useCrmDealGet,
-  useCrmDealSave,
   useCrmProjects,
+  useCrmProjectSave,
   useCrmCommunicationAdd,
 } from "@/api/crm";
 import { type StageConfig, formatCurrency } from "@/lib/crm-data";
@@ -56,7 +56,7 @@ interface DealDetailProps {
 
 export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
   const { data: detailData, isLoading } = useCrmDealGet(deal.id);
-  const saveDeal = useCrmDealSave();
+  const saveProject = useCrmProjectSave();
   const { data: projectsData } = useCrmProjects();
   const addComm = useCrmCommunicationAdd();
 
@@ -73,8 +73,8 @@ export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
 
   function handleAttachProject() {
     if (selectedProjectId === "none") return;
-    saveDeal.mutate(
-      { id: deal.id, project_id: Number(selectedProjectId) },
+    saveProject.mutate(
+      { id: Number(selectedProjectId), deal_id: deal.id },
       {
         onSuccess: () => {
           toast.success("Project attached");
