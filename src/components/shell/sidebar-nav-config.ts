@@ -69,6 +69,7 @@ export interface NavItem {
 	label: string;
 	path: string;
 	icon: LucideIcon;
+	children?: NavItem[];
 }
 
 export interface NavGroup {
@@ -83,7 +84,18 @@ export const NAV_GROUPS: NavGroup[] = [
 		label: "",
 		items: [
 			{ label: "Dashboard", path: "/my", icon: LayoutDashboard },
-			{ label: "CRM", path: "/my/crm", icon: Briefcase },
+			{
+				label: "Sales",
+				path: "/my/crm",
+				icon: Briefcase,
+				children: [
+					{ label: "Overview", path: "/my/crm", icon: LayoutDashboard },
+					{ label: "Pipeline", path: "/my/crm/pipeline", icon: LayoutGrid },
+					{ label: "Deliverables", path: "/my/crm/projects", icon: FolderOpen },
+					{ label: "Contacts", path: "/my/crm/contacts", icon: Users },
+					{ label: "Tasks", path: "/my/crm/tasks", icon: ClipboardList },
+				],
+			},
 		],
 	},
 	{
@@ -156,18 +168,6 @@ export const NAV_GROUPS: NavGroup[] = [
 			{ label: "Analytics", path: "/my/ad-manager/analytics", icon: BarChart3 },
 			{ label: "Audit Log", path: "/my/ad-manager/audit-log", icon: ScrollText },
 			{ label: "Settings", path: "/my/ad-manager/settings", icon: Settings },
-		],
-	},
-	{
-		label: "CRM",
-		icon: Briefcase,
-		path: "/my/crm",
-		items: [
-			{ label: "Dashboard", path: "/my/crm", icon: LayoutDashboard },
-			{ label: "Pipeline", path: "/my/crm/pipeline", icon: LayoutGrid },
-			{ label: "Projects", path: "/my/crm/projects", icon: FolderOpen },
-			{ label: "Contacts", path: "/my/crm/contacts", icon: Users },
-			{ label: "Tasks", path: "/my/crm/tasks", icon: ClipboardList },
 		],
 	},
 	{
