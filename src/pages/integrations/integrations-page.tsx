@@ -1,8 +1,8 @@
-import { useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, ExternalLink, RefreshCw } from "lucide-react";
+import { CheckCircle, XCircle, ExternalLink, RefreshCw, Unplug, RotateCw } from "lucide-react";
 import { useIntegrations } from "@/api/general";
+import { useStartOAuth, useDisconnectAccount, useSyncAccount } from "@/api/social-accounts";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { toast } from "sonner";
 import { queryClient } from "@/lib/query-client";
@@ -13,38 +13,30 @@ export function IntegrationsPage() {
 	const platforms = data?.platforms ?? {};
 	const connectedPlatforms = new Set(connected.map((c) => c.platform));
 
-	const handleConnect = useCallback((platform: string) => {
-		// Open OAuth in popup window — user stays in React app
-		const width = 600;
-		const height = 700;
-		const left = window.screenX + (window.outerWidth - width) / 2;
-		const top = window.screenY + (window.outerHeight - height) / 2;
+	const oauthMut = useStartOAuth();
+	const disconnectMut = useDisconnectAccount();
+	const syncMut = useSyncAccount();
 
-		const popup = window.open(
-			`/${platform}/login`,
-			`connect_${platform}`,
-			`width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`,
-		);
+	const handleConnect = (platform: string) => {
+		oauthMut.mutate(platform, {
+			onError: (e) => toast.error((e as { error?: string })?.error ?? "OAuth failed"),
+		});
+	};
 
-		if (!popup) {
-			toast.error("Popup blocked. Please allow popups for this site.");
-			return;
-		}
+	const handleDisconnect = (accountId: number, name: string) => {
+		if (!confirm(`Disconnect ${name}?`)) return;
+		disconnectMut.mutate(accountId, {
+			onSuccess: () => { toast.success("Disconnected."); queryClient.invalidateQueries({ queryKey: ["integrations"] }); },
+			onError: (e) => toast.error((e as { error?: string })?.error ?? "Failed"),
+		});
+	};
 
-		// Poll for popup close — when it closes, OAuth is complete
-		const timer = setInterval(() => {
-			if (popup.closed) {
-				clearInterval(timer);
-				// Refresh integrations data
-				queryClient.invalidateQueries({ queryKey: ["integrations"] });
-				queryClient.invalidateQueries({ queryKey: ["social"] });
-				toast.success(`${platform} connection flow completed. Refreshing...`);
-			}
-		}, 500);
-
-		// Clean up after 5 minutes
-		setTimeout(() => clearInterval(timer), 5 * 60 * 1000);
-	}, []);
+	const handleSync = (accountId: number) => {
+		syncMut.mutate(accountId, {
+			onSuccess: () => { toast.success("Synced."); queryClient.invalidateQueries({ queryKey: ["integrations"] }); },
+			onError: (e) => toast.error((e as { error?: string })?.error ?? "Sync failed"),
+		});
+	};
 
 	return (
 		<div className="space-y-6">
@@ -76,11 +68,19 @@ export function IntegrationsPage() {
 										<p className="truncate font-medium">{acc.account_name}</p>
 										<p className="text-xs capitalize text-[var(--muted-foreground)]">{acc.platform}</p>
 									</div>
-									{acc.token_status === "active" ? (
-										<CheckCircle size={18} className="text-green-500" />
-									) : (
-										<XCircle size={18} className="text-red-500" />
-									)}
+									<div className="flex items-center gap-1">
+										{acc.token_status === "active" ? (
+											<CheckCircle size={16} className="text-green-500" />
+										) : (
+											<XCircle size={16} className="text-red-500" />
+										)}
+										<Button variant="ghost" size="icon" className="h-7 w-7" title="Sync" onClick={() => handleSync(acc.id)}>
+											<RotateCw size={14} />
+										</Button>
+										<Button variant="ghost" size="icon" className="h-7 w-7 text-red-500" title="Disconnect" onClick={() => handleDisconnect(acc.id, acc.account_name)}>
+											<Unplug size={14} />
+										</Button>
+									</div>
 								</CardContent>
 							</Card>
 						))}
