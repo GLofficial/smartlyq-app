@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
-import { Pencil, Check, X } from "lucide-react";
+import { Pencil, Check, X, Plus, Copy, Trash2 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { queryClient } from "@/lib/query-client";
 import { useEditPlan } from "@/api/admin-pricing";
+import { useAdminPlanSave, useAdminPlanDelete, useAdminPlanDuplicate } from "@/api/admin-plans";
 import { PLAN_COLUMN_GROUPS } from "./admin-plans-config";
 import { toast } from "sonner";
 
@@ -18,7 +19,36 @@ export function AdminPlansPage() {
 	const [activeGroup, setActiveGroup] = useState(0);
 	const [editingPlan, setEditingPlan] = useState<number | null>(null);
 	const [editValues, setEditValues] = useState<Record<string, unknown>>({});
+	const [showCreate, setShowCreate] = useState(false);
+	const [newName, setNewName] = useState("");
+	const [newPrice, setNewPrice] = useState("0");
 	const editMutation = useEditPlan();
+	const createMut = useAdminPlanSave();
+	const deleteMut = useAdminPlanDelete();
+	const dupMut = useAdminPlanDuplicate();
+
+	const handleCreate = () => {
+		if (!newName.trim()) { toast.error("Name required"); return; }
+		createMut.mutate({ name: newName.trim(), price: parseFloat(newPrice) || 0, status: 1 }, {
+			onSuccess: () => { toast.success("Plan created."); setShowCreate(false); setNewName(""); setNewPrice("0"); queryClient.invalidateQueries({ queryKey: ["admin", "plans"] }); },
+			onError: () => toast.error("Failed to create."),
+		});
+	};
+
+	const handleDuplicate = (id: number) => {
+		dupMut.mutate(id, {
+			onSuccess: () => { toast.success("Plan duplicated."); queryClient.invalidateQueries({ queryKey: ["admin", "plans"] }); },
+			onError: () => toast.error("Failed to duplicate."),
+		});
+	};
+
+	const handleDelete = (id: number) => {
+		if (!confirm("Deactivate this plan?")) return;
+		deleteMut.mutate(id, {
+			onSuccess: () => { toast.success("Plan deactivated."); queryClient.invalidateQueries({ queryKey: ["admin", "plans"] }); },
+			onError: () => toast.error("Failed."),
+		});
+	};
 
 	const plans = data?.plans ?? [];
 	const group = PLAN_COLUMN_GROUPS[activeGroup];
@@ -52,8 +82,20 @@ export function AdminPlansPage() {
 		<div className="space-y-6">
 			<div className="flex items-center justify-between">
 				<h1 className="text-2xl font-bold">Plans and Pricing</h1>
-				<span className="text-sm text-[var(--muted-foreground)]">{plans.length} plans</span>
+				<div className="flex items-center gap-3">
+					<span className="text-sm text-[var(--muted-foreground)]">{plans.length} plans</span>
+					<Button size="sm" onClick={() => setShowCreate(!showCreate)}><Plus size={14} /> New Plan</Button>
+				</div>
 			</div>
+
+			{showCreate && (
+				<Card><CardContent className="flex items-center gap-3 py-4">
+					<Input placeholder="Plan name" value={newName} onChange={(e) => setNewName(e.target.value)} className="max-w-xs" />
+					<Input type="number" placeholder="Price" value={newPrice} onChange={(e) => setNewPrice(e.target.value)} className="w-24" />
+					<Button size="sm" onClick={handleCreate} disabled={createMut.isPending}>{createMut.isPending ? "..." : "Create"}</Button>
+					<Button size="sm" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+				</CardContent></Card>
+			)}
 
 			<div className="flex flex-wrap gap-2">
 				{PLAN_COLUMN_GROUPS.map((g, i) => (
@@ -122,7 +164,11 @@ export function AdminPlansPage() {
 															<Button variant="ghost" size="icon" className="h-7 w-7" onClick={cancelEdit}><X size={14} /></Button>
 														</div>
 													) : (
-														<Button variant="default" size="sm" onClick={() => startEdit(plan)}><Pencil size={12} className="mr-1" /> Edit</Button>
+														<div className="flex gap-1">
+																<Button variant="default" size="sm" onClick={() => startEdit(plan)}><Pencil size={12} /></Button>
+																<Button variant="ghost" size="icon" className="h-8 w-8" title="Duplicate" onClick={() => handleDuplicate(planId)}><Copy size={14} /></Button>
+																<Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" title="Deactivate" onClick={() => handleDelete(planId)}><Trash2 size={14} /></Button>
+															</div>
 													)}
 												</td>
 											</tr>
