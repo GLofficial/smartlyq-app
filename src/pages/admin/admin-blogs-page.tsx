@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RichEditor } from "@/components/ui/rich-editor";
 import { FileText, Plus, Pencil, Trash2, CheckCircle, XCircle, X } from "lucide-react";
 import {
 	useAdminBlogs,
@@ -123,13 +124,8 @@ function BlogForm({ id, onClose }: { id: number | null; onClose: () => void }) {
 					<Input value={categoryName} onChange={(e) => setCategoryName(e.target.value)} placeholder="e.g. Marketing, Tips" />
 				</div>
 				<div>
-					<label className="mb-1 block text-sm font-medium">Content (HTML)</label>
-					<textarea
-						className="w-full rounded-md border border-[var(--input)] bg-[var(--background)] px-3 py-2 text-sm min-h-[160px] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
-						value={description}
-						onChange={(e) => setDescription(e.target.value)}
-						placeholder="Blog content..."
-					/>
+					<label className="mb-1 block text-sm font-medium">Content</label>
+					<RichEditor value={description} onChange={setDescription} />
 				</div>
 				<div className="flex items-center gap-2">
 					<input type="checkbox" id="blog-status" checked={status === 1} onChange={(e) => setStatus(e.target.checked ? 1 : 0)} />
