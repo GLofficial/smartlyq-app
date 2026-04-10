@@ -77,7 +77,7 @@ export function ContactImportDialog({ open, onOpenChange }: Props) {
   function handleUploadPreview() {
     if (!file) return;
     const fd = new FormData();
-    fd.append("file", file);
+    fd.append("csv", file);
     previewMut.mutate(fd, {
       onSuccess: (data) => {
         setPreview(data);
@@ -103,7 +103,7 @@ export function ContactImportDialog({ open, onOpenChange }: Props) {
   function handleImport() {
     if (!file) return;
     const fd = new FormData();
-    fd.append("file", file);
+    fd.append("csv", file);
     fd.append("mapping", JSON.stringify(mapping));
     fd.append("mode", importMode);
     fd.append("dedup_field", dedupField);
@@ -204,29 +204,32 @@ function StepUpload(props: {
           <span className="text-[var(--muted-foreground)]">({fmt(file.size)})</span>
         </div>
       )}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-[var(--foreground)]">How to import contacts</label>
+        <Select value={importMode} onValueChange={onImportModeChange}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="create_and_update">Create and update existing contacts</SelectItem>
+            <SelectItem value="create_only">Create new contacts only</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {importMode === "create_and_update" && (
         <div className="space-y-2">
-          <label className="text-sm font-medium text-[var(--foreground)]">Import mode</label>
-          <Select value={importMode} onValueChange={onImportModeChange}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="create_and_update">Create and update contacts</SelectItem>
-              <SelectItem value="create_only">Create new only</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-[var(--foreground)]">Dedup field</label>
+          <label className="text-sm font-medium text-[var(--foreground)]">Find existing contacts based on</label>
           <Select value={dedupField} onValueChange={onDedupFieldChange}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="email">Email</SelectItem>
-              <SelectItem value="phone">Phone</SelectItem>
-              <SelectItem value="both">Both</SelectItem>
+              <SelectItem value="email">Email address</SelectItem>
+              <SelectItem value="phone">Phone number</SelectItem>
+              <SelectItem value="both">Email and phone</SelectItem>
             </SelectContent>
           </Select>
+          <p className="text-xs text-[var(--muted-foreground)]">
+            Existing contacts matching this field will be updated instead of duplicated.
+          </p>
         </div>
-      </div>
+      )}
       <div className="flex justify-end">
         <Button onClick={onUploadPreview} disabled={!file || isLoading}>
           {isLoading ? (<><Loader2 className="w-4 h-4 mr-1.5 animate-spin" />Uploading...</>) : "Upload & Preview"}
