@@ -33,14 +33,27 @@ export function SidebarSection({ group, collapsed }: SidebarSectionProps) {
 		);
 	}
 
-	// Collapsed sidebar: always show icons (no label toggle)
+	// Collapsed sidebar: show single group icon only
 	if (collapsed) {
+		if (!group.icon) return null;
+		const Icon = group.icon;
+		const groupActive = group.items.some(
+			(item) => location.pathname === item.path || location.pathname.startsWith(item.path + "/"),
+		);
 		return (
-			<div className="mb-1">
-				<div className="mx-3 my-2 border-t border-[var(--sidebar-border)]" />
-				{group.items.map((item) => (
-					<NavLink key={item.path} item={item} collapsed />
-				))}
+			<div className="mb-0.5">
+				<Link
+					to={group.path || group.items[0]?.path || "/"}
+					title={group.label}
+					className={cn(
+						"flex items-center justify-center rounded-md px-2 py-1.5 transition-colors",
+						groupActive
+							? "bg-[color-mix(in_srgb,var(--sidebar-primary)_10%,transparent)] text-[var(--sidebar-primary)]"
+							: "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]",
+					)}
+				>
+					<Icon size={18} className="shrink-0" />
+				</Link>
 			</div>
 		);
 	}

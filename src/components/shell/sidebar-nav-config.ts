@@ -73,6 +73,8 @@ export interface NavItem {
 
 export interface NavGroup {
 	label: string;
+	icon?: LucideIcon;
+	path?: string;
 	items: NavItem[];
 }
 
@@ -83,6 +85,8 @@ export const NAV_GROUPS: NavGroup[] = [
 	},
 	{
 		label: "CREATE",
+		icon: Sparkles,
+		path: "/my/captain",
 		items: [
 			{ label: "AI Captain", path: "/my/captain", icon: Sparkles },
 			{ label: "Assistant", path: "/my/chat", icon: MessageSquare },
@@ -104,6 +108,8 @@ export const NAV_GROUPS: NavGroup[] = [
 	},
 	{
 		label: "PUBLISH",
+		icon: PenSquare,
+		path: "/my/social-media/create-post",
 		items: [
 			{ label: "Create Post", path: "/my/social-media/create-post", icon: PenSquare },
 			{ label: "Content Calendar", path: "/my/social-media/calendar", icon: CalendarDays },
@@ -118,6 +124,8 @@ export const NAV_GROUPS: NavGroup[] = [
 	},
 	{
 		label: "ANALYZE",
+		icon: BarChart3,
+		path: "/my/social-media/analytics",
 		items: [
 			{ label: "Analytics", path: "/my/social-media/analytics", icon: BarChart3 },
 			{ label: "Reports", path: "/my/social-media/report", icon: FileBarChart },
@@ -133,6 +141,8 @@ export const NAV_GROUPS: NavGroup[] = [
 	},
 	{
 		label: "AD MANAGER",
+		icon: Megaphone,
+		path: "/my/ad-manager",
 		items: [
 			{ label: "Dashboard", path: "/my/ad-manager", icon: Megaphone },
 			{ label: "Campaigns", path: "/my/ad-manager/campaigns", icon: Folders },
@@ -147,6 +157,8 @@ export const NAV_GROUPS: NavGroup[] = [
 	},
 	{
 		label: "CONNECT",
+		icon: Plug,
+		path: "/my/integrations",
 		items: [
 			{ label: "Integrations", path: "/my/integrations", icon: Plug },
 			{ label: "URL Shortener", path: "/my/url-shortener", icon: Link2 },
@@ -155,6 +167,8 @@ export const NAV_GROUPS: NavGroup[] = [
 	},
 	{
 		label: "AUTOMATE",
+		icon: Bot,
+		path: "/my/chatbot",
 		items: [
 			{ label: "Chatbot", path: "/my/chatbot", icon: Bot },
 			{ label: "Templates", path: "/my/chatbot/templates", icon: FileText },
@@ -166,6 +180,8 @@ export const NAV_GROUPS: NavGroup[] = [
 	},
 	{
 		label: "WORKSPACE",
+		icon: Building2,
+		path: "/my/workspace",
 		items: [
 			{ label: "Overview", path: "/my/workspace", icon: Building2 },
 			{ label: "Members", path: "/my/workspace/members", icon: Users },
@@ -179,6 +195,8 @@ export const NAV_GROUPS: NavGroup[] = [
 	},
 	{
 		label: "WHITELABEL",
+		icon: Globe,
+		path: "/my/whitelabel",
 		items: [
 			{ label: "Settings", path: "/my/whitelabel", icon: Globe },
 			{ label: "Agency", path: "/my/agency", icon: Building2 },
@@ -190,6 +208,8 @@ export const NAV_GROUPS: NavGroup[] = [
 
 export const ADMIN_GROUP: NavGroup = {
 	label: "ADMIN",
+	icon: Shield,
+	path: "/admin",
 	items: [
 		{ label: "Dashboard", path: "/admin", icon: Shield },
 		{ label: "Users", path: "/admin/users", icon: Users },
