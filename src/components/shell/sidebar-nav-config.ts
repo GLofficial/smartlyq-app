@@ -156,6 +156,18 @@ export const NAV_GROUPS: NavGroup[] = [
 		],
 	},
 	{
+		label: "DEAL FLOW",
+		icon: Briefcase,
+		path: "/my/deal-flow",
+		items: [
+			{ label: "Dashboard", path: "/my/deal-flow", icon: LayoutDashboard },
+			{ label: "Pipeline", path: "/my/deal-flow/pipeline", icon: LayoutGrid },
+			{ label: "Projects", path: "/my/deal-flow/projects", icon: FolderOpen },
+			{ label: "Contacts", path: "/my/deal-flow/contacts", icon: Users },
+			{ label: "Tasks", path: "/my/deal-flow/tasks", icon: ClipboardList },
+		],
+	},
+	{
 		label: "CONNECT",
 		icon: Plug,
 		path: "/my/integrations",
