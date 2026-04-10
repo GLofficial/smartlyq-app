@@ -97,11 +97,11 @@ export function SidebarSection({ group, collapsed }: SidebarSectionProps) {
 				/>
 			</button>
 
-			{/* Collapsible items */}
+			{/* Collapsible items — same nested style as Sales submenu */}
 			{open && (
-				<div className="mt-0.5 space-y-0.5">
+				<div className="ml-6 mt-0.5 space-y-0.5 border-l border-[var(--sidebar-border)] pl-3">
 					{group.items.map((item) => (
-						<NavLink key={item.path} item={item} collapsed={false} />
+						<SubNavLink key={item.path} item={item} />
 					))}
 				</div>
 			)}
@@ -173,32 +173,40 @@ function ExpandableNavItem({
 
 			{open && (
 				<div className="ml-6 mt-0.5 space-y-0.5 border-l border-[var(--sidebar-border)] pl-3">
-					{children.map((child) => {
-						const ChildIcon = child.icon;
-						const active =
-							child.path === "/my/crm"
-								? location.pathname === "/my/crm"
-								: location.pathname === child.path ||
-									location.pathname.startsWith(child.path + "/");
-						return (
-							<Link
-								key={child.path}
-								to={child.path}
-								className={cn(
-									"flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
-									active
-										? "bg-[color-mix(in_srgb,var(--sidebar-primary)_10%,transparent)] text-[var(--sidebar-primary)] font-medium"
-										: "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]",
-								)}
-							>
-								<ChildIcon size={16} className="shrink-0" />
-								<span className="truncate">{child.label}</span>
-							</Link>
-						);
-					})}
+					{children.map((child) => (
+						<SubNavLink key={child.path} item={child} />
+					))}
 				</div>
 			)}
 		</div>
+	);
+}
+
+/** Sub-item inside an expanded section or expandable parent */
+function SubNavLink({ item }: { item: NavItem }) {
+	const location = useLocation();
+	const fullPath = location.pathname + location.search;
+	const active = item.path.includes("?")
+		? fullPath === item.path || fullPath.startsWith(item.path + "&")
+		: item.path === "/my/crm"
+			? location.pathname === "/my/crm"
+			: location.pathname === item.path;
+
+	const Icon = item.icon;
+
+	return (
+		<Link
+			to={item.path}
+			className={cn(
+				"flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
+				active
+					? "bg-[color-mix(in_srgb,var(--sidebar-primary)_10%,transparent)] text-[var(--sidebar-primary)] font-medium"
+					: "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]",
+			)}
+		>
+			<Icon size={16} className="shrink-0" />
+			<span className="truncate">{item.label}</span>
+		</Link>
 	);
 }
 
