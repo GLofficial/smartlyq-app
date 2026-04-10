@@ -48,7 +48,7 @@ export function NewDealDialog({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!clientName.trim()) return;
+    if (!clientName.trim() || saveDeal.isPending) return;
 
     saveDeal.mutate(
       {
@@ -58,7 +58,6 @@ export function NewDealDialog({
         value: parseFloat(value) || 0,
         stage,
         notes: notes.trim(),
-        project_id: projectId && projectId !== "none" ? Number(projectId) : null,
       },
       {
         onSuccess: () => {
@@ -189,7 +188,9 @@ export function NewDealDialog({
             >
               Cancel
             </Button>
-            <Button type="submit">Create Deal</Button>
+            <Button type="submit" disabled={saveDeal.isPending}>
+              {saveDeal.isPending ? "Creating..." : "Create Deal"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
