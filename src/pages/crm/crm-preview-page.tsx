@@ -14,6 +14,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useCrmContentItemStatus } from "@/api/crm";
+import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
 // Status styles
@@ -74,20 +75,32 @@ export function CrmPreviewPage() {
 
   function handleApprove(item: ApiContentItem) {
     if (!project) return;
-    statusMutation.mutate({
-      id: item.id,
-      project_id: project.id,
-      status: "approved",
-    });
+    statusMutation.mutate(
+      {
+        id: item.id,
+        project_id: project.id,
+        status: "approved",
+      },
+      {
+        onSuccess: () => toast.success("Content approved"),
+        onError: () => toast.error("Failed to approve content"),
+      },
+    );
   }
 
   function handleRequestChanges(item: ApiContentItem) {
     if (!project) return;
-    statusMutation.mutate({
-      id: item.id,
-      project_id: project.id,
-      status: "draft",
-    });
+    statusMutation.mutate(
+      {
+        id: item.id,
+        project_id: project.id,
+        status: "draft",
+      },
+      {
+        onSuccess: () => toast.success("Changes requested"),
+        onError: () => toast.error("Failed to request changes"),
+      },
+    );
   }
 
   return (

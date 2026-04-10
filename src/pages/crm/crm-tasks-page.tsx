@@ -54,6 +54,7 @@ import {
   GripVertical,
   Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { TaskCard } from "./components/task-card";
 import { TaskDetailSheet } from "./components/task-detail-sheet";
 
@@ -134,7 +135,13 @@ export function CrmTasksPage() {
 
   function handleDrop(status: TaskStatus) {
     if (draggingId === null) return;
-    saveTask.mutate({ id: draggingId, status });
+    saveTask.mutate(
+      { id: draggingId, status },
+      {
+        onSuccess: () => toast.success("Task moved"),
+        onError: () => toast.error("Failed to move task"),
+      },
+    );
     setDraggingId(null);
   }
 
@@ -149,13 +156,26 @@ export function CrmTasksPage() {
   }
 
   function bulkDelete() {
-    bulkIds.forEach((id) => deleteTaskMut.mutate(id));
+    const count = bulkIds.size;
+    bulkIds.forEach((id) =>
+      deleteTaskMut.mutate(id, {
+        onError: () => toast.error("Failed to delete a task"),
+      }),
+    );
+    toast.success(`${count} task${count !== 1 ? "s" : ""} deleted`);
     setBulkIds(new Set());
     setBulkMode(false);
   }
 
   function bulkChangeStatus(status: TaskStatus) {
-    bulkIds.forEach((id) => saveTask.mutate({ id, status }));
+    const count = bulkIds.size;
+    bulkIds.forEach((id) =>
+      saveTask.mutate(
+        { id, status },
+        { onError: () => toast.error("Failed to update a task") },
+      ),
+    );
+    toast.success(`${count} task${count !== 1 ? "s" : ""} marked done`);
     setBulkIds(new Set());
     setBulkMode(false);
   }
@@ -163,17 +183,25 @@ export function CrmTasksPage() {
   // --- Create task ---
   function handleCreate() {
     if (!formTitle.trim()) return;
-    saveTask.mutate({
-      title: formTitle.trim(),
-      description: formDesc.trim(),
-      status: "todo",
-      priority: formPriority,
-      due_date: formDueDate,
-      linked_deal_id: formDealId !== "none" ? Number(formDealId) : null,
-      linked_contact_id: formContactId !== "none" ? Number(formContactId) : null,
-    });
-    resetForm();
-    setCreateOpen(false);
+    saveTask.mutate(
+      {
+        title: formTitle.trim(),
+        description: formDesc.trim(),
+        status: "todo",
+        priority: formPriority,
+        due_date: formDueDate,
+        linked_deal_id: formDealId !== "none" ? Number(formDealId) : null,
+        linked_contact_id: formContactId !== "none" ? Number(formContactId) : null,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Task created");
+          resetForm();
+          setCreateOpen(false);
+        },
+        onError: () => toast.error("Failed to create task"),
+      },
+    );
   }
 
   function resetForm() {
@@ -479,8 +507,17 @@ export function CrmTasksPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (deleteTarget) deleteTaskMut.mutate(deleteTarget.id);
-                setDeleteTarget(null);
+                if (deleteTarget) {
+                  deleteTaskMut.mutate(deleteTarget.id, {
+                    onSuccess: () => {
+                      toast.success("Task deleted");
+                      setDeleteTarget(null);
+                    },
+                    onError: () => toast.error("Failed to delete task"),
+                  });
+                } else {
+                  setDeleteTarget(null);
+                }
               }}
               className="bg-red-600 hover:bg-red-700"
             >

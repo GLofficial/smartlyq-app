@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import {
   useCrmTaskSave,
   type ApiTask,
@@ -86,10 +87,16 @@ export function TaskDetailSheet({ task, deals, contacts, onClose }: TaskDetailSh
     if (!task) return;
     if (timerRunning && timerStart) {
       const elapsed = Math.round((Date.now() - timerStart) / 60000);
-      saveTask.mutate({
-        id: task.id,
-        time_tracked_minutes: task.time_tracked_minutes + elapsed,
-      });
+      saveTask.mutate(
+        {
+          id: task.id,
+          time_tracked_minutes: task.time_tracked_minutes + elapsed,
+        },
+        {
+          onSuccess: () => toast.success("Time tracked"),
+          onError: () => toast.error("Failed to save time"),
+        },
+      );
       setTimerRunning(false);
       setTimerStart(null);
     } else {
@@ -100,41 +107,77 @@ export function TaskDetailSheet({ task, deals, contacts, onClose }: TaskDetailSh
 
   function handleStatusChange(status: TaskStatus) {
     if (!task) return;
-    saveTask.mutate({ id: task.id, status });
+    saveTask.mutate(
+      { id: task.id, status },
+      {
+        onSuccess: () => toast.success("Status updated"),
+        onError: () => toast.error("Failed to update status"),
+      },
+    );
   }
 
   function handlePriorityChange(priority: TaskPriority) {
     if (!task) return;
-    saveTask.mutate({ id: task.id, priority });
+    saveTask.mutate(
+      { id: task.id, priority },
+      {
+        onSuccess: () => toast.success("Priority updated"),
+        onError: () => toast.error("Failed to update priority"),
+      },
+    );
   }
 
   function handleDueDateChange(date: string) {
     if (!task) return;
-    saveTask.mutate({ id: task.id, due_date: date });
+    saveTask.mutate(
+      { id: task.id, due_date: date },
+      {
+        onSuccess: () => toast.success("Due date updated"),
+        onError: () => toast.error("Failed to update due date"),
+      },
+    );
   }
 
   function handleLinkedDealChange(dealId: string) {
     if (!task) return;
-    saveTask.mutate({
-      id: task.id,
-      linked_deal_id: dealId === "none" ? null : Number(dealId),
-    });
+    saveTask.mutate(
+      {
+        id: task.id,
+        linked_deal_id: dealId === "none" ? null : Number(dealId),
+      },
+      {
+        onSuccess: () => toast.success("Linked deal updated"),
+        onError: () => toast.error("Failed to update linked deal"),
+      },
+    );
   }
 
   function handleLinkedContactChange(contactId: string) {
     if (!task) return;
-    saveTask.mutate({
-      id: task.id,
-      linked_contact_id: contactId === "none" ? null : Number(contactId),
-    });
+    saveTask.mutate(
+      {
+        id: task.id,
+        linked_contact_id: contactId === "none" ? null : Number(contactId),
+      },
+      {
+        onSuccess: () => toast.success("Linked contact updated"),
+        onError: () => toast.error("Failed to update linked contact"),
+      },
+    );
   }
 
   function handleRecurrenceChange(freq: string) {
     if (!task) return;
-    saveTask.mutate({
-      id: task.id,
-      recurrence: freq === "none" ? null : freq,
-    });
+    saveTask.mutate(
+      {
+        id: task.id,
+        recurrence: freq === "none" ? null : freq,
+      },
+      {
+        onSuccess: () => toast.success("Recurrence updated"),
+        onError: () => toast.error("Failed to update recurrence"),
+      },
+    );
   }
 
   // Subtasks
@@ -143,37 +186,70 @@ export function TaskDetailSheet({ task, deals, contacts, onClose }: TaskDetailSh
     const updated = task.subtasks.map((s, i) =>
       i === idx ? { ...s, done: !s.done } : s,
     );
-    saveTask.mutate({ id: task.id, subtasks: updated });
+    saveTask.mutate(
+      { id: task.id, subtasks: updated },
+      {
+        onError: () => toast.error("Failed to update subtask"),
+      },
+    );
   }
 
   function addSubtask() {
     if (!task || !newSubtask.trim()) return;
-    saveTask.mutate({
-      id: task.id,
-      subtasks: [...task.subtasks, { title: newSubtask.trim(), done: false }],
-    });
-    setNewSubtask("");
+    saveTask.mutate(
+      {
+        id: task.id,
+        subtasks: [...task.subtasks, { title: newSubtask.trim(), done: false }],
+      },
+      {
+        onSuccess: () => {
+          toast.success("Subtask added");
+          setNewSubtask("");
+        },
+        onError: () => toast.error("Failed to add subtask"),
+      },
+    );
   }
 
   function removeSubtask(idx: number) {
     if (!task) return;
-    saveTask.mutate({
-      id: task.id,
-      subtasks: task.subtasks.filter((_, i) => i !== idx),
-    });
+    saveTask.mutate(
+      {
+        id: task.id,
+        subtasks: task.subtasks.filter((_, i) => i !== idx),
+      },
+      {
+        onSuccess: () => toast.success("Subtask removed"),
+        onError: () => toast.error("Failed to remove subtask"),
+      },
+    );
   }
 
   // Tags
   function addTag() {
     if (!task || !newTag.trim()) return;
     if (task.tags.includes(newTag.trim())) return;
-    saveTask.mutate({ id: task.id, tags: [...task.tags, newTag.trim()] });
-    setNewTag("");
+    saveTask.mutate(
+      { id: task.id, tags: [...task.tags, newTag.trim()] },
+      {
+        onSuccess: () => {
+          toast.success("Tag added");
+          setNewTag("");
+        },
+        onError: () => toast.error("Failed to add tag"),
+      },
+    );
   }
 
   function removeTag(tag: string) {
     if (!task) return;
-    saveTask.mutate({ id: task.id, tags: task.tags.filter((t) => t !== tag) });
+    saveTask.mutate(
+      { id: task.id, tags: task.tags.filter((t) => t !== tag) },
+      {
+        onSuccess: () => toast.success("Tag removed"),
+        onError: () => toast.error("Failed to remove tag"),
+      },
+    );
   }
 
   return (

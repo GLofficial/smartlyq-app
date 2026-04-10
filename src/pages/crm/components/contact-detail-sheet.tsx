@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   useCrmContactSave,
   type ApiContact,
@@ -67,34 +68,62 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
 
   function handleSave() {
     if (!contact) return;
-    saveContact.mutate({
-      id: contact.id,
-      first_name: editFirstName.trim(),
-      last_name: editLastName.trim(),
-      email: editEmail.trim(),
-      phone: editPhone.trim(),
-      company: editCompany.trim(),
-      role: editRole.trim(),
-    });
-    setEditing(false);
+    saveContact.mutate(
+      {
+        id: contact.id,
+        first_name: editFirstName.trim(),
+        last_name: editLastName.trim(),
+        email: editEmail.trim(),
+        phone: editPhone.trim(),
+        company: editCompany.trim(),
+        role: editRole.trim(),
+      },
+      {
+        onSuccess: () => {
+          toast.success("Contact saved");
+          setEditing(false);
+        },
+        onError: () => toast.error("Failed to save contact"),
+      },
+    );
   }
 
   function handleStatusChange(status: ApiContact["status"]) {
     if (!contact) return;
-    saveContact.mutate({ id: contact.id, status });
+    saveContact.mutate(
+      { id: contact.id, status },
+      {
+        onSuccess: () => toast.success("Status updated"),
+        onError: () => toast.error("Failed to update status"),
+      },
+    );
   }
 
   function handleAddTag() {
     if (!contact || !newTag.trim()) return;
     const tag = newTag.trim().toLowerCase();
     if (contact.tags.includes(tag)) { setNewTag(""); return; }
-    saveContact.mutate({ id: contact.id, tags: [...contact.tags, tag] });
-    setNewTag("");
+    saveContact.mutate(
+      { id: contact.id, tags: [...contact.tags, tag] },
+      {
+        onSuccess: () => {
+          toast.success("Tag added");
+          setNewTag("");
+        },
+        onError: () => toast.error("Failed to add tag"),
+      },
+    );
   }
 
   function handleRemoveTag(tag: string) {
     if (!contact) return;
-    saveContact.mutate({ id: contact.id, tags: contact.tags.filter((t) => t !== tag) });
+    saveContact.mutate(
+      { id: contact.id, tags: contact.tags.filter((t) => t !== tag) },
+      {
+        onSuccess: () => toast.success("Tag removed"),
+        onError: () => toast.error("Failed to remove tag"),
+      },
+    );
   }
 
   return (

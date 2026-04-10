@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   type ApiDeal,
   useCrmDealGet,
@@ -72,19 +73,35 @@ export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
 
   function handleAttachProject() {
     if (selectedProjectId === "none") return;
-    saveDeal.mutate({ id: deal.id, project_id: Number(selectedProjectId) });
-    setProjectDialogOpen(false);
-    setSelectedProjectId("none");
+    saveDeal.mutate(
+      { id: deal.id, project_id: Number(selectedProjectId) },
+      {
+        onSuccess: () => {
+          toast.success("Project attached");
+          setProjectDialogOpen(false);
+          setSelectedProjectId("none");
+        },
+        onError: () => toast.error("Failed to attach project"),
+      },
+    );
   }
 
   function handleAddComm() {
     if (!commMessage.trim()) return;
-    addComm.mutate({
-      deal_id: deal.id,
-      message: commMessage.trim(),
-      sender: "You",
-    });
-    setCommMessage("");
+    addComm.mutate(
+      {
+        deal_id: deal.id,
+        message: commMessage.trim(),
+        sender: "You",
+      },
+      {
+        onSuccess: () => {
+          toast.success("Note added");
+          setCommMessage("");
+        },
+        onError: () => toast.error("Failed to add note"),
+      },
+    );
   }
 
   return (

@@ -17,6 +17,7 @@ import { NewDealDialog } from "./new-deal-dialog";
 import { PipelineHeader } from "./pipeline-header";
 import { StageManager } from "./stage-manager";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export function KanbanBoard() {
   const { data: dealsData, isLoading: dealsLoading } = useCrmDeals();
@@ -60,7 +61,13 @@ export function KanbanBoard() {
 
   function handleDrop(stage: string) {
     if (dragDealId !== null) {
-      saveDeal.mutate({ id: dragDealId, stage });
+      saveDeal.mutate(
+        { id: dragDealId, stage },
+        {
+          onSuccess: () => toast.success("Deal moved"),
+          onError: () => toast.error("Failed to move deal"),
+        },
+      );
     }
     setDragDealId(null);
     setDragOverStage(null);
@@ -77,7 +84,10 @@ export function KanbanBoard() {
       color: config[key]?.color ?? "220 14% 46%",
       sort_order: idx,
     }));
-    saveStages.mutate(apiStages);
+    saveStages.mutate(apiStages, {
+      onSuccess: () => toast.success("Stages updated"),
+      onError: () => toast.error("Failed to update stages"),
+    });
   }
 
   if (dealsLoading || stagesLoading) {

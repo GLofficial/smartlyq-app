@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { useCrmDealSave, useCrmProjects } from "@/api/crm";
 import {
   Dialog,
@@ -49,17 +50,25 @@ export function NewDealDialog({
     e.preventDefault();
     if (!clientName.trim()) return;
 
-    saveDeal.mutate({
-      client_name: clientName.trim(),
-      client_email: clientEmail.trim(),
-      client_company: clientCompany.trim(),
-      value: parseFloat(value) || 0,
-      stage,
-      notes: notes.trim(),
-      project_id: projectId && projectId !== "none" ? Number(projectId) : null,
-    });
-    resetForm();
-    onOpenChange(false);
+    saveDeal.mutate(
+      {
+        client_name: clientName.trim(),
+        client_email: clientEmail.trim(),
+        client_company: clientCompany.trim(),
+        value: parseFloat(value) || 0,
+        stage,
+        notes: notes.trim(),
+        project_id: projectId && projectId !== "none" ? Number(projectId) : null,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Deal created");
+          resetForm();
+          onOpenChange(false);
+        },
+        onError: () => toast.error("Failed to create deal"),
+      },
+    );
   }
 
   function resetForm() {

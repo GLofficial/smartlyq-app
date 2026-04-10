@@ -51,6 +51,7 @@ import {
   Building2,
   Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { ContactDetailSheet } from "./components/contact-detail-sheet";
 
 // ---------------------------------------------------------------------------
@@ -156,17 +157,25 @@ export function CrmContactsPage() {
 
   function handleCreate() {
     if (!validateForm()) return;
-    saveContact.mutate({
-      first_name: formFirstName.trim(),
-      last_name: formLastName.trim(),
-      email: formEmail.trim(),
-      company: formCompany.trim(),
-      phone: formPhone.trim(),
-      role: formRole.trim(),
-      status: formStatus,
-    });
-    resetForm();
-    setCreateOpen(false);
+    saveContact.mutate(
+      {
+        first_name: formFirstName.trim(),
+        last_name: formLastName.trim(),
+        email: formEmail.trim(),
+        company: formCompany.trim(),
+        phone: formPhone.trim(),
+        role: formRole.trim(),
+        status: formStatus,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Contact created");
+          resetForm();
+          setCreateOpen(false);
+        },
+        onError: () => toast.error("Failed to create contact"),
+      },
+    );
   }
 
   function resetForm() {
@@ -182,8 +191,13 @@ export function CrmContactsPage() {
 
   function handleDelete() {
     if (!deleteTarget) return;
-    deleteContactMut.mutate(deleteTarget.id);
-    setDeleteTarget(null);
+    deleteContactMut.mutate(deleteTarget.id, {
+      onSuccess: () => {
+        toast.success("Contact deleted");
+        setDeleteTarget(null);
+      },
+      onError: () => toast.error("Failed to delete contact"),
+    });
   }
 
   const selectedContact = selectedContactId
