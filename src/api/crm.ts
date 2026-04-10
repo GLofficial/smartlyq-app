@@ -1,0 +1,495 @@
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
+import { queryClient } from "@/lib/query-client";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export interface ApiStage {
+  id: number;
+  stage_key: string;
+  label: string;
+  color: string;
+  sort_order: number;
+}
+
+export interface ApiDeal {
+  id: number;
+  client_name: string;
+  client_email: string;
+  client_company: string;
+  value: number;
+  stage: string;
+  next_action_date: string | null;
+  notes: string;
+  project_id: number | null;
+  project_name: string | null;
+  created_at: string;
+}
+
+export interface ApiCommunication {
+  id: number;
+  deal_id: number;
+  message: string;
+  sender: string;
+  comm_date: string;
+}
+
+export interface ApiContentItem {
+  id: number;
+  title: string;
+  type: string;
+  status: string;
+  word_count: number;
+  content: string;
+  sort_order: number;
+}
+
+export interface ApiProject {
+  id: number;
+  name: string;
+  deal_id: number | null;
+  deal_name: string | null;
+  item_count: number;
+  created_at: string;
+}
+
+export interface ApiDealDetail {
+  deal: ApiDeal;
+  communications: ApiCommunication[];
+  project: (ApiProject & { content_items: ApiContentItem[] }) | null;
+}
+
+export interface ApiContact {
+  id: number;
+  name: string;
+  email: string;
+  company: string;
+  phone: string;
+  role: string;
+  status: string;
+  initials: string;
+  tags: string[];
+  deal_count: number;
+  total_value: number;
+  last_contacted_at: string | null;
+  created_at: string;
+}
+
+export interface ApiContactDetail {
+  contact: ApiContact;
+  deal_ids: number[];
+}
+
+export interface ApiTask {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  due_date: string | null;
+  linked_deal_id: number | null;
+  linked_contact_id: number | null;
+  tags: string[];
+  subtasks: { title: string; done: boolean }[];
+  recurrence: string | null;
+  time_tracked_minutes: number;
+  created_at: string;
+}
+
+export interface ApiDealCountByStage {
+  stage: string;
+  count: number;
+  value: number;
+}
+
+export interface ApiDashboardCrm {
+  total_pipeline_value: number;
+  won_revenue: number;
+  deal_count_by_stage: ApiDealCountByStage[];
+  active_deals_count: number;
+  total_contacts: number;
+  total_tasks: number;
+  open_tasks: number;
+  overdue_tasks: number;
+  tasks_due_this_week: number;
+  recent_activity: Record<string, unknown>[];
+}
+
+export interface ApiSaveResponse {
+  message: string;
+  id?: number;
+}
+
+// ---------------------------------------------------------------------------
+// Invalidation helpers
+// ---------------------------------------------------------------------------
+
+const inv = (key: string) =>
+  queryClient.invalidateQueries({ queryKey: ["crm", key] });
+
+export const invalidateAllCrm = () =>
+  queryClient.invalidateQueries({ queryKey: ["crm"] });
+
+// ---------------------------------------------------------------------------
+// Stages
+// ---------------------------------------------------------------------------
+
+export function useCrmStages() {
+  return useQuery({
+    queryKey: ["crm", "stages"],
+    queryFn: () =>
+      apiClient.get<{ stages: ApiStage[] }>("/api/spa/crm/stages"),
+  });
+}
+
+export function useCrmStagesSave() {
+  return useMutation({
+    mutationFn: (stages: Omit<ApiStage, "id">[]) =>
+      apiClient.post<ApiSaveResponse>("/api/spa/crm/stages/save", { stages }),
+    onSuccess: () => {
+      inv("stages");
+      inv("deals");
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Deals
+// ---------------------------------------------------------------------------
+
+export function useCrmDeals(stage?: string) {
+  return useQuery({
+    queryKey: ["crm", "deals", stage ?? "all"],
+    queryFn: () => {
+      const url = stage
+        ? `/api/spa/crm/deals?stage=${encodeURIComponent(stage)}`
+        : "/api/spa/crm/deals";
+      return apiClient.get<{ deals: ApiDeal[] }>(url);
+    },
+  });
+}
+
+export function useCrmDealGet(id: number | null) {
+  return useQuery({
+    queryKey: ["crm", "deal", id],
+    queryFn: () =>
+      apiClient.get<ApiDealDetail>(`/api/spa/crm/deals/get?id=${id}`),
+    enabled: id !== null,
+  });
+}
+
+export function useCrmDealSave() {
+  return useMutation({
+    mutationFn: (body: Partial<ApiDeal>) =>
+      apiClient.post<ApiSaveResponse>("/api/spa/crm/deals/save", body),
+    onMutate: async (body) => {
+      // Optimistic update for kanban stage drag-drop
+      if (!body.id || !body.stage) return;
+
+      await queryClient.cancelQueries({ queryKey: ["crm", "deals"] });
+
+      const queries = queryClient.getQueriesData<{ deals: ApiDeal[] }>({
+        queryKey: ["crm", "deals"],
+      });
+
+      const snapshots = queries.map(([key, data]) => ({ key, data }));
+
+      for (const [key, data] of queries) {
+        if (!data?.deals) continue;
+        queryClient.setQueryData(key, {
+          ...data,
+          deals: data.deals.map((d) =>
+            d.id === body.id ? { ...d, stage: body.stage! } : d,
+          ),
+        });
+      }
+
+      return { snapshots };
+    },
+    onError: (_err, _body, ctx) => {
+      if (ctx?.snapshots) {
+        for (const { key, data } of ctx.snapshots) {
+          queryClient.setQueryData(key, data);
+        }
+      }
+    },
+    onSettled: () => {
+      inv("deals");
+      inv("dashboard");
+    },
+  });
+}
+
+export function useCrmDealDelete() {
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiClient.post<ApiSaveResponse>("/api/spa/crm/deals/delete", { id }),
+    onSuccess: () => {
+      inv("deals");
+      inv("dashboard");
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Contacts
+// ---------------------------------------------------------------------------
+
+export function useCrmContacts(params?: {
+  status?: string;
+  search?: string;
+}) {
+  return useQuery({
+    queryKey: ["crm", "contacts", params ?? {}],
+    queryFn: () => {
+      const sp = new URLSearchParams();
+      if (params?.status) sp.set("status", params.status);
+      if (params?.search) sp.set("search", params.search);
+      const qs = sp.toString();
+      return apiClient.get<{ contacts: ApiContact[] }>(
+        `/api/spa/crm/contacts${qs ? `?${qs}` : ""}`,
+      );
+    },
+  });
+}
+
+export function useCrmContactGet(id: number | null) {
+  return useQuery({
+    queryKey: ["crm", "contact", id],
+    queryFn: () =>
+      apiClient.get<ApiContactDetail>(`/api/spa/crm/contacts/get?id=${id}`),
+    enabled: id !== null,
+  });
+}
+
+export function useCrmContactSave() {
+  return useMutation({
+    mutationFn: (body: Partial<ApiContact>) =>
+      apiClient.post<ApiSaveResponse>("/api/spa/crm/contacts/save", body),
+    onSuccess: () => {
+      inv("contacts");
+      inv("dashboard");
+    },
+  });
+}
+
+export function useCrmContactDelete() {
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiClient.post<ApiSaveResponse>("/api/spa/crm/contacts/delete", { id }),
+    onSuccess: () => {
+      inv("contacts");
+      inv("deals");
+      inv("dashboard");
+    },
+  });
+}
+
+export function useCrmContactLinkDeal() {
+  return useMutation({
+    mutationFn: (body: { contact_id: number; deal_id: number }) =>
+      apiClient.post<ApiSaveResponse>(
+        "/api/spa/crm/contacts/link-deal",
+        body,
+      ),
+    onSuccess: () => {
+      inv("contacts");
+      inv("deals");
+    },
+  });
+}
+
+export function useCrmContactUnlinkDeal() {
+  return useMutation({
+    mutationFn: (body: { contact_id: number; deal_id: number }) =>
+      apiClient.post<ApiSaveResponse>(
+        "/api/spa/crm/contacts/unlink-deal",
+        body,
+      ),
+    onSuccess: () => {
+      inv("contacts");
+      inv("deals");
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Communications
+// ---------------------------------------------------------------------------
+
+export function useCrmCommunicationAdd() {
+  return useMutation({
+    mutationFn: (body: { deal_id: number; message: string; sender: string }) =>
+      apiClient.post<ApiSaveResponse>(
+        "/api/spa/crm/communications/add",
+        body,
+      ),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({
+        queryKey: ["crm", "deal", vars.deal_id],
+      });
+    },
+  });
+}
+
+export function useCrmCommunicationDelete() {
+  return useMutation({
+    mutationFn: (body: { id: number; deal_id: number }) =>
+      apiClient.post<ApiSaveResponse>(
+        "/api/spa/crm/communications/delete",
+        body,
+      ),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({
+        queryKey: ["crm", "deal", vars.deal_id],
+      });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Projects
+// ---------------------------------------------------------------------------
+
+export function useCrmProjects() {
+  return useQuery({
+    queryKey: ["crm", "projects"],
+    queryFn: () =>
+      apiClient.get<{ projects: ApiProject[] }>("/api/spa/crm/projects"),
+  });
+}
+
+export function useCrmProjectSave() {
+  return useMutation({
+    mutationFn: (body: { id?: number; name: string; deal_id?: number }) =>
+      apiClient.post<ApiSaveResponse>("/api/spa/crm/projects/save", body),
+    onSuccess: () => {
+      inv("projects");
+      inv("deals");
+    },
+  });
+}
+
+export function useCrmProjectDelete() {
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiClient.post<ApiSaveResponse>("/api/spa/crm/projects/delete", { id }),
+    onSuccess: () => {
+      inv("projects");
+      inv("deals");
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Content Items (within projects)
+// ---------------------------------------------------------------------------
+
+export function useCrmContentItemSave() {
+  return useMutation({
+    mutationFn: (
+      body: Partial<ApiContentItem> & { project_id: number },
+    ) =>
+      apiClient.post<ApiSaveResponse>(
+        "/api/spa/crm/content-items/save",
+        body,
+      ),
+    onSuccess: () => {
+      inv("projects");
+      // Also refresh any open deal detail that shows project content
+      queryClient.invalidateQueries({ queryKey: ["crm", "deal"] });
+    },
+  });
+}
+
+export function useCrmContentItemDelete() {
+  return useMutation({
+    mutationFn: (body: { id: number; project_id: number }) =>
+      apiClient.post<ApiSaveResponse>(
+        "/api/spa/crm/content-items/delete",
+        body,
+      ),
+    onSuccess: () => {
+      inv("projects");
+      queryClient.invalidateQueries({ queryKey: ["crm", "deal"] });
+    },
+  });
+}
+
+export function useCrmContentItemStatus() {
+  return useMutation({
+    mutationFn: (body: { id: number; project_id: number; status: string }) =>
+      apiClient.post<ApiSaveResponse>(
+        "/api/spa/crm/content-items/status",
+        body,
+      ),
+    onSuccess: () => {
+      inv("projects");
+      queryClient.invalidateQueries({ queryKey: ["crm", "deal"] });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Tasks
+// ---------------------------------------------------------------------------
+
+export function useCrmTasks(status?: string) {
+  return useQuery({
+    queryKey: ["crm", "tasks", status ?? "all"],
+    queryFn: () => {
+      const url = status
+        ? `/api/spa/crm/tasks?status=${encodeURIComponent(status)}`
+        : "/api/spa/crm/tasks";
+      return apiClient.get<{ tasks: ApiTask[] }>(url);
+    },
+  });
+}
+
+export function useCrmTaskSave() {
+  return useMutation({
+    mutationFn: (body: Partial<ApiTask>) =>
+      apiClient.post<ApiSaveResponse>("/api/spa/crm/tasks/save", body),
+    onSuccess: () => {
+      inv("tasks");
+      inv("dashboard");
+    },
+  });
+}
+
+export function useCrmTaskDelete() {
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiClient.post<ApiSaveResponse>("/api/spa/crm/tasks/delete", { id }),
+    onSuccess: () => {
+      inv("tasks");
+      inv("dashboard");
+    },
+  });
+}
+
+export function useCrmTaskTimer() {
+  return useMutation({
+    mutationFn: (body: { id: number; action: "start" | "stop" }) =>
+      apiClient.post<ApiSaveResponse>("/api/spa/crm/tasks/timer", body),
+    onSuccess: () => {
+      inv("tasks");
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard
+// ---------------------------------------------------------------------------
+
+export function useCrmDashboard() {
+  return useQuery({
+    queryKey: ["crm", "dashboard"],
+    queryFn: () =>
+      apiClient.get<{ dashboard: ApiDashboardCrm }>(
+        "/api/spa/crm/dashboard",
+      ),
+  });
+}
