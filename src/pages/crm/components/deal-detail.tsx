@@ -73,17 +73,40 @@ export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
 
   function handleAttachProject() {
     if (selectedProjectId === "none") return;
-    saveProject.mutate(
-      { id: Number(selectedProjectId), deal_id: deal.id },
-      {
-        onSuccess: () => {
-          toast.success("Project attached");
-          setProjectDialogOpen(false);
-          setSelectedProjectId("none");
+    // If there's already a project linked, unlink it first
+    if (project) {
+      saveProject.mutate(
+        { id: project.id, deal_id: 0 },
+        {
+          onSuccess: () => {
+            // Now link the new project
+            saveProject.mutate(
+              { id: Number(selectedProjectId), deal_id: deal.id },
+              {
+                onSuccess: () => {
+                  toast.success("Project attached");
+                  setProjectDialogOpen(false);
+                  setSelectedProjectId("none");
+                },
+                onError: () => toast.error("Failed to attach project"),
+              },
+            );
+          },
         },
-        onError: () => toast.error("Failed to attach project"),
-      },
-    );
+      );
+    } else {
+      saveProject.mutate(
+        { id: Number(selectedProjectId), deal_id: deal.id },
+        {
+          onSuccess: () => {
+            toast.success("Project attached");
+            setProjectDialogOpen(false);
+            setSelectedProjectId("none");
+          },
+          onError: () => toast.error("Failed to attach project"),
+        },
+      );
+    }
   }
 
   function handleAddComm() {
