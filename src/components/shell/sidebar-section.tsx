@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type { NavGroup, NavItem } from "./sidebar-nav-config";
 import { cn } from "@/lib/cn";
 
@@ -79,14 +79,20 @@ export function SidebarSection({ group, collapsed }: SidebarSectionProps) {
 			<button
 				type="button"
 				onClick={() => setOpen(!open)}
-				className="flex w-full items-center justify-between px-3 py-2 mt-2 rounded-md text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] hover:bg-[var(--sidebar-accent)] transition-colors"
+				className={cn(
+					"flex w-full items-center gap-2.5 rounded-md px-3 py-2 mt-2 text-sm transition-colors",
+					hasActiveChild
+						? "text-[var(--sidebar-primary)] font-medium"
+						: "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]",
+				)}
 			>
-				<span>{group.label}</span>
-				<ChevronDown
-					size={14}
+				{group.icon && <group.icon size={18} className="shrink-0" />}
+				<span className="truncate flex-1 text-left">{group.label}</span>
+				<ChevronRight
+					size={16}
 					className={cn(
-						"transition-transform duration-200",
-						open ? "rotate-0" : "-rotate-90",
+						"shrink-0 text-[var(--muted-foreground)] transition-transform duration-200",
+						open && "rotate-90",
 					)}
 				/>
 			</button>
