@@ -12,7 +12,6 @@ interface SidebarSectionProps {
 export function SidebarSection({ group, collapsed }: SidebarSectionProps) {
 	const location = useLocation();
 
-	// Auto-open if any child is active
 	const hasActiveChild = group.items.some(
 		(item) =>
 			item.path === "/my"
@@ -62,13 +61,13 @@ export function SidebarSection({ group, collapsed }: SidebarSectionProps) {
 					to={group.path || group.items[0]?.path || "/"}
 					title={group.label}
 					className={cn(
-						"flex items-center justify-center rounded-md px-2 py-1.5 transition-colors",
+						"flex items-center justify-center rounded-md px-2 py-2 transition-colors",
 						groupActive
 							? "bg-[color-mix(in_srgb,var(--sidebar-primary)_10%,transparent)] text-[var(--sidebar-primary)]"
 							: "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]",
 					)}
 				>
-					<Icon size={18} className="shrink-0" />
+					<Icon size={20} className="shrink-0" />
 				</Link>
 			</div>
 		);
@@ -76,15 +75,15 @@ export function SidebarSection({ group, collapsed }: SidebarSectionProps) {
 
 	return (
 		<div className="mb-0.5">
-			{/* Toggler header */}
+			{/* Section header */}
 			<button
 				type="button"
 				onClick={() => setOpen(!open)}
-				className="flex w-full items-center justify-between px-3 py-1.5 mt-2 rounded-md text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] hover:bg-[var(--sidebar-accent)] transition-colors"
+				className="flex w-full items-center justify-between px-3 py-2 mt-2 rounded-md text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] hover:bg-[var(--sidebar-accent)] transition-colors"
 			>
 				<span>{group.label}</span>
 				<ChevronDown
-					size={12}
+					size={14}
 					className={cn(
 						"transition-transform duration-200",
 						open ? "rotate-0" : "-rotate-90",
@@ -125,20 +124,20 @@ function ExpandableNavItem({
 
 	const Icon = item.icon;
 
-	// Collapsed: just show icon linking to the main path
+	// Collapsed: just show icon
 	if (collapsed) {
 		return (
 			<Link
 				to={item.path}
 				title={item.label}
 				className={cn(
-					"flex items-center justify-center rounded-md px-2 py-1.5 transition-colors",
+					"flex items-center justify-center rounded-md px-2 py-2 transition-colors",
 					isChildActive
 						? "bg-[color-mix(in_srgb,var(--sidebar-primary)_10%,transparent)] text-[var(--sidebar-primary)]"
 						: "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]",
 				)}
 			>
-				<Icon size={16} className="shrink-0" />
+				<Icon size={20} className="shrink-0" />
 			</Link>
 		);
 	}
@@ -149,16 +148,16 @@ function ExpandableNavItem({
 				type="button"
 				onClick={() => setOpen(!open)}
 				className={cn(
-					"flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-[13px] transition-colors",
+					"flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
 					isChildActive
 						? "text-[var(--sidebar-primary)] font-medium"
 						: "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]",
 				)}
 			>
-				<Icon size={16} className="shrink-0" />
+				<Icon size={18} className="shrink-0" />
 				<span className="truncate flex-1 text-left">{item.label}</span>
 				<ChevronRight
-					size={14}
+					size={16}
 					className={cn(
 						"shrink-0 text-[var(--muted-foreground)] transition-transform duration-200",
 						open && "rotate-90",
@@ -167,7 +166,7 @@ function ExpandableNavItem({
 			</button>
 
 			{open && (
-				<div className="ml-5 mt-0.5 space-y-0.5 border-l border-[var(--sidebar-border)] pl-2.5">
+				<div className="ml-6 mt-0.5 space-y-0.5 border-l border-[var(--sidebar-border)] pl-3">
 					{children.map((child) => {
 						const ChildIcon = child.icon;
 						const active =
@@ -180,13 +179,13 @@ function ExpandableNavItem({
 								key={child.path}
 								to={child.path}
 								className={cn(
-									"flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] transition-colors",
+									"flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
 									active
 										? "bg-[color-mix(in_srgb,var(--sidebar-primary)_10%,transparent)] text-[var(--sidebar-primary)] font-medium"
 										: "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]",
 								)}
 							>
-								<ChildIcon size={14} className="shrink-0" />
+								<ChildIcon size={16} className="shrink-0" />
 								<span className="truncate">{child.label}</span>
 							</Link>
 						);
@@ -216,7 +215,7 @@ function NavLink({
 		<Link
 			to={item.path}
 			className={cn(
-				"flex items-center gap-2.5 rounded-md px-3 py-1.5 text-[13px] transition-colors",
+				"flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
 				active
 					? "bg-[color-mix(in_srgb,var(--sidebar-primary)_10%,transparent)] text-[var(--sidebar-primary)] font-medium"
 					: "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]",
@@ -224,7 +223,7 @@ function NavLink({
 			)}
 			title={collapsed ? item.label : undefined}
 		>
-			<Icon size={16} className="shrink-0" />
+			<Icon size={18} className="shrink-0" />
 			{!collapsed && <span className="truncate">{item.label}</span>}
 		</Link>
 	);
