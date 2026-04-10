@@ -179,7 +179,7 @@ export function useCrmDeals(stage?: string) {
 
 export function useCrmDealGet(id: number | null) {
   return useQuery({
-    queryKey: ["crm", "deal", id],
+    queryKey: ["crm", "deals", "detail", id],
     queryFn: () => apiClient.get<ApiDealDetail>(`/api/spa/crm/deals/get?id=${id}`),
     enabled: id !== null,
   });

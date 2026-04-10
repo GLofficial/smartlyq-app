@@ -206,9 +206,37 @@ export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
                   </Button>
                 </div>
 
-                <p className="text-sm font-medium text-[var(--foreground)] mb-2">
-                  {project.name}
-                </p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-[var(--foreground)]">
+                    {project.name}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-[11px] px-2"
+                      onClick={() => setProjectDialogOpen(true)}
+                    >
+                      Change
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-[11px] px-2 text-red-500 hover:text-red-600"
+                      onClick={() => {
+                        saveProject.mutate(
+                          { id: project.id, deal_id: 0 },
+                          {
+                            onSuccess: () => toast.success("Project unlinked"),
+                            onError: () => toast.error("Failed to unlink"),
+                          },
+                        );
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </div>
 
                 {/* Content items */}
                 <ul className="space-y-2">
