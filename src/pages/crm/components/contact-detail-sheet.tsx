@@ -7,6 +7,7 @@ import { formatCurrency } from "@/lib/crm-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -21,6 +22,9 @@ import {
   Building2,
   Briefcase,
   Save,
+  Tag,
+  X,
+  Plus,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -47,6 +51,7 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
   const [editPhone, setEditPhone] = useState("");
   const [editCompany, setEditCompany] = useState("");
   const [editRole, setEditRole] = useState("");
+  const [newTag, setNewTag] = useState("");
 
   function startEditing() {
     if (!contact) return;
@@ -74,6 +79,19 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
   function handleStatusChange(status: ApiContact["status"]) {
     if (!contact) return;
     saveContact.mutate({ id: contact.id, status });
+  }
+
+  function handleAddTag() {
+    if (!contact || !newTag.trim()) return;
+    const tag = newTag.trim().toLowerCase();
+    if (contact.tags.includes(tag)) { setNewTag(""); return; }
+    saveContact.mutate({ id: contact.id, tags: [...contact.tags, tag] });
+    setNewTag("");
+  }
+
+  function handleRemoveTag(tag: string) {
+    if (!contact) return;
+    saveContact.mutate({ id: contact.id, tags: contact.tags.filter((t) => t !== tag) });
   }
 
   return (
@@ -106,6 +124,48 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
                   {s}
                 </Button>
               ))}
+            </div>
+
+            {/* Tags */}
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-semibold uppercase text-[var(--muted-foreground)]">
+                <Tag className="w-3.5 h-3.5" />
+                Tags
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {contact.tags.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="gap-1 pr-1">
+                    {tag}
+                    <button
+                      onClick={() => handleRemoveTag(tag)}
+                      className="ml-0.5 rounded-full hover:bg-[var(--muted)] p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+                {contact.tags.length === 0 && (
+                  <span className="text-xs text-[var(--muted-foreground)]">No tags</span>
+                )}
+              </div>
+              <div className="flex gap-1.5">
+                <Input
+                  placeholder="Add tag..."
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleAddTag(); }}
+                  className="h-8 text-xs"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={handleAddTag}
+                  disabled={!newTag.trim()}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </Button>
+              </div>
             </div>
 
             <Separator className="my-4" />

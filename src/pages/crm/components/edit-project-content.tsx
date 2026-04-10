@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { ApiContentItem } from "@/api/crm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,9 @@ import {
   Plus,
   X,
   FileText,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -47,6 +50,7 @@ interface EditProjectContentProps {
   onRename: (name: string) => void;
   onRemoveItem: (itemId: number) => void;
   onStatusChange: (itemId: number, status: string) => void;
+  onReorder?: (reorderedItems: ApiContentItem[]) => void;
   addTitle: string;
   setAddTitle: (v: string) => void;
   addType: string;
@@ -60,6 +64,7 @@ export function EditProjectContent({
   onRename,
   onRemoveItem,
   onStatusChange,
+  onReorder,
   addTitle,
   setAddTitle,
   addType,
@@ -67,6 +72,19 @@ export function EditProjectContent({
   onAddItem,
 }: EditProjectContentProps) {
   const [localName, setLocalName] = useState(projectName);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+  const moveItem = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      if (toIndex < 0 || toIndex >= items.length) return;
+      const reordered = [...items];
+      const removed = reordered.splice(fromIndex, 1);
+      if (!removed[0]) return;
+      reordered.splice(toIndex, 0, removed[0]);
+      onReorder?.(reordered.map((item, i) => ({ ...item, sort_order: i })));
+    },
+    [items, onReorder],
+  );
 
   return (
     <div className="space-y-5">
@@ -96,11 +114,42 @@ export function EditProjectContent({
           <p className="text-sm text-[var(--muted-foreground)] py-2">No content items yet.</p>
         )}
         <div className="space-y-2 max-h-[300px] overflow-y-auto">
-          {items.map((item) => (
+          {items.map((item, idx) => (
             <div
               key={item.id}
+              draggable={!!onReorder}
+              onDragStart={() => setDragIdx(idx)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => {
+                if (dragIdx !== null && dragIdx !== idx) moveItem(dragIdx, idx);
+                setDragIdx(null);
+              }}
+              onDragEnd={() => setDragIdx(null)}
               className="flex items-center gap-2 p-2.5 rounded-md border border-[var(--border)] bg-[var(--card)]"
             >
+              {onReorder && (
+                <div className="flex flex-col shrink-0">
+                  <button
+                    className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] disabled:opacity-30"
+                    disabled={idx === 0}
+                    onClick={() => moveItem(idx, idx - 1)}
+                  >
+                    <ArrowUp className="w-3 h-3" />
+                  </button>
+                  <button
+                    className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] disabled:opacity-30"
+                    disabled={idx === items.length - 1}
+                    onClick={() => moveItem(idx, idx + 1)}
+                  >
+                    <ArrowDown className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+              {onReorder && (
+                <div className="text-[var(--muted-foreground)] cursor-grab shrink-0">
+                  <GripVertical className="w-3.5 h-3.5" />
+                </div>
+              )}
               <div className="text-[var(--muted-foreground)]">
                 <FileText className="w-3.5 h-3.5" />
               </div>

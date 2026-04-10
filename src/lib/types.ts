@@ -28,6 +28,7 @@ export interface PlanFeatures {
 	video_editor_access: boolean;
 	presentations_access: boolean;
 	whitelabel_access: boolean;
+	crm_access: boolean;
 	[key: string]: boolean | number | null | string;
 }
 

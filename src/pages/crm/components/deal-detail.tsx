@@ -1,10 +1,30 @@
+import { useState } from "react";
 import {
   type ApiDeal,
   useCrmDealGet,
+  useCrmDealSave,
+  useCrmProjects,
+  useCrmCommunicationAdd,
 } from "@/api/crm";
 import { type StageConfig, formatCurrency } from "@/lib/crm-data";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   X,
   Mail,
@@ -15,6 +35,8 @@ import {
   ExternalLink,
   MessageSquare,
   Loader2,
+  Link2,
+  Send,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -33,10 +55,37 @@ interface DealDetailProps {
 
 export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
   const { data: detailData, isLoading } = useCrmDealGet(deal.id);
+  const saveDeal = useCrmDealSave();
+  const { data: projectsData } = useCrmProjects();
+  const addComm = useCrmCommunicationAdd();
+
   const stage = stageConfig[deal.stage];
   const communications = detailData?.communications ?? [];
   const project = detailData?.project;
   const contentItems = project?.content_items ?? [];
+
+  const [projectDialogOpen, setProjectDialogOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("none");
+  const [commMessage, setCommMessage] = useState("");
+
+  const availableProjects = projectsData?.projects ?? [];
+
+  function handleAttachProject() {
+    if (selectedProjectId === "none") return;
+    saveDeal.mutate({ id: deal.id, project_id: Number(selectedProjectId) });
+    setProjectDialogOpen(false);
+    setSelectedProjectId("none");
+  }
+
+  function handleAddComm() {
+    if (!commMessage.trim()) return;
+    addComm.mutate({
+      deal_id: deal.id,
+      message: commMessage.trim(),
+      sender: "You",
+    });
+    setCommMessage("");
+  }
 
   return (
     <div className="h-full flex flex-col bg-[var(--card)] border-l border-[var(--border)] overflow-y-auto">
@@ -127,9 +176,16 @@ export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
                     <Sparkles className="w-3.5 h-3.5" />
                     SmartlyQ Project
                   </h3>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1">
-                    <ExternalLink className="w-3 h-3" />
-                    Client Preview
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs gap-1"
+                    asChild
+                  >
+                    <a href={`/my/crm/preview/${deal.id}`}>
+                      <ExternalLink className="w-3 h-3" />
+                      Client Preview
+                    </a>
                   </Button>
                 </div>
 
@@ -159,21 +215,32 @@ export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
                 </ul>
               </section>
             ) : (
-              <section className="text-sm text-[var(--muted-foreground)] italic">
-                No SmartlyQ project linked yet.
+              <section className="space-y-2">
+                <p className="text-sm text-[var(--muted-foreground)] italic">
+                  No SmartlyQ project linked yet.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => setProjectDialogOpen(true)}
+                >
+                  <Link2 className="w-3.5 h-3.5" />
+                  Attach Project
+                </Button>
               </section>
             )}
 
             <Separator />
 
             {/* Communication history */}
-            {communications.length > 0 && (
-              <section>
-                <h3 className="text-xs font-semibold uppercase text-[var(--muted-foreground)] flex items-center gap-1.5 mb-3">
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  Communication
-                </h3>
-                <div className="space-y-3">
+            <section>
+              <h3 className="text-xs font-semibold uppercase text-[var(--muted-foreground)] flex items-center gap-1.5 mb-3">
+                <MessageSquare className="w-3.5 h-3.5" />
+                Communication
+              </h3>
+              {communications.length > 0 && (
+                <div className="space-y-3 mb-3">
                   {communications.map((entry) => (
                     <div key={entry.id} className="relative pl-4 border-l-2 border-[var(--border)]">
                       <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)] mb-0.5">
@@ -192,11 +259,67 @@ export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
                     </div>
                   ))}
                 </div>
-              </section>
-            )}
+              )}
+              {communications.length === 0 && (
+                <p className="text-xs text-[var(--muted-foreground)] mb-3">No communications yet.</p>
+              )}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add a note..."
+                  value={commMessage}
+                  onChange={(e) => setCommMessage(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleAddComm(); }}
+                  className="h-8 text-xs flex-1"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={handleAddComm}
+                  disabled={!commMessage.trim() || addComm.isPending}
+                >
+                  <Send className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </section>
           </>
         )}
       </div>
+
+      {/* Attach project dialog */}
+      <Dialog open={projectDialogOpen} onOpenChange={setProjectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Attach Project</DialogTitle>
+            <DialogDescription>
+              Link a SmartlyQ project to this deal.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {availableProjects.map((p) => (
+                  <SelectItem key={p.id} value={String(p.id)}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProjectDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAttachProject} disabled={selectedProjectId === "none"}>
+              Attach
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
