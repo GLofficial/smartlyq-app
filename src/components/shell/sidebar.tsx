@@ -28,14 +28,16 @@ export function Sidebar() {
 				collapsed ? "w-14" : "w-56",
 			)}
 		>
-			{/* Logo + workspace */}
-			<div className="flex items-center justify-between px-3 py-3 border-b border-[var(--sidebar-border)]">
+			{/* Logo */}
+			<div className="flex items-center justify-between px-3 pt-3 pb-2">
 				{!collapsed && (
-					<WorkspaceDropdown
-						workspaces={workspaces}
-						activeId={activeWsId}
-						branding={branding}
-					/>
+					<Link to="/my" className="flex items-center gap-2 min-w-0">
+						{branding.logo_url ? (
+							<img src={branding.logo_url} alt={branding.site_name} className="h-7 w-auto" />
+						) : (
+							<span className="text-lg font-bold text-[var(--sidebar-foreground)]">{branding.site_name}</span>
+						)}
+					</Link>
 				)}
 				<button
 					type="button"
@@ -45,6 +47,13 @@ export function Sidebar() {
 					{collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
 				</button>
 			</div>
+
+			{/* Workspace selector */}
+			{!collapsed && (
+				<div className="px-3 pb-3 border-b border-[var(--sidebar-border)]">
+					<WorkspaceDropdown workspaces={workspaces} activeId={activeWsId} />
+				</div>
+			)}
 
 			{/* Navigation */}
 			<nav className="flex-1 overflow-y-auto px-1.5 py-1">
@@ -86,11 +95,9 @@ export function Sidebar() {
 function WorkspaceDropdown({
 	workspaces,
 	activeId,
-	branding,
 }: {
 	workspaces: { id: number; name: string }[];
 	activeId: number | null;
-	branding: { site_name: string; logo_url: string | null };
 }) {
 	const activeWs = workspaces.find((w) => w.id === activeId);
 	const setActiveWorkspace = useWorkspaceStore((s) => s.setActiveWorkspace);
@@ -111,28 +118,24 @@ function WorkspaceDropdown({
 
 	if (workspaces.length <= 1) {
 		return (
-			<Link to="/my" className="flex items-center gap-2 min-w-0">
-				{branding.logo_url ? (
-					<img src={branding.logo_url} alt="" className="h-6 w-auto" />
-				) : (
-					<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--sq-primary)] text-[11px] font-bold text-white">
-						{(activeWs?.name ?? branding.site_name).charAt(0).toUpperCase()}
-					</div>
-				)}
-				<span className="truncate text-sm font-semibold text-[var(--sidebar-foreground)]">
-					{activeWs?.name ?? branding.site_name}
+			<div className="flex items-center gap-2 rounded-md bg-[var(--sidebar-accent)] px-2.5 py-1.5">
+				<div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[var(--sq-primary)] text-[10px] font-bold text-white">
+					{(activeWs?.name ?? "W").charAt(0).toUpperCase()}
+				</div>
+				<span className="truncate text-sm font-medium text-[var(--sidebar-foreground)]">
+					{activeWs?.name ?? "My Workspace"}
 				</span>
-			</Link>
+			</div>
 		);
 	}
 
 	return (
-		<details className="group min-w-0 flex-1">
-			<summary className="flex cursor-pointer items-center gap-2 list-none rounded-md px-1 py-0.5 hover:bg-[var(--sidebar-accent)]">
-				<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--sq-primary)] text-[11px] font-bold text-white">
+		<details className="group min-w-0">
+			<summary className="flex cursor-pointer items-center gap-2 list-none rounded-md bg-[var(--sidebar-accent)] px-2.5 py-1.5 hover:bg-[var(--sidebar-accent)]">
+				<div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[var(--sq-primary)] text-[10px] font-bold text-white">
 					{(activeWs?.name ?? "W").charAt(0).toUpperCase()}
 				</div>
-				<span className="truncate text-sm font-semibold text-[var(--sidebar-foreground)]">
+				<span className="truncate text-sm font-medium text-[var(--sidebar-foreground)]">
 					{activeWs?.name ?? "Workspace"}
 				</span>
 				<ChevronDown size={14} className="shrink-0 text-[var(--muted-foreground)] transition-transform group-open:rotate-180" />
