@@ -10,6 +10,7 @@ import { queryClient } from "@/lib/query-client";
 import { useEditPlan } from "@/api/admin-pricing";
 import { useAdminPlanSave, useAdminPlanDelete, useAdminPlanDuplicate } from "@/api/admin-plans";
 import { PLAN_COLUMN_GROUPS } from "./admin-plans-config";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 
 export function AdminPlansPage() {
@@ -44,8 +45,15 @@ export function AdminPlansPage() {
 		});
 	};
 
-	const handleDelete = (id: number) => {
-		const hard = confirm("Permanently delete this plan? (Cancel = just deactivate)");
+	const confirmDialog = useConfirm();
+	const handleDelete = async (id: number) => {
+		const hard = await confirmDialog({
+			title: "Delete Plan",
+			message: "Permanently delete this plan? If users are on it, the plan will be deactivated instead.",
+			confirmLabel: "Delete Permanently",
+			cancelLabel: "Just Deactivate",
+			variant: "destructive",
+		});
 		deleteMut.mutate({ id, hard }, {
 			onSuccess: (d) => { toast.success(d.message); queryClient.invalidateQueries({ queryKey: ["admin", "plans"] }); },
 			onError: (e) => toast.error((e as { error?: string })?.error ?? "Failed."),

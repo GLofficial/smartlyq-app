@@ -4,6 +4,7 @@ import { queryClient } from "@/lib/query-client";
 import { Toaster } from "sonner";
 import { TenantProvider } from "./tenant-provider";
 import { AuthProvider } from "./auth-provider";
+import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 
 interface AppProvidersProps {
 	children: ReactNode;
@@ -14,7 +15,9 @@ export function AppProviders({ children }: AppProvidersProps) {
 		<QueryClientProvider client={queryClient}>
 			<AuthProvider>
 				<TenantProvider>
-					{children}
+					<ConfirmProvider>
+						{children}
+					</ConfirmProvider>
 					<Toaster position="top-right" richColors closeButton />
 				</TenantProvider>
 			</AuthProvider>
