@@ -304,6 +304,17 @@ export function useCrmProjects() {
   });
 }
 
+export function useCrmProjectGet(id: number | null) {
+  return useQuery({
+    queryKey: ["crm", "projects", "detail", id],
+    queryFn: () =>
+      apiClient.get<{ project: ApiProject & { content_items: ApiContentItem[] } }>(
+        `/api/spa/crm/projects/get?id=${id}`,
+      ),
+    enabled: id !== null,
+  });
+}
+
 export function useCrmProjectSave() {
   return useMutation({
     mutationFn: (body: { id?: number; name?: string; deal_id?: number }) =>

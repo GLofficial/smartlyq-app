@@ -47,9 +47,11 @@ import {
   Search,
   Plus,
   Trash2,
+  Pencil,
   ArrowUpDown,
   Loader2,
 } from "lucide-react";
+import { ProjectEditDialog } from "./components/project-edit-dialog";
 import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
@@ -79,6 +81,7 @@ export function CrmProjectsPage() {
   // Dialogs
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ApiProject | null>(null);
+  const [editProjectId, setEditProjectId] = useState<number | null>(null);
 
   // Create form
   const [newName, setNewName] = useState("");
@@ -222,7 +225,11 @@ export function CrmProjectsPage() {
                 </TableRow>
               )}
               {filtered.map((project) => (
-                <TableRow key={project.id}>
+                <TableRow
+                  key={project.id}
+                  className="cursor-pointer hover:bg-[var(--accent)]/50"
+                  onClick={() => setEditProjectId(project.id)}
+                >
                   <TableCell>
                     <div className="font-medium text-[var(--foreground)]">{project.name}</div>
                   </TableCell>
@@ -248,8 +255,16 @@ export function CrmProjectsPage() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => { e.stopPropagation(); setEditProjectId(project.id); }}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="h-8 w-8 text-red-500 hover:text-red-600"
-                        onClick={() => setDeleteTarget(project)}
+                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(project); }}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
@@ -326,6 +341,12 @@ export function CrmProjectsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* --- Edit dialog --- */}
+      <ProjectEditDialog
+        projectId={editProjectId}
+        onClose={() => setEditProjectId(null)}
+      />
     </div>
   );
 }
