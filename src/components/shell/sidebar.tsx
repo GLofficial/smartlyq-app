@@ -1,15 +1,13 @@
 import { Link } from "react-router-dom";
-import { PanelLeftClose, PanelLeft, ChevronDown } from "lucide-react";
+import { PanelLeftClose, PanelLeft } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useUiStore } from "@/stores/ui-store";
 import { useTenantStore } from "@/stores/tenant-store";
 import { useAuthStore } from "@/stores/auth-store";
-import { useWorkspaceStore } from "@/stores/workspace-store";
 import { NAV_GROUPS, ADMIN_GROUP } from "./sidebar-nav-config";
 import { SidebarSection } from "./sidebar-section";
-import { apiClient } from "@/lib/api-client";
-import { STORAGE_KEYS } from "@/lib/constants";
-import { toast } from "sonner";
+import { WorkspaceSwitcher } from "./workspace-switcher";
+import { SidebarSearch } from "./sidebar-search";
 
 export function Sidebar() {
 	const collapsed = useUiStore((s) => s.sidebarCollapsed);
@@ -18,8 +16,6 @@ export function Sidebar() {
 	const user = useAuthStore((s) => s.user);
 	const plan = useAuthStore((s) => s.plan);
 	const isAdmin = user?.role === 1;
-	const workspaces = useWorkspaceStore((s) => s.workspaces);
-	const activeWsId = useWorkspaceStore((s) => s.activeWorkspaceId);
 
 	return (
 		<aside
@@ -50,10 +46,15 @@ export function Sidebar() {
 
 			{/* Workspace selector */}
 			{!collapsed && (
-				<div className="px-3 pb-3 border-b border-[var(--sidebar-border)]">
-					<WorkspaceDropdown workspaces={workspaces} activeId={activeWsId} />
+				<div className="px-3 pb-2">
+					<WorkspaceSwitcher />
 				</div>
 			)}
+
+			{/* Search + Quick Actions */}
+			<div className={cn("pb-2 border-b border-[var(--sidebar-border)]", collapsed ? "px-1.5" : "px-3")}>
+				<SidebarSearch collapsed={collapsed} />
+			</div>
 
 			{/* Navigation */}
 			<nav className="flex-1 overflow-y-auto px-1.5 py-1">
@@ -89,77 +90,5 @@ export function Sidebar() {
 				</div>
 			)}
 		</aside>
-	);
-}
-
-function WorkspaceDropdown({
-	workspaces,
-	activeId,
-}: {
-	workspaces: { id: number; name: string }[];
-	activeId: number | null;
-}) {
-	const activeWs = workspaces.find((w) => w.id === activeId);
-	const setActiveWorkspace = useWorkspaceStore((s) => s.setActiveWorkspace);
-
-	const handleSwitch = async (wsId: number) => {
-		if (wsId === activeId) return;
-		try {
-			const res = await apiClient.post<{ access_token: string }>("/api/spa/workspace/switch", {
-				workspace_id: wsId,
-			});
-			localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, res.access_token);
-			setActiveWorkspace(wsId);
-			window.location.reload();
-		} catch {
-			toast.error("Failed to switch workspace.");
-		}
-	};
-
-	if (workspaces.length <= 1) {
-		return (
-			<div className="flex items-center gap-2 rounded-md bg-[var(--sidebar-accent)] px-2.5 py-1.5">
-				<div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[var(--sq-primary)] text-[10px] font-bold text-white">
-					{(activeWs?.name ?? "W").charAt(0).toUpperCase()}
-				</div>
-				<span className="truncate text-sm font-medium text-[var(--sidebar-foreground)]">
-					{activeWs?.name ?? "My Workspace"}
-				</span>
-			</div>
-		);
-	}
-
-	return (
-		<details className="group min-w-0">
-			<summary className="flex cursor-pointer items-center gap-2 list-none rounded-md bg-[var(--sidebar-accent)] px-2.5 py-1.5 hover:bg-[var(--sidebar-accent)]">
-				<div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[var(--sq-primary)] text-[10px] font-bold text-white">
-					{(activeWs?.name ?? "W").charAt(0).toUpperCase()}
-				</div>
-				<span className="truncate text-sm font-medium text-[var(--sidebar-foreground)]">
-					{activeWs?.name ?? "Workspace"}
-				</span>
-				<ChevronDown size={14} className="shrink-0 text-[var(--muted-foreground)] transition-transform group-open:rotate-180" />
-			</summary>
-			<div className="mt-1 space-y-0.5 rounded-md border border-[var(--border)] bg-[var(--card)] p-1 shadow-md">
-				{workspaces.map((ws) => (
-					<button
-						key={ws.id}
-						type="button"
-						onClick={() => handleSwitch(ws.id)}
-						className={cn(
-							"flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs transition-colors",
-							ws.id === activeId
-								? "bg-[color-mix(in_srgb,var(--sq-primary)_10%,transparent)] text-[var(--sq-primary)] font-medium"
-								: "text-[var(--foreground)] hover:bg-[var(--accent)]",
-						)}
-					>
-						<div className="flex h-5 w-5 items-center justify-center rounded bg-[var(--muted)] text-[9px] font-bold">
-							{ws.name.charAt(0).toUpperCase()}
-						</div>
-						<span className="truncate">{ws.name}</span>
-					</button>
-				))}
-			</div>
-		</details>
 	);
 }
