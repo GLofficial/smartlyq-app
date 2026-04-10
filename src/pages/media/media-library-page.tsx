@@ -114,8 +114,21 @@ export function MediaLibraryPage() {
 
 function BuyStorageDialog({ quota, onClose }: { quota: { extra_price_yearly?: number; currency?: string }; onClose: () => void }) {
 	const [gb, setGb] = useState(1);
+	const [loading, setLoading] = useState(false);
 	const price = quota.extra_price_yearly ?? 96;
 	const cur = quota.currency ?? "EUR";
+
+	const handlePurchase = async () => {
+		setLoading(true);
+		try {
+			const res = await import("@/lib/api-client").then(m => m.apiClient.post<{ checkout_url: string }>("/api/spa/media/buy-storage", { gb }));
+			if (res.checkout_url) window.location.href = res.checkout_url;
+		} catch (e) {
+			toast.error((e as { error?: string })?.error ?? "Purchase failed.");
+			setLoading(false);
+		}
+	};
+
 	return (
 		<Card className="border-[var(--sq-primary)]/20"><CardContent className="py-6 space-y-4 max-w-sm mx-auto text-center">
 			<div className="flex items-center justify-between"><h3 className="text-lg font-bold">Buy Extra Storage</h3><Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}><X size={16} /></Button></div>
@@ -123,7 +136,7 @@ function BuyStorageDialog({ quota, onClose }: { quota: { extra_price_yearly?: nu
 			<p className="text-sm text-[var(--muted-foreground)]">{cur} {price.toFixed(2)} per GB / year</p>
 			<div className="flex items-center justify-center gap-3"><span className="text-sm font-medium">How many GB?</span><Input type="number" min={1} max={100} value={gb} onChange={(e) => setGb(Math.max(1, parseInt(e.target.value) || 1))} className="w-20 text-center" /></div>
 			<p className="text-lg font-bold">Total: {cur} {(gb * price).toFixed(2)} / yr</p>
-			<Button className="w-full" onClick={() => { toast.success("Storage purchase request submitted."); onClose(); }}>Purchase</Button>
+			<Button className="w-full" onClick={handlePurchase} disabled={loading}>{loading ? "Redirecting to payment..." : "Purchase"}</Button>
 		</CardContent></Card>
 	);
 }
