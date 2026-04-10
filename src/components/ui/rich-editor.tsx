@@ -146,7 +146,7 @@ function TBtn({ icon: Icon, action, active, title }: { icon: React.ElementType; 
 			onMouseDown={(e) => e.preventDefault()}
 			onClick={action}
 			title={title}
-			className={`flex h-7 w-7 items-center justify-center rounded text-xs transition-colors ${
+			className={`flex h-7 w-7 items-center justify-center rounded text-xs transition-colors cursor-pointer ${
 				active ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "hover:bg-[var(--accent)] text-[var(--foreground)]"
 			}`}
 		>

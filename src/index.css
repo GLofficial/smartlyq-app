@@ -78,6 +78,11 @@ body {
 	-moz-osx-font-smoothing: grayscale;
 }
 
+/* Pointer cursor on all interactive elements (Tailwind v4 removed this default) */
+button, [role="button"], a, select, summary,
+input[type="checkbox"], input[type="radio"], input[type="submit"], input[type="reset"],
+label[for], .cursor-pointer { cursor: pointer; }
+
 /* TipTap rich editor prose styles */
 .tiptap {
 	outline: none;
