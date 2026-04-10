@@ -55,7 +55,9 @@ export function MediaLibraryPage() {
 	}, [handleFiles]);
 
 	const quotaPercent = quota?.percentage ?? 0;
-	const quotaText = quota ? `${quota.used_mb} MB / ${quota.limit_mb ? quota.limit_mb + " GB" : "Unlimited"}` : "";
+	const limitDisplay = quota?.limit_mb ? (quota.limit_mb >= 1024 ? `${(quota.limit_mb / 1024).toFixed(0)} GB` : `${quota.limit_mb} MB`) : "Unlimited";
+	const usedDisplay = quota ? (quota.used_mb >= 1024 ? `${(quota.used_mb / 1024).toFixed(1)} GB` : `${quota.used_mb} MB`) : "0 MB";
+	const quotaText = quota ? `${usedDisplay} / ${limitDisplay} used` : "";
 
 	return (
 		<div className="flex gap-6">
