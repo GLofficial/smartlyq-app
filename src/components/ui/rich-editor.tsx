@@ -9,13 +9,14 @@ import { Table } from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
+import { apiClient } from "@/lib/api-client";
 import {
 	Bold, Italic, Underline as UnderlineIcon, Strikethrough,
 	List, ListOrdered, Quote, Code, Minus, Undo2, Redo2,
 	AlignLeft, AlignCenter, AlignRight, Heading1, Heading2, Heading3,
-	Link as LinkIcon, Image as ImageIcon, Highlighter, Table as TableIcon,
-	RemoveFormatting,
+	Link as LinkIcon, ImagePlus, Highlighter, Table as TableIcon,
+	RemoveFormatting, Upload,
 } from "lucide-react";
 
 interface RichEditorProps {
@@ -65,14 +66,37 @@ export function RichEditor({ value, onChange, minHeight = "240px" }: RichEditorP
 }
 
 function Toolbar({ editor }: { editor: Editor }) {
+	const fileInputRef = useRef<HTMLInputElement>(null);
+
 	const addLink = useCallback(() => {
-		const url = window.prompt("URL:");
-		if (url) editor.chain().focus().setLink({ href: url }).run();
+		const prev = editor.getAttributes("link").href ?? "";
+		const url = window.prompt("URL:", prev);
+		if (url === null) return;
+		if (url === "") { editor.chain().focus().unsetLink().run(); return; }
+		editor.chain().focus().setLink({ href: url }).run();
 	}, [editor]);
 
-	const addImage = useCallback(() => {
-		const url = window.prompt("Image URL:");
-		if (url) editor.chain().focus().setImage({ src: url }).run();
+	const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		e.target.value = "";
+
+		try {
+			const formData = new FormData();
+			formData.append("image", file);
+			const res = await apiClient.upload<{ url: string }>("/api/spa/admin/upload-image", formData);
+			if (res.url) {
+				editor.chain().focus().setImage({ src: res.url }).run();
+			}
+		} catch {
+			const reader = new FileReader();
+			reader.onload = () => {
+				if (typeof reader.result === "string") {
+					editor.chain().focus().setImage({ src: reader.result }).run();
+				}
+			};
+			reader.readAsDataURL(file);
+		}
 	}, [editor]);
 
 	const addTable = useCallback(() => {
@@ -105,10 +129,12 @@ function Toolbar({ editor }: { editor: Editor }) {
 			<TBtn icon={Minus} action={() => editor.chain().focus().setHorizontalRule().run()} title="Horizontal rule" />
 			<Sep />
 			<TBtn icon={LinkIcon} action={addLink} active={editor.isActive("link")} title="Insert link" />
-			<TBtn icon={ImageIcon} action={addImage} title="Insert image" />
+			<TBtn icon={ImagePlus} action={() => fileInputRef.current?.click()} title="Upload image" />
+			<TBtn icon={Upload} action={() => { const u = window.prompt("Image URL:"); if (u) editor.chain().focus().setImage({ src: u }).run(); }} title="Image from URL" />
 			<TBtn icon={TableIcon} action={addTable} title="Insert table" />
 			<Sep />
 			<TBtn icon={RemoveFormatting} action={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} title="Clear formatting" />
+			<input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 		</div>
 	);
 }
@@ -117,6 +143,7 @@ function TBtn({ icon: Icon, action, active, title }: { icon: React.ElementType; 
 	return (
 		<button
 			type="button"
+			onMouseDown={(e) => e.preventDefault()}
 			onClick={action}
 			title={title}
 			className={`flex h-7 w-7 items-center justify-center rounded text-xs transition-colors ${
