@@ -61,7 +61,7 @@ export function PlansPage() {
 			</div>
 
 			{/* Plan Cards */}
-			<div className={cn("grid gap-4 mx-auto justify-center", activePlans.length <= 1 ? "max-w-lg" : activePlans.length === 2 ? "sm:grid-cols-2 max-w-3xl" : activePlans.length === 3 ? "sm:grid-cols-2 lg:grid-cols-3" : activePlans.length === 4 ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5")}>
+			<div className={cn("grid gap-4 mx-auto justify-center", activePlans.length <= 1 ? "max-w-xl" : activePlans.length === 2 ? "sm:grid-cols-2 max-w-3xl" : activePlans.length === 3 ? "sm:grid-cols-2 lg:grid-cols-3" : activePlans.length === 4 ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5")}>
 				{activePlans.map(plan => (
 					<PlanCard key={plan.id} plan={plan} currency={currency} isCurrent={currentPlan?.id === plan.id} onCheckout={handleCheckout} checkoutLoading={checkoutMut.isPending} />
 				))}
