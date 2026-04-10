@@ -160,7 +160,8 @@ function FileCard({ file, onPreview }: { file: MediaFile; onPreview: (f: MediaFi
 			<div onClick={() => onPreview(file)} className="cursor-pointer">
 				<div className="aspect-square overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--muted)] transition-all group-hover:border-[var(--sq-primary)]">
 					{isImage ? <img src={file.preview_url || file.url} alt={file.name} className="h-full w-full object-cover" loading="lazy" />
-					: isVideo && file.preview_url ? <img src={file.preview_url} alt={file.name} className="h-full w-full object-cover" loading="lazy" />
+					: isVideo && file.preview_url && !file.preview_url.endsWith(".mp4") && !file.preview_url.endsWith(".MP4") && file.preview_url !== file.url ? <img src={file.preview_url} alt={file.name} className="h-full w-full object-cover" loading="lazy" />
+					: isVideo ? <video src={file.url} muted preload="metadata" className="h-full w-full object-cover" />
 					: <div className="flex h-full flex-col items-center justify-center gap-2">
 						{isVideo ? <Video size={28} className="text-red-500" /> : isAudio ? <AudioLines size={28} className="text-purple-500" /> : <DocIcon size={28} className="text-blue-500" />}
 						{isDoc && ext && <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{ext}</span>}
