@@ -2,7 +2,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { queryClient } from "@/lib/query-client";
 
-export interface MediaFile { id: string; name: string; file_name: string; url: string; preview_url: string; type: string; mime_type: string; size: number; folder_id: string; created_at: string | null; }
+export interface MediaFile { id: string; name: string; file_name: string; url: string; preview_url: string; type: string; mime_type: string; size: number; folder_id: string; provider: string; created_at: string | null; }
 export interface MediaFolder { id: number; name: string; parent_id: number; }
 
 const inv = () => queryClient.invalidateQueries({ queryKey: ["media"] });
@@ -57,6 +57,6 @@ export function useMediaFolderDelete() {
 export function useMediaQuota() {
 	return useQuery({
 		queryKey: ["media", "quota"],
-		queryFn: () => apiClient.get<{ used_bytes: number; used_mb: number; limit_mb: number | null; percentage: number }>("/api/spa/media/quota"),
+		queryFn: () => apiClient.get<{ used_bytes: number; used_mb: number; limit_mb: number | null; percentage: number; extra_price_monthly?: number; extra_price_yearly?: number; currency?: string }>("/api/spa/media/quota"),
 	});
 }
