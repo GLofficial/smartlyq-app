@@ -152,9 +152,10 @@ function FileCard({ file }: { file: MediaFile }) {
 	const [renaming, setRenaming] = useState(false);
 	const [newName, setNewName] = useState(file.name);
 
-	const isImage = file.type === "image";
-	const isVideo = file.type === "video";
-	const sizeStr = file.size > 1048576 ? `${(file.size / 1048576).toFixed(1)} MB` : `${(file.size / 1024).toFixed(1)} KB`;
+	const isImage = file.type === "image" || file.mime_type?.startsWith("image/");
+	const isVideo = file.type === "video" || file.mime_type?.startsWith("video/");
+	const isAudio = file.type === "audio" || file.mime_type?.startsWith("audio/");
+	const sizeStr = file.size > 1048576 ? `${(file.size / 1048576).toFixed(1)} MB` : file.size > 0 ? `${(file.size / 1024).toFixed(1)} KB` : "";
 
 	const handleRename = () => {
 		if (!newName.trim() || newName === file.name) { setRenaming(false); return; }
@@ -173,10 +174,12 @@ function FileCard({ file }: { file: MediaFile }) {
 			<a href={file.url} target="_blank" rel="noopener noreferrer">
 				<div className="aspect-square overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--muted)] transition-all group-hover:border-[var(--sq-primary)]">
 					{isImage ? (
-						<img src={file.url} alt={file.name} className="h-full w-full object-cover" loading="lazy" />
+						<img src={file.preview_url || file.url} alt={file.name} className="h-full w-full object-cover" loading="lazy" />
+					) : isVideo && file.preview_url ? (
+						<img src={file.preview_url} alt={file.name} className="h-full w-full object-cover" loading="lazy" />
 					) : (
 						<div className="flex h-full flex-col items-center justify-center gap-1">
-							{isVideo ? <Video size={28} className="text-red-500" /> : file.type === "audio" ? <AudioLines size={28} className="text-purple-500" /> : <FileText size={28} className="text-blue-500" />}
+							{isVideo ? <Video size={28} className="text-red-500" /> : isAudio ? <AudioLines size={28} className="text-purple-500" /> : <FileText size={28} className="text-blue-500" />}
 						</div>
 					)}
 					{/* Type badge */}

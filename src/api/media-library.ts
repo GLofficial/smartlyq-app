@@ -2,12 +2,12 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { queryClient } from "@/lib/query-client";
 
-export interface MediaFile { id: number; name: string; url: string; type: string; size: number; folder_id: number; created_at: string | null; }
+export interface MediaFile { id: string; name: string; file_name: string; url: string; preview_url: string; type: string; mime_type: string; size: number; folder_id: string; created_at: string | null; }
 export interface MediaFolder { id: number; name: string; parent_id: number; }
 
 const inv = () => queryClient.invalidateQueries({ queryKey: ["media"] });
 
-export function useMediaList(folderId = 0, type = "", search = "", page = 1) {
+export function useMediaList(folderId: number | string = 0, type = "", search = "", page = 1) {
 	return useQuery({
 		queryKey: ["media", "list", folderId, type, search, page],
 		queryFn: () => apiClient.get<{ files: MediaFile[]; total: number; page: number; pages: number }>(
@@ -28,15 +28,15 @@ export function useMediaUpload() {
 }
 
 export function useMediaDelete() {
-	return useMutation({ mutationFn: (id: number) => apiClient.post<{ message: string }>("/api/spa/media/delete", { id }), onSuccess: inv });
+	return useMutation({ mutationFn: (id: string) => apiClient.post<{ message: string }>("/api/spa/media/delete", { id }), onSuccess: inv });
 }
 
 export function useMediaRename() {
-	return useMutation({ mutationFn: (data: { id: number; name: string }) => apiClient.post<{ message: string }>("/api/spa/media/rename", data), onSuccess: inv });
+	return useMutation({ mutationFn: (data: { id: string; name: string }) => apiClient.post<{ message: string }>("/api/spa/media/rename", data), onSuccess: inv });
 }
 
 export function useMediaMove() {
-	return useMutation({ mutationFn: (data: { id: number; folder_id: number }) => apiClient.post<{ message: string }>("/api/spa/media/move", data), onSuccess: inv });
+	return useMutation({ mutationFn: (data: { id: string; folder_id: string }) => apiClient.post<{ message: string }>("/api/spa/media/move", data), onSuccess: inv });
 }
 
 export function useMediaFolders() {
