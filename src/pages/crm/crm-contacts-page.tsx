@@ -89,7 +89,8 @@ export function CrmContactsPage() {
   const [selectedContactId, setSelectedContactId] = useState<number | null>(null);
 
   // Create form
-  const [formName, setFormName] = useState("");
+  const [formFirstName, setFormFirstName] = useState("");
+  const [formLastName, setFormLastName] = useState("");
   const [formEmail, setFormEmail] = useState("");
   const [formCompany, setFormCompany] = useState("");
   const [formPhone, setFormPhone] = useState("");
@@ -144,7 +145,8 @@ export function CrmContactsPage() {
   // --- Validate & create ---
   function validateForm(): boolean {
     const errors: Record<string, string> = {};
-    if (!formName.trim()) errors.name = "Name is required.";
+    if (!formFirstName.trim()) errors.first_name = "First name is required.";
+    if (!formLastName.trim()) errors.last_name = "Last name is required.";
     if (!formEmail.trim()) errors.email = "Email is required.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formEmail)) errors.email = "Invalid email.";
     if (!formCompany.trim()) errors.company = "Company is required.";
@@ -155,7 +157,8 @@ export function CrmContactsPage() {
   function handleCreate() {
     if (!validateForm()) return;
     saveContact.mutate({
-      name: formName.trim(),
+      first_name: formFirstName.trim(),
+      last_name: formLastName.trim(),
       email: formEmail.trim(),
       company: formCompany.trim(),
       phone: formPhone.trim(),
@@ -167,7 +170,8 @@ export function CrmContactsPage() {
   }
 
   function resetForm() {
-    setFormName("");
+    setFormFirstName("");
+    setFormLastName("");
     setFormEmail("");
     setFormCompany("");
     setFormPhone("");
@@ -301,7 +305,9 @@ export function CrmContactsPage() {
                       </div>
                       <div className="min-w-0">
                         <div className="font-medium text-[var(--foreground)] truncate">
-                          {contact.name}
+                          {contact.first_name || contact.last_name
+                            ? `${contact.first_name} ${contact.last_name}`.trim()
+                            : contact.name}
                         </div>
                         <div className="text-xs text-[var(--muted-foreground)] truncate">
                           {contact.email}
@@ -366,16 +372,29 @@ export function CrmContactsPage() {
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Name *</Label>
+                <Label>First Name *</Label>
                 <Input
-                  placeholder="Full name"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="First name"
+                  value={formFirstName}
+                  onChange={(e) => setFormFirstName(e.target.value)}
                 />
-                {formErrors.name && (
-                  <p className="text-xs text-red-500">{formErrors.name}</p>
+                {formErrors.first_name && (
+                  <p className="text-xs text-red-500">{formErrors.first_name}</p>
                 )}
               </div>
+              <div className="space-y-2">
+                <Label>Last Name *</Label>
+                <Input
+                  placeholder="Last name"
+                  value={formLastName}
+                  onChange={(e) => setFormLastName(e.target.value)}
+                />
+                {formErrors.last_name && (
+                  <p className="text-xs text-red-500">{formErrors.last_name}</p>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Email *</Label>
                 <Input
@@ -449,7 +468,9 @@ export function CrmContactsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Contact</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deleteTarget?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{deleteTarget?.first_name || deleteTarget?.last_name
+                ? `${deleteTarget?.first_name} ${deleteTarget?.last_name}`.trim()
+                : deleteTarget?.name}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

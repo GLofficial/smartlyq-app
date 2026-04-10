@@ -46,7 +46,8 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
   const saveContact = useCrmContactSave();
 
   const [editing, setEditing] = useState(false);
-  const [editName, setEditName] = useState("");
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editCompany, setEditCompany] = useState("");
@@ -55,7 +56,8 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
 
   function startEditing() {
     if (!contact) return;
-    setEditName(contact.name);
+    setEditFirstName(contact.first_name || contact.name.split(" ")[0] || "");
+    setEditLastName(contact.last_name || contact.name.split(" ").slice(1).join(" ") || "");
     setEditEmail(contact.email);
     setEditPhone(contact.phone);
     setEditCompany(contact.company);
@@ -67,7 +69,8 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
     if (!contact) return;
     saveContact.mutate({
       id: contact.id,
-      name: editName.trim(),
+      first_name: editFirstName.trim(),
+      last_name: editLastName.trim(),
       email: editEmail.trim(),
       phone: editPhone.trim(),
       company: editCompany.trim(),
@@ -105,7 +108,11 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
                   {contact.initials}
                 </div>
                 <div>
-                  <SheetTitle>{contact.name}</SheetTitle>
+                  <SheetTitle>
+                    {contact.first_name || contact.last_name
+                      ? `${contact.first_name} ${contact.last_name}`.trim()
+                      : contact.name}
+                  </SheetTitle>
                   <SheetDescription>{contact.company}</SheetDescription>
                 </div>
               </div>
@@ -188,9 +195,15 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Name</Label>
-                  <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">First Name</Label>
+                    <Input value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Last Name</Label>
+                    <Input value={editLastName} onChange={(e) => setEditLastName(e.target.value)} />
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Email</Label>

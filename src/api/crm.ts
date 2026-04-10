@@ -64,6 +64,8 @@ export interface ApiDealDetail {
 export interface ApiContact {
   id: number;
   name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   company: string;
   phone: string;
