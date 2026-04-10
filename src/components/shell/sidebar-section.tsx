@@ -33,15 +33,14 @@ export function SidebarSection({ group, collapsed }: SidebarSectionProps) {
 		);
 	}
 
-	// Collapsed sidebar: show divider only
+	// Collapsed sidebar: always show icons (no label toggle)
 	if (collapsed) {
 		return (
 			<div className="mb-1">
 				<div className="mx-3 my-2 border-t border-[var(--sidebar-border)]" />
-				{open &&
-					group.items.map((item) => (
-						<NavLink key={item.path} item={item} collapsed />
-					))}
+				{group.items.map((item) => (
+					<NavLink key={item.path} item={item} collapsed />
+				))}
 			</div>
 		);
 	}
