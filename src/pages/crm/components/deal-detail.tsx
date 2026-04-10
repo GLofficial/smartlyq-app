@@ -38,6 +38,8 @@ import {
   Loader2,
   Link2,
   Send,
+  RefreshCw,
+  Unlink,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -229,36 +231,48 @@ export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
                   </Button>
                 </div>
 
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium text-[var(--foreground)]">
-                    {project.name}
-                  </p>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 text-[11px] px-2"
-                      onClick={() => setProjectDialogOpen(true)}
-                    >
-                      Change
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 text-[11px] px-2 text-red-500 hover:text-red-600"
-                      onClick={() => {
-                        saveProject.mutate(
-                          { id: project.id, deal_id: 0 },
-                          {
-                            onSuccess: () => toast.success("Project unlinked"),
-                            onError: () => toast.error("Failed to unlink"),
-                          },
-                        );
-                      }}
-                    >
-                      Remove
-                    </Button>
+                <div className="rounded-lg border border-[var(--border)] bg-[var(--accent)]/30 p-3 mb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-[var(--primary)]" />
+                      <span className="text-sm font-medium text-[var(--foreground)]">
+                        {project.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs px-2 gap-1"
+                        onClick={() => setProjectDialogOpen(true)}
+                        title="Switch to a different project"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        Switch
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs px-2 gap-1 text-[var(--muted-foreground)] hover:text-red-500"
+                        onClick={() => {
+                          saveProject.mutate(
+                            { id: project.id, deal_id: 0 },
+                            {
+                              onSuccess: () => toast.success("Project unlinked from this deal"),
+                              onError: () => toast.error("Failed to unlink project"),
+                            },
+                          );
+                        }}
+                        title="Unlink this project from the deal (project is not deleted)"
+                      >
+                        <Unlink className="w-3 h-3" />
+                        Unlink
+                      </Button>
+                    </div>
                   </div>
+                  <p className="text-[11px] text-[var(--muted-foreground)] mt-1 ml-6">
+                    {contentItems.length} content item{contentItems.length !== 1 ? "s" : ""}
+                  </p>
                 </div>
 
                 {/* Content items */}
