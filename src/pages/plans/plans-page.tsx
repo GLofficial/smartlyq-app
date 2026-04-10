@@ -54,7 +54,7 @@ export function PlansPage() {
 			{/* Cycle Toggle */}
 			<div className="flex justify-center">
 				<div className="inline-flex items-center gap-1 rounded-full bg-[var(--muted)] p-1">
-					<button onClick={() => setCycle("month")} className={cn("rounded-full px-6 py-2 text-sm font-medium transition-all", cycle === "month" ? "bg-pink-500 text-white shadow-md" : "text-[var(--muted-foreground)]")}>Monthly</button>
+					<button onClick={() => setCycle("month")} className={cn("rounded-full px-6 py-2 text-sm font-medium transition-all", cycle === "month" ? "bg-[var(--sq-primary)] text-white shadow-md" : "text-[var(--muted-foreground)]")}>Monthly</button>
 					<button onClick={() => setCycle("year")} className={cn("rounded-full px-6 py-2 text-sm font-medium transition-all flex items-center gap-1.5", cycle === "year" ? "bg-[var(--sq-primary)] text-white shadow-md" : "text-[var(--muted-foreground)]")}>Yearly <span className="rounded-full bg-green-500 px-1.5 py-0.5 text-[10px] font-bold text-white">-20%</span></button>
 					<button onClick={() => setCycle("lifetime")} className={cn("rounded-full px-6 py-2 text-sm font-medium transition-all flex items-center gap-1.5", cycle === "lifetime" ? "bg-[var(--sq-primary)] text-white shadow-md" : "text-[var(--muted-foreground)]")}>Lifetime <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">HOT</span></button>
 				</div>
