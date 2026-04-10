@@ -1,5 +1,5 @@
 import { cn } from "@/lib/cn";
-import { type Deal, formatCurrency, getContentProgress } from "@/lib/deal-flow-data";
+import { type Deal, formatCurrency, getContentProgress } from "@/lib/crm-data";
 import { Calendar, Sparkles } from "lucide-react";
 
 interface DealCardProps {

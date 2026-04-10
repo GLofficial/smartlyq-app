@@ -1,6 +1,6 @@
 import { cn } from "@/lib/cn";
-import type { CrmTask, Deal, Contact } from "@/lib/deal-flow-data";
-import { PRIORITY_CONFIG } from "@/lib/deal-flow-data";
+import type { CrmTask, Deal, Contact } from "@/lib/crm-data";
+import { PRIORITY_CONFIG } from "@/lib/crm-data";
 import { Badge } from "@/components/ui/badge";
 import {
   Clock,

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { useDealFlowStore } from "@/stores/deal-flow-store";
-import type { ContentItem } from "@/lib/deal-flow-data";
+import { useCrmStore } from "@/stores/crm-store";
+import type { ContentItem } from "@/lib/crm-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,10 +38,10 @@ const STATUS_STYLE: Record<ContentItem["status"], string> = {
 // Page component
 // ---------------------------------------------------------------------------
 
-export function DealFlowPreviewPage() {
+export function CrmPreviewPage() {
   const { dealId } = useParams<{ dealId: string }>();
-  const deals = useDealFlowStore((s) => s.deals);
-  const updateContentItemStatus = useDealFlowStore((s) => s.updateContentItemStatus);
+  const deals = useCrmStore((s) => s.deals);
+  const updateContentItemStatus = useCrmStore((s) => s.updateContentItemStatus);
 
   const deal = useMemo(() => deals.find((d) => d.id === dealId), [deals, dealId]);
 

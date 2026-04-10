@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { cn } from "@/lib/cn";
-import { type StageConfig, DEFAULT_STAGE_COLORS } from "@/lib/deal-flow-data";
+import { type StageConfig, DEFAULT_STAGE_COLORS } from "@/lib/crm-data";
 import {
   Dialog,
   DialogContent,

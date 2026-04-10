@@ -1,15 +1,15 @@
 import { useState, useMemo, useCallback } from "react";
-import { useDealFlowStore } from "@/stores/deal-flow-store";
+import { useCrmStore } from "@/stores/crm-store";
 import type {
   CrmTask,
   TaskStatus,
   TaskPriority,
-} from "@/lib/deal-flow-data";
+} from "@/lib/crm-data";
 import {
   TASK_STATUS_CONFIG,
   TASK_STATUS_ORDER,
   PRIORITY_CONFIG,
-} from "@/lib/deal-flow-data";
+} from "@/lib/crm-data";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,13 +54,13 @@ import { TaskDetailSheet } from "./components/task-detail-sheet";
 // Page component
 // ---------------------------------------------------------------------------
 
-export function DealFlowTasksPage() {
-  const tasks = useDealFlowStore((s) => s.tasks);
-  const deals = useDealFlowStore((s) => s.deals);
-  const contacts = useDealFlowStore((s) => s.contacts);
-  const createTask = useDealFlowStore((s) => s.createTask);
-  const updateTask = useDealFlowStore((s) => s.updateTask);
-  const deleteTask = useDealFlowStore((s) => s.deleteTask);
+export function CrmTasksPage() {
+  const tasks = useCrmStore((s) => s.tasks);
+  const deals = useCrmStore((s) => s.deals);
+  const contacts = useCrmStore((s) => s.contacts);
+  const createTask = useCrmStore((s) => s.createTask);
+  const updateTask = useCrmStore((s) => s.updateTask);
+  const deleteTask = useCrmStore((s) => s.deleteTask);
 
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");

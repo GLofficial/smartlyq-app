@@ -1,5 +1,5 @@
 import { KanbanBoard } from "./components/kanban-board";
 
-export function DealFlowPipelinePage() {
+export function CrmPipelinePage() {
   return <KanbanBoard />;
 }

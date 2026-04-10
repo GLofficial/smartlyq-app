@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useDealFlowStore } from "@/stores/deal-flow-store";
-import type { Contact } from "@/lib/deal-flow-data";
-import { formatCurrency } from "@/lib/deal-flow-data";
+import { useCrmStore } from "@/stores/crm-store";
+import type { Contact } from "@/lib/crm-data";
+import { formatCurrency } from "@/lib/crm-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,8 +39,8 @@ interface ContactDetailSheetProps {
 }
 
 export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps) {
-  const deals = useDealFlowStore((s) => s.deals);
-  const updateContact = useDealFlowStore((s) => s.updateContact);
+  const deals = useCrmStore((s) => s.deals);
+  const updateContact = useCrmStore((s) => s.updateContact);
 
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");

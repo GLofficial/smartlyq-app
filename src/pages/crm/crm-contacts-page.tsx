@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { useDealFlowStore } from "@/stores/deal-flow-store";
-import type { Contact } from "@/lib/deal-flow-data";
+import { useCrmStore } from "@/stores/crm-store";
+import type { Contact } from "@/lib/crm-data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -65,11 +65,11 @@ type SortDir = "asc" | "desc";
 // Page component
 // ---------------------------------------------------------------------------
 
-export function DealFlowContactsPage() {
-  const contacts = useDealFlowStore((s) => s.contacts);
-  const deals = useDealFlowStore((s) => s.deals);
-  const createContact = useDealFlowStore((s) => s.createContact);
-  const deleteContact = useDealFlowStore((s) => s.deleteContact);
+export function CrmContactsPage() {
+  const contacts = useCrmStore((s) => s.contacts);
+  const deals = useCrmStore((s) => s.deals);
+  const createContact = useCrmStore((s) => s.createContact);
+  const deleteContact = useCrmStore((s) => s.deleteContact);
 
   const [search, setSearch] = useState("");
   const [searchField, setSearchField] = useState<"all" | "name" | "email" | "company">("all");

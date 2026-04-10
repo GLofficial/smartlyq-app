@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { type Deal } from "@/lib/deal-flow-data";
-import { useDealFlowStore } from "@/stores/deal-flow-store";
+import { type Deal } from "@/lib/crm-data";
+import { useCrmStore } from "@/stores/crm-store";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +35,7 @@ export function NewDealDialog({
   stageOrder,
   stageConfig,
 }: NewDealDialogProps) {
-  const projects = useDealFlowStore((s) => s.projects);
+  const projects = useCrmStore((s) => s.projects);
 
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");

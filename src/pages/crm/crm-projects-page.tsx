@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { useDealFlowStore } from "@/stores/deal-flow-store";
-import type { ContentItem, SmartlyQProject } from "@/lib/deal-flow-data";
+import { useCrmStore } from "@/stores/crm-store";
+import type { ContentItem, SmartlyQProject } from "@/lib/crm-data";
 import { cn } from "@/lib/cn";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -88,15 +88,15 @@ type SortDir = "asc" | "desc";
 // Page component
 // ---------------------------------------------------------------------------
 
-export function DealFlowProjectsPage() {
-  const projects = useDealFlowStore((s) => s.projects);
-  const deals = useDealFlowStore((s) => s.deals);
-  const createProject = useDealFlowStore((s) => s.createProject);
-  const updateProject = useDealFlowStore((s) => s.updateProject);
-  const deleteProject = useDealFlowStore((s) => s.deleteProject);
-  const addContentItem = useDealFlowStore((s) => s.addContentItem);
-  const removeContentItem = useDealFlowStore((s) => s.removeContentItem);
-  const updateContentItemStatus = useDealFlowStore((s) => s.updateContentItemStatus);
+export function CrmProjectsPage() {
+  const projects = useCrmStore((s) => s.projects);
+  const deals = useCrmStore((s) => s.deals);
+  const createProject = useCrmStore((s) => s.createProject);
+  const updateProject = useCrmStore((s) => s.updateProject);
+  const deleteProject = useCrmStore((s) => s.deleteProject);
+  const addContentItem = useCrmStore((s) => s.addContentItem);
+  const removeContentItem = useCrmStore((s) => s.removeContentItem);
+  const updateContentItemStatus = useCrmStore((s) => s.updateContentItemStatus);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");

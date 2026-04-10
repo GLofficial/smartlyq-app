@@ -81,7 +81,10 @@ export interface NavGroup {
 export const NAV_GROUPS: NavGroup[] = [
 	{
 		label: "",
-		items: [{ label: "Dashboard", path: "/my", icon: LayoutDashboard }],
+		items: [
+			{ label: "Dashboard", path: "/my", icon: LayoutDashboard },
+			{ label: "CRM", path: "/my/crm", icon: Briefcase },
+		],
 	},
 	{
 		label: "CREATE",
@@ -156,15 +159,15 @@ export const NAV_GROUPS: NavGroup[] = [
 		],
 	},
 	{
-		label: "DEAL FLOW",
+		label: "CRM",
 		icon: Briefcase,
-		path: "/my/deal-flow",
+		path: "/my/crm",
 		items: [
-			{ label: "Dashboard", path: "/my/deal-flow", icon: LayoutDashboard },
-			{ label: "Pipeline", path: "/my/deal-flow/pipeline", icon: LayoutGrid },
-			{ label: "Projects", path: "/my/deal-flow/projects", icon: FolderOpen },
-			{ label: "Contacts", path: "/my/deal-flow/contacts", icon: Users },
-			{ label: "Tasks", path: "/my/deal-flow/tasks", icon: ClipboardList },
+			{ label: "Dashboard", path: "/my/crm", icon: LayoutDashboard },
+			{ label: "Pipeline", path: "/my/crm/pipeline", icon: LayoutGrid },
+			{ label: "Projects", path: "/my/crm/projects", icon: FolderOpen },
+			{ label: "Contacts", path: "/my/crm/contacts", icon: Users },
+			{ label: "Tasks", path: "/my/crm/tasks", icon: ClipboardList },
 		],
 	},
 	{

@@ -6,8 +6,8 @@ import {
   STAGE_CONFIG,
   getDealsForStage,
   formatCurrency,
-} from "@/lib/deal-flow-data";
-import { useDealFlowStore } from "@/stores/deal-flow-store";
+} from "@/lib/crm-data";
+import { useCrmStore } from "@/stores/crm-store";
 import { DealCard } from "./deal-card";
 import { DealDetail } from "./deal-detail";
 import { NewDealDialog } from "./new-deal-dialog";
@@ -15,9 +15,9 @@ import { PipelineHeader } from "./pipeline-header";
 import { StageManager } from "./stage-manager";
 
 export function KanbanBoard() {
-  const deals = useDealFlowStore((s) => s.deals);
-  const createDeal = useDealFlowStore((s) => s.createDeal);
-  const updateDeal = useDealFlowStore((s) => s.updateDeal);
+  const deals = useCrmStore((s) => s.deals);
+  const createDeal = useCrmStore((s) => s.createDeal);
+  const updateDeal = useCrmStore((s) => s.updateDeal);
 
   // Stage configuration (mutable for custom pipelines)
   const [stageOrder, setStageOrder] = useState<string[]>(STAGE_ORDER);

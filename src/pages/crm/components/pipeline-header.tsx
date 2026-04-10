@@ -1,4 +1,4 @@
-import { formatCurrency, type Deal } from "@/lib/deal-flow-data";
+import { formatCurrency, type Deal } from "@/lib/crm-data";
 import { Button } from "@/components/ui/button";
 import { Plus, Settings2 } from "lucide-react";
 

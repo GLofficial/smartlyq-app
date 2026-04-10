@@ -92,12 +92,12 @@ const AdsInsightsPage = lazy(() => import("@/pages/integrations/ads-insights-pag
 const GoogleInsightsPage = lazy(() => import("@/pages/integrations/google-insights-page").then((m) => ({ default: m.GoogleInsightsPage })));
 const WoocommercePage = lazy(() => import("@/pages/integrations/woocommerce-page").then((m) => ({ default: m.WoocommercePage })));
 const NotFoundPage = lazy(() => import("@/pages/misc/not-found-page").then((m) => ({ default: m.NotFoundPage })));
-const DealFlowDashboardPage = lazy(() => import("@/pages/deal-flow/deal-flow-dashboard-page").then((m) => ({ default: m.DealFlowDashboardPage })));
-const DealFlowPipelinePage = lazy(() => import("@/pages/deal-flow/deal-flow-pipeline-page").then((m) => ({ default: m.DealFlowPipelinePage })));
-const DealFlowProjectsPage = lazy(() => import("@/pages/deal-flow/deal-flow-projects-page").then((m) => ({ default: m.DealFlowProjectsPage })));
-const DealFlowContactsPage = lazy(() => import("@/pages/deal-flow/deal-flow-contacts-page").then((m) => ({ default: m.DealFlowContactsPage })));
-const DealFlowTasksPage = lazy(() => import("@/pages/deal-flow/deal-flow-tasks-page").then((m) => ({ default: m.DealFlowTasksPage })));
-const DealFlowPreviewPage = lazy(() => import("@/pages/deal-flow/deal-flow-preview-page").then((m) => ({ default: m.DealFlowPreviewPage })));
+const CrmDashboardPage = lazy(() => import("@/pages/crm/crm-dashboard-page").then((m) => ({ default: m.CrmDashboardPage })));
+const CrmPipelinePage = lazy(() => import("@/pages/crm/crm-pipeline-page").then((m) => ({ default: m.CrmPipelinePage })));
+const CrmProjectsPage = lazy(() => import("@/pages/crm/crm-projects-page").then((m) => ({ default: m.CrmProjectsPage })));
+const CrmContactsPage = lazy(() => import("@/pages/crm/crm-contacts-page").then((m) => ({ default: m.CrmContactsPage })));
+const CrmTasksPage = lazy(() => import("@/pages/crm/crm-tasks-page").then((m) => ({ default: m.CrmTasksPage })));
+const CrmPreviewPage = lazy(() => import("@/pages/crm/crm-preview-page").then((m) => ({ default: m.CrmPreviewPage })));
 
 function S({ children }: { children: React.ReactNode }) {
 	return <Suspense fallback={<div className="flex h-[50vh] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" /></div>}>{children}</Suspense>;
@@ -238,12 +238,12 @@ export const router = createBrowserRouter([
 			{ path: "/my/workspace/members", element: <S><MembersPage /></S> },
 
 			/* ── Deal Flow CRM ── */
-			{ path: "/my/deal-flow", element: <S><DealFlowDashboardPage /></S> },
-			{ path: "/my/deal-flow/pipeline", element: <S><DealFlowPipelinePage /></S> },
-			{ path: "/my/deal-flow/projects", element: <S><DealFlowProjectsPage /></S> },
-			{ path: "/my/deal-flow/contacts", element: <S><DealFlowContactsPage /></S> },
-			{ path: "/my/deal-flow/tasks", element: <S><DealFlowTasksPage /></S> },
-			{ path: "/my/deal-flow/preview/:dealId", element: <S><DealFlowPreviewPage /></S> },
+			{ path: "/my/crm", element: <S><CrmDashboardPage /></S> },
+			{ path: "/my/crm/pipeline", element: <S><CrmPipelinePage /></S> },
+			{ path: "/my/crm/projects", element: <S><CrmProjectsPage /></S> },
+			{ path: "/my/crm/contacts", element: <S><CrmContactsPage /></S> },
+			{ path: "/my/crm/tasks", element: <S><CrmTasksPage /></S> },
+			{ path: "/my/crm/preview/:dealId", element: <S><CrmPreviewPage /></S> },
 
 			/* ── Agency + Whitelabel (native) ── */
 			{ path: "/my/agency", element: <S><AgencyPage /></S> },

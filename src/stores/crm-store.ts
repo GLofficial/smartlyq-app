@@ -5,18 +5,18 @@ import type {
   CrmTask,
   SmartlyQProject,
   ContentItem,
-} from "@/lib/deal-flow-data";
+} from "@/lib/crm-data";
 import {
   MOCK_DEALS,
   MOCK_CONTACTS,
   MOCK_TASKS,
-} from "@/lib/deal-flow-data";
+} from "@/lib/crm-data";
 
 // ---------------------------------------------------------------------------
 // Store interface
 // ---------------------------------------------------------------------------
 
-interface DealFlowState {
+interface CrmState {
   deals: Deal[];
   contacts: Contact[];
   tasks: CrmTask[];
@@ -87,7 +87,7 @@ function syncProjectToDeals(
 // Store
 // ---------------------------------------------------------------------------
 
-export const useDealFlowStore = create<DealFlowState>((set) => ({
+export const useCrmStore = create<CrmState>((set) => ({
   deals: MOCK_DEALS,
   contacts: MOCK_CONTACTS,
   tasks: MOCK_TASKS,

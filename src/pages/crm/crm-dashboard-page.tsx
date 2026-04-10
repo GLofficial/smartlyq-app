@@ -12,7 +12,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { useDealFlowStore } from "@/stores/deal-flow-store";
+import { useCrmStore } from "@/stores/crm-store";
 import {
   STAGE_CONFIG,
   STAGE_ORDER,
@@ -20,7 +20,7 @@ import {
   formatCurrency,
   type Deal,
   type CrmTask,
-} from "@/lib/deal-flow-data";
+} from "@/lib/crm-data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -70,10 +70,10 @@ function relativeDate(dateStr: string): string {
 // Component
 // ---------------------------------------------------------------------------
 
-export function DealFlowDashboardPage() {
-  const deals = useDealFlowStore((s) => s.deals);
-  const tasks = useDealFlowStore((s) => s.tasks);
-  const contacts = useDealFlowStore((s) => s.contacts);
+export function CrmDashboardPage() {
+  const deals = useCrmStore((s) => s.deals);
+  const tasks = useCrmStore((s) => s.tasks);
+  const contacts = useCrmStore((s) => s.contacts);
 
   // --- KPI data ---
   const totalPipelineValue = useMemo(
@@ -319,7 +319,7 @@ export function DealFlowDashboardPage() {
                 </CardDescription>
               </div>
               <Link
-                to="/my/deal-flow/tasks"
+                to="/my/crm/tasks"
                 className="text-xs text-[var(--primary)] hover:underline flex items-center gap-1"
               >
                 View all <ArrowRight className="w-3 h-3" />
@@ -375,7 +375,7 @@ export function DealFlowDashboardPage() {
                 <CardDescription>Latest communication across deals</CardDescription>
               </div>
               <Link
-                to="/my/deal-flow/pipeline"
+                to="/my/crm/pipeline"
                 className="text-xs text-[var(--primary)] hover:underline flex items-center gap-1"
               >
                 Pipeline <ArrowRight className="w-3 h-3" />

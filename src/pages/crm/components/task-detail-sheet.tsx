@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useDealFlowStore } from "@/stores/deal-flow-store";
-import type { CrmTask, TaskStatus, TaskPriority, Subtask } from "@/lib/deal-flow-data";
-import { TASK_STATUS_CONFIG, PRIORITY_CONFIG } from "@/lib/deal-flow-data";
+import { useCrmStore } from "@/stores/crm-store";
+import type { CrmTask, TaskStatus, TaskPriority, Subtask } from "@/lib/crm-data";
+import { TASK_STATUS_CONFIG, PRIORITY_CONFIG } from "@/lib/crm-data";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,9 +55,9 @@ interface TaskDetailSheetProps {
 }
 
 export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
-  const deals = useDealFlowStore((s) => s.deals);
-  const contacts = useDealFlowStore((s) => s.contacts);
-  const updateTask = useDealFlowStore((s) => s.updateTask);
+  const deals = useCrmStore((s) => s.deals);
+  const contacts = useCrmStore((s) => s.contacts);
+  const updateTask = useCrmStore((s) => s.updateTask);
 
   // Timer state
   const [timerRunning, setTimerRunning] = useState(false);

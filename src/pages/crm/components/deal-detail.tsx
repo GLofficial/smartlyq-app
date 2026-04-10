@@ -5,7 +5,7 @@ import {
   type ContentItem,
   formatCurrency,
   getContentProgress,
-} from "@/lib/deal-flow-data";
+} from "@/lib/crm-data";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
