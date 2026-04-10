@@ -155,6 +155,7 @@ function FileCard({ file, onPreview }: { file: MediaFile; onPreview: (f: MediaFi
 	const isVideo = file.type === "video" || file.mime_type?.startsWith("video/");
 	const isAudio = file.type === "audio" || file.mime_type?.startsWith("audio/");
 	const isDoc = file.type === "document";
+	const isPdf = file.mime_type === "application/pdf" || file.file_name?.toLowerCase().endsWith(".pdf");
 	const ext = file.file_name?.split(".").pop()?.toUpperCase() ?? "";
 	const sizeStr = file.size > 1048576 ? `${(file.size / 1048576).toFixed(1)} MB` : file.size > 0 ? `${(file.size / 1024).toFixed(1)} KB` : "";
 	const DocIcon = (isDoc && DOC_ICONS[file.mime_type]) || FileIcon;
@@ -190,9 +191,10 @@ function FileCard({ file, onPreview }: { file: MediaFile; onPreview: (f: MediaFi
 					{isImage ? <img src={file.preview_url || file.url} alt={file.name} className="h-full w-full object-cover" loading="lazy" />
 					: isVideo && file.preview_url && !file.preview_url.endsWith(".mp4") && !file.preview_url.endsWith(".MP4") && file.preview_url !== file.url ? <img src={file.preview_url} alt={file.name} className="h-full w-full object-cover" loading="lazy" />
 					: isVideo ? <video src={file.url} muted preload="metadata" className="h-full w-full object-cover" />
+					: isPdf ? <div className="relative h-full w-full overflow-hidden bg-white"><object data={file.url + "#page=1&view=FitH"} type="application/pdf" className="pointer-events-none h-[200%] w-[200%] origin-top-left scale-50"><DocIcon size={28} className="text-blue-500" /></object></div>
 					: <div className="flex h-full flex-col items-center justify-center gap-2">
-						{isVideo ? <Video size={28} className="text-red-500" /> : isAudio ? <AudioLines size={28} className="text-purple-500" /> : <DocIcon size={28} className="text-blue-500" />}
-						{isDoc && ext && <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{ext}</span>}
+						{isAudio ? <AudioLines size={28} className="text-purple-500" /> : <DocIcon size={28} className="text-blue-500" />}
+						{ext && <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{ext}</span>}
 					</div>}
 					{/* Hover overlay with Preview + Download buttons */}
 					<div className="absolute inset-0 flex items-center justify-center gap-3 rounded-lg bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
