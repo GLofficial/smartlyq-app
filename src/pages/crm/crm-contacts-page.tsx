@@ -3,6 +3,7 @@ import {
   useCrmContacts,
   useCrmContactSave,
   useCrmContactDelete,
+  exportCrmContacts,
   type ApiContact,
 } from "@/api/crm";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,49 +11,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Search,
-  Plus,
-  Trash2,
-  ArrowUpDown,
-  Building2,
-  Loader2,
-} from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Plus, Trash2, ArrowUpDown, Building2, Loader2, Upload, Download, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { ContactDetailSheet } from "./components/contact-detail-sheet";
+import { ContactImportDialog } from "./components/contact-import-dialog";
+import { DeletedContactsDialog } from "./components/deleted-contacts-dialog";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -88,6 +58,8 @@ export function CrmContactsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ApiContact | null>(null);
   const [selectedContactId, setSelectedContactId] = useState<number | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [deletedOpen, setDeletedOpen] = useState(false);
 
   // Create form
   const [formFirstName, setFormFirstName] = useState("");
@@ -222,10 +194,24 @@ export function CrmContactsPage() {
             {contacts.length} contact{contacts.length !== 1 ? "s" : ""} total
           </p>
         </div>
-        <Button onClick={() => { resetForm(); setCreateOpen(true); }}>
-          <Plus className="w-4 h-4 mr-1.5" />
-          Add Contact
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <Upload className="w-4 h-4 mr-1.5" />
+            Import
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => { exportCrmContacts(); toast.success("Downloading..."); }}>
+            <Download className="w-4 h-4 mr-1.5" />
+            Export
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setDeletedOpen(true)}>
+            <RotateCcw className="w-4 h-4 mr-1.5" />
+            Restore
+          </Button>
+          <Button onClick={() => { resetForm(); setCreateOpen(true); }}>
+            <Plus className="w-4 h-4 mr-1.5" />
+            Add Contact
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -484,7 +470,7 @@ export function CrmContactsPage() {
             <AlertDialogDescription>
               Are you sure you want to delete "{deleteTarget?.first_name || deleteTarget?.last_name
                 ? `${deleteTarget?.first_name} ${deleteTarget?.last_name}`.trim()
-                : deleteTarget?.name}"? This action cannot be undone.
+                : deleteTarget?.name}"? This contact will be moved to trash. You can restore it later from the Restore menu.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -495,6 +481,9 @@ export function CrmContactsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ContactImportDialog open={importOpen} onOpenChange={setImportOpen} />
+      <DeletedContactsDialog open={deletedOpen} onOpenChange={setDeletedOpen} />
     </div>
   );
 }
