@@ -1,11 +1,8 @@
-import { cn } from "@/lib/cn";
 import {
-  type Deal,
-  type StageConfig,
-  type ContentItem,
-  formatCurrency,
-  getContentProgress,
-} from "@/lib/crm-data";
+  type ApiDeal,
+  useCrmDealGet,
+} from "@/api/crm";
+import { type StageConfig, formatCurrency } from "@/lib/crm-data";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -17,33 +14,15 @@ import {
   Sparkles,
   ExternalLink,
   MessageSquare,
+  Loader2,
 } from "lucide-react";
-
-// ---------------------------------------------------------------------------
-// Content-item labels
-// ---------------------------------------------------------------------------
-
-const STATUS_LABELS: Record<ContentItem["status"], { label: string; className: string }> = {
-  queued:     { label: "Queued",     className: "bg-gray-100 text-gray-600" },
-  generating: { label: "Generating", className: "bg-blue-100 text-blue-700 animate-pulse" },
-  draft:      { label: "Draft",      className: "bg-amber-100 text-amber-700" },
-  approved:   { label: "Approved",   className: "bg-emerald-100 text-emerald-700" },
-  published:  { label: "Published",  className: "bg-emerald-200 text-emerald-800" },
-};
-
-const TYPE_LABELS: Record<ContentItem["type"], string> = {
-  "seo-article": "SEO Article",
-  "social-post": "Social Post",
-  "ad-copy": "Ad Copy",
-  "blog-post": "Blog Post",
-};
 
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
 
 interface DealDetailProps {
-  deal: Deal;
+  deal: ApiDeal;
   stageConfig: Record<string, StageConfig>;
   onClose: () => void;
 }
@@ -53,8 +32,11 @@ interface DealDetailProps {
 // ---------------------------------------------------------------------------
 
 export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
-  const progress = getContentProgress(deal.project);
+  const { data: detailData, isLoading } = useCrmDealGet(deal.id);
   const stage = stageConfig[deal.stage];
+  const communications = detailData?.communications ?? [];
+  const project = detailData?.project;
+  const contentItems = project?.content_items ?? [];
 
   return (
     <div className="h-full flex flex-col bg-[var(--card)] border-l border-[var(--border)] overflow-y-auto">
@@ -62,7 +44,7 @@ export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
       <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
         <div>
           <h2 className="text-lg font-semibold text-[var(--foreground)]">
-            {deal.clientName}
+            {deal.client_name}
           </h2>
           {stage && (
             <span
@@ -87,20 +69,20 @@ export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
         <section className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
             <Mail className="w-3.5 h-3.5" />
-            <a href={`mailto:${deal.clientEmail}`} className="hover:underline">
-              {deal.clientEmail}
+            <a href={`mailto:${deal.client_email}`} className="hover:underline">
+              {deal.client_email}
             </a>
           </div>
           <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
             <Building2 className="w-3.5 h-3.5" />
-            <span>{deal.clientCompany}</span>
+            <span>{deal.client_company}</span>
           </div>
-          {deal.nextActionDate && (
+          {deal.next_action_date && (
             <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
               <Calendar className="w-3.5 h-3.5" />
               <span>
                 Next action:{" "}
-                {new Date(deal.nextActionDate).toLocaleDateString("en-US", {
+                {new Date(deal.next_action_date).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
                   year: "numeric",
@@ -131,101 +113,88 @@ export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
 
         <Separator />
 
-        {/* SmartlyQ project */}
-        {deal.project ? (
-          <section>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-semibold uppercase text-[var(--muted-foreground)] flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                SmartlyQ Project
-              </h3>
-              <Button variant="ghost" size="sm" className="h-7 text-xs gap-1">
-                <ExternalLink className="w-3 h-3" />
-                Client Preview
-              </Button>
-            </div>
-
-            <p className="text-sm font-medium text-[var(--foreground)] mb-2">
-              {deal.project.name}
-            </p>
-
-            {/* Progress */}
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex-1 h-1.5 rounded-full bg-[var(--muted)] overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                  style={{ width: `${progress.percent}%` }}
-                />
-              </div>
-              <span className="text-xs text-[var(--muted-foreground)] whitespace-nowrap">
-                {progress.done}/{progress.total}
-              </span>
-            </div>
-
-            {/* Content items */}
-            <ul className="space-y-2">
-              {deal.project.items.map((item) => {
-                const statusCfg = STATUS_LABELS[item.status];
-                return (
-                  <li
-                    key={item.id}
-                    className="flex items-center gap-2 text-sm"
-                  >
-                    <FileText className="w-3.5 h-3.5 text-[var(--muted-foreground)] shrink-0" />
-                    <span className="flex-1 truncate text-[var(--foreground)]">
-                      {item.title}
-                    </span>
-                    <span className="text-[10px] text-[var(--muted-foreground)] shrink-0">
-                      {TYPE_LABELS[item.type]}
-                    </span>
-                    <span
-                      className={cn(
-                        "text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0",
-                        statusCfg.className,
-                      )}
-                    >
-                      {statusCfg.label}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-5 h-5 animate-spin text-[var(--muted-foreground)]" />
+          </div>
         ) : (
-          <section className="text-sm text-[var(--muted-foreground)] italic">
-            No SmartlyQ project linked yet.
-          </section>
-        )}
-
-        <Separator />
-
-        {/* Communication history */}
-        {deal.communicationHistory.length > 0 && (
-          <section>
-            <h3 className="text-xs font-semibold uppercase text-[var(--muted-foreground)] flex items-center gap-1.5 mb-3">
-              <MessageSquare className="w-3.5 h-3.5" />
-              Communication
-            </h3>
-            <div className="space-y-3">
-              {deal.communicationHistory.map((entry, idx) => (
-                <div key={idx} className="relative pl-4 border-l-2 border-[var(--border)]">
-                  <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)] mb-0.5">
-                    <span className="font-medium">{entry.from}</span>
-                    <span>&middot;</span>
-                    <span>
-                      {new Date(entry.date).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                  </div>
-                  <p className="text-sm text-[var(--foreground)]">
-                    {entry.message}
-                  </p>
+          <>
+            {/* SmartlyQ project */}
+            {project ? (
+              <section>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-semibold uppercase text-[var(--muted-foreground)] flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    SmartlyQ Project
+                  </h3>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1">
+                    <ExternalLink className="w-3 h-3" />
+                    Client Preview
+                  </Button>
                 </div>
-              ))}
-            </div>
-          </section>
+
+                <p className="text-sm font-medium text-[var(--foreground)] mb-2">
+                  {project.name}
+                </p>
+
+                {/* Content items */}
+                <ul className="space-y-2">
+                  {contentItems.map((item) => (
+                    <li
+                      key={item.id}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-[var(--muted-foreground)] shrink-0" />
+                      <span className="flex-1 truncate text-[var(--foreground)]">
+                        {item.title}
+                      </span>
+                      <span className="text-[10px] text-[var(--muted-foreground)] shrink-0">
+                        {item.type}
+                      </span>
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 bg-gray-100 text-gray-600">
+                        {item.status}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : (
+              <section className="text-sm text-[var(--muted-foreground)] italic">
+                No SmartlyQ project linked yet.
+              </section>
+            )}
+
+            <Separator />
+
+            {/* Communication history */}
+            {communications.length > 0 && (
+              <section>
+                <h3 className="text-xs font-semibold uppercase text-[var(--muted-foreground)] flex items-center gap-1.5 mb-3">
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  Communication
+                </h3>
+                <div className="space-y-3">
+                  {communications.map((entry) => (
+                    <div key={entry.id} className="relative pl-4 border-l-2 border-[var(--border)]">
+                      <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)] mb-0.5">
+                        <span className="font-medium">{entry.sender}</span>
+                        <span>&middot;</span>
+                        <span>
+                          {new Date(entry.comm_date).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-[var(--foreground)]">
+                        {entry.message}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
         )}
       </div>
     </div>

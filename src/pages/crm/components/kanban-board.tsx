@@ -1,32 +1,45 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { cn } from "@/lib/cn";
 import {
   type StageConfig,
-  STAGE_ORDER,
-  STAGE_CONFIG,
   getDealsForStage,
   formatCurrency,
 } from "@/lib/crm-data";
-import { useCrmStore } from "@/stores/crm-store";
+import {
+  useCrmDeals,
+  useCrmDealSave,
+  useCrmStages,
+  useCrmStagesSave,
+} from "@/api/crm";
 import { DealCard } from "./deal-card";
 import { DealDetail } from "./deal-detail";
 import { NewDealDialog } from "./new-deal-dialog";
 import { PipelineHeader } from "./pipeline-header";
 import { StageManager } from "./stage-manager";
+import { Loader2 } from "lucide-react";
 
 export function KanbanBoard() {
-  const deals = useCrmStore((s) => s.deals);
-  const createDeal = useCrmStore((s) => s.createDeal);
-  const updateDeal = useCrmStore((s) => s.updateDeal);
+  const { data: dealsData, isLoading: dealsLoading } = useCrmDeals();
+  const { data: stagesData, isLoading: stagesLoading } = useCrmStages();
+  const saveDeal = useCrmDealSave();
+  const saveStages = useCrmStagesSave();
 
-  // Stage configuration (mutable for custom pipelines)
-  const [stageOrder, setStageOrder] = useState<string[]>(STAGE_ORDER);
-  const [stageConfig, setStageConfig] =
-    useState<Record<string, StageConfig>>(STAGE_CONFIG);
+  const deals = dealsData?.deals ?? [];
+  const stages = stagesData?.stages ?? [];
+
+  // Derive stage order and config from API stages
+  const stageOrder = useMemo(() => stages.map((s) => s.stage_key), [stages]);
+  const stageConfig = useMemo(() => {
+    const m: Record<string, StageConfig> = {};
+    for (const s of stages) {
+      m[s.stage_key] = { label: s.label, color: s.color };
+    }
+    return m;
+  }, [stages]);
 
   // UI state
-  const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
-  const [dragDealId, setDragDealId] = useState<string | null>(null);
+  const [selectedDealId, setSelectedDealId] = useState<number | null>(null);
+  const [dragDealId, setDragDealId] = useState<number | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [showNewDeal, setShowNewDeal] = useState(false);
   const [showStageManager, setShowStageManager] = useState(false);
@@ -34,7 +47,7 @@ export function KanbanBoard() {
   const selectedDeal = deals.find((d) => d.id === selectedDealId) ?? null;
 
   // Drag handlers
-  const handleDragStart = useCallback((id: string) => setDragDealId(id), []);
+  const handleDragStart = useCallback((id: number) => setDragDealId(id), []);
   const handleDragEnd = useCallback(() => {
     setDragDealId(null);
     setDragOverStage(null);
@@ -46,8 +59,8 @@ export function KanbanBoard() {
   }
 
   function handleDrop(stage: string) {
-    if (dragDealId) {
-      updateDeal(dragDealId, { stage });
+    if (dragDealId !== null) {
+      saveDeal.mutate({ id: dragDealId, stage });
     }
     setDragDealId(null);
     setDragOverStage(null);
@@ -58,8 +71,21 @@ export function KanbanBoard() {
     order: string[],
     config: Record<string, StageConfig>,
   ) {
-    setStageOrder(order);
-    setStageConfig(config);
+    const apiStages = order.map((key, idx) => ({
+      stage_key: key,
+      label: config[key]?.label ?? key,
+      color: config[key]?.color ?? "220 14% 46%",
+      sort_order: idx,
+    }));
+    saveStages.mutate(apiStages);
+  }
+
+  if (dealsLoading || stagesLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-6 h-6 animate-spin text-[var(--muted-foreground)]" />
+      </div>
+    );
   }
 
   return (
@@ -155,7 +181,6 @@ export function KanbanBoard() {
       <NewDealDialog
         open={showNewDeal}
         onOpenChange={setShowNewDeal}
-        onCreate={createDeal}
         stageOrder={stageOrder}
         stageConfig={stageConfig}
       />

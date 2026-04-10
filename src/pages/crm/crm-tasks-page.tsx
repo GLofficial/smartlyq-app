@@ -1,7 +1,13 @@
 import { useState, useMemo, useCallback } from "react";
-import { useCrmStore } from "@/stores/crm-store";
+import {
+  useCrmTasks,
+  useCrmDeals,
+  useCrmContacts,
+  useCrmTaskSave,
+  useCrmTaskDelete,
+  type ApiTask,
+} from "@/api/crm";
 import type {
-  CrmTask,
   TaskStatus,
   TaskPriority,
 } from "@/lib/crm-data";
@@ -46,6 +52,7 @@ import {
   Trash2,
   CheckSquare,
   GripVertical,
+  Loader2,
 } from "lucide-react";
 import { TaskCard } from "./components/task-card";
 import { TaskDetailSheet } from "./components/task-detail-sheet";
@@ -55,24 +62,27 @@ import { TaskDetailSheet } from "./components/task-detail-sheet";
 // ---------------------------------------------------------------------------
 
 export function CrmTasksPage() {
-  const tasks = useCrmStore((s) => s.tasks);
-  const deals = useCrmStore((s) => s.deals);
-  const contacts = useCrmStore((s) => s.contacts);
-  const createTask = useCrmStore((s) => s.createTask);
-  const updateTask = useCrmStore((s) => s.updateTask);
-  const deleteTask = useCrmStore((s) => s.deleteTask);
+  const { data: tasksData, isLoading: tasksLoading } = useCrmTasks();
+  const { data: dealsData } = useCrmDeals();
+  const { data: contactsData } = useCrmContacts();
+  const saveTask = useCrmTaskSave();
+  const deleteTaskMut = useCrmTaskDelete();
+
+  const tasks = tasksData?.tasks ?? [];
+  const deals = dealsData?.deals ?? [];
+  const contacts = contactsData?.contacts ?? [];
 
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<number | null>(null);
 
   // Dialogs
   const [createOpen, setCreateOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<CrmTask | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<CrmTask | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ApiTask | null>(null);
 
   // Bulk select
-  const [bulkIds, setBulkIds] = useState<Set<string>>(new Set());
+  const [bulkIds, setBulkIds] = useState<Set<number>>(new Set());
   const [bulkMode, setBulkMode] = useState(false);
 
   // Create form
@@ -103,7 +113,7 @@ export function CrmTasksPage() {
     return list;
   }, [tasks, search, priorityFilter]);
 
-  const columns: { status: TaskStatus; tasks: CrmTask[] }[] = useMemo(
+  const columns: { status: TaskStatus; tasks: ApiTask[] }[] = useMemo(
     () =>
       TASK_STATUS_ORDER.map((status) => ({
         status,
@@ -111,24 +121,25 @@ export function CrmTasksPage() {
           .filter((t) => t.status === status)
           .sort(
             (a, b) =>
-              new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+              new Date(a.due_date ?? "").getTime() -
+              new Date(b.due_date ?? "").getTime(),
           ),
       })),
     [filteredTasks],
   );
 
   // --- Drag & drop ---
-  const handleDragStart = useCallback((id: string) => setDraggingId(id), []);
+  const handleDragStart = useCallback((id: number) => setDraggingId(id), []);
   const handleDragEnd = useCallback(() => setDraggingId(null), []);
 
   function handleDrop(status: TaskStatus) {
-    if (!draggingId) return;
-    updateTask(draggingId, { status });
+    if (draggingId === null) return;
+    saveTask.mutate({ id: draggingId, status });
     setDraggingId(null);
   }
 
   // --- Bulk actions ---
-  function toggleBulkId(id: string) {
+  function toggleBulkId(id: number) {
     setBulkIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -138,13 +149,13 @@ export function CrmTasksPage() {
   }
 
   function bulkDelete() {
-    bulkIds.forEach((id) => deleteTask(id));
+    bulkIds.forEach((id) => deleteTaskMut.mutate(id));
     setBulkIds(new Set());
     setBulkMode(false);
   }
 
   function bulkChangeStatus(status: TaskStatus) {
-    bulkIds.forEach((id) => updateTask(id, { status }));
+    bulkIds.forEach((id) => saveTask.mutate({ id, status }));
     setBulkIds(new Set());
     setBulkMode(false);
   }
@@ -152,22 +163,15 @@ export function CrmTasksPage() {
   // --- Create task ---
   function handleCreate() {
     if (!formTitle.trim()) return;
-    const task: CrmTask = {
-      id: `task-${Date.now()}`,
+    saveTask.mutate({
       title: formTitle.trim(),
       description: formDesc.trim(),
       status: "todo",
       priority: formPriority,
-      dueDate: formDueDate,
-      linkedDealId: formDealId !== "none" ? formDealId : undefined,
-      linkedContactId: formContactId !== "none" ? formContactId : undefined,
-      tags: [],
-      subtasks: [],
-      recurrence: undefined,
-      timeTrackedMinutes: 0,
-      createdAt: new Date().toISOString().slice(0, 10),
-    };
-    createTask(task);
+      due_date: formDueDate,
+      linked_deal_id: formDealId !== "none" ? Number(formDealId) : null,
+      linked_contact_id: formContactId !== "none" ? Number(formContactId) : null,
+    });
     resetForm();
     setCreateOpen(false);
   }
@@ -181,10 +185,18 @@ export function CrmTasksPage() {
     setFormContactId("none");
   }
 
-  // Keep selectedTask in sync with store
-  const liveSelectedTask = selectedTask
-    ? tasks.find((t) => t.id === selectedTask.id) ?? null
+  // Keep selectedTask in sync
+  const liveSelectedTask = selectedTaskId
+    ? tasks.find((t) => t.id === selectedTaskId) ?? null
     : null;
+
+  if (tasksLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-6 h-6 animate-spin text-[var(--muted-foreground)]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -323,14 +335,14 @@ export function CrmTasksPage() {
                         )}
                         onClick={() => toggleBulkId(task.id)}
                       >
-                        {bulkIds.has(task.id) && "✓"}
+                        {bulkIds.has(task.id) && "check"}
                       </button>
                     )}
                     <TaskCard
                       task={task}
                       deals={deals}
                       contacts={contacts}
-                      onClick={() => !bulkMode && setSelectedTask(task)}
+                      onClick={() => !bulkMode && setSelectedTaskId(task.id)}
                       onDragStart={handleDragStart}
                       onDragEnd={handleDragEnd}
                       isDragging={draggingId === task.id}
@@ -346,7 +358,9 @@ export function CrmTasksPage() {
       {/* Task detail sheet */}
       <TaskDetailSheet
         task={liveSelectedTask}
-        onClose={() => setSelectedTask(null)}
+        deals={deals}
+        contacts={contacts}
+        onClose={() => setSelectedTaskId(null)}
       />
 
       {/* --- Create dialog --- */}
@@ -412,8 +426,8 @@ export function CrmTasksPage() {
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
                     {deals.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.clientCompany}
+                      <SelectItem key={d.id} value={String(d.id)}>
+                        {d.client_company}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -428,7 +442,7 @@ export function CrmTasksPage() {
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
                     {contacts.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
+                      <SelectItem key={c.id} value={String(c.id)}>
                         {c.name}
                       </SelectItem>
                     ))}
@@ -448,7 +462,7 @@ export function CrmTasksPage() {
         </DialogContent>
       </Dialog>
 
-      {/* --- Delete dialog (for bulk) --- */}
+      {/* --- Delete dialog --- */}
       <AlertDialog
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
@@ -465,7 +479,7 @@ export function CrmTasksPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (deleteTarget) deleteTask(deleteTarget.id);
+                if (deleteTarget) deleteTaskMut.mutate(deleteTarget.id);
                 setDeleteTarget(null);
               }}
               className="bg-red-600 hover:bg-red-700"

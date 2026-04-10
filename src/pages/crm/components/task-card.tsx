@@ -1,6 +1,6 @@
 import { cn } from "@/lib/cn";
-import type { CrmTask, Deal, Contact } from "@/lib/crm-data";
-import { PRIORITY_CONFIG } from "@/lib/crm-data";
+import { type ApiTask, type ApiDeal, type ApiContact } from "@/api/crm";
+import { PRIORITY_CONFIG, type TaskPriority } from "@/lib/crm-data";
 import { Badge } from "@/components/ui/badge";
 import {
   Clock,
@@ -15,7 +15,8 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function isOverdue(dateStr: string): boolean {
+function isOverdue(dateStr: string | null): boolean {
+  if (!dateStr) return false;
   return new Date(dateStr) < new Date(new Date().toDateString());
 }
 
@@ -31,11 +32,11 @@ function formatMinutes(mins: number): string {
 // ---------------------------------------------------------------------------
 
 interface TaskCardProps {
-  task: CrmTask;
-  deals: Deal[];
-  contacts: Contact[];
+  task: ApiTask;
+  deals: ApiDeal[];
+  contacts: ApiContact[];
   onClick: () => void;
-  onDragStart: (id: string) => void;
+  onDragStart: (id: number) => void;
   onDragEnd: () => void;
   isDragging: boolean;
 }
@@ -49,13 +50,13 @@ export function TaskCard({
   onDragEnd,
   isDragging,
 }: TaskCardProps) {
-  const priorityCfg = PRIORITY_CONFIG[task.priority];
-  const overdue = task.status !== "done" && isOverdue(task.dueDate);
-  const linkedDeal = task.linkedDealId
-    ? deals.find((d) => d.id === task.linkedDealId)
+  const priorityCfg = PRIORITY_CONFIG[task.priority as TaskPriority];
+  const overdue = task.status !== "done" && isOverdue(task.due_date);
+  const linkedDeal = task.linked_deal_id
+    ? deals.find((d) => d.id === task.linked_deal_id)
     : undefined;
-  const linkedContact = task.linkedContactId
-    ? contacts.find((c) => c.id === task.linkedContactId)
+  const linkedContact = task.linked_contact_id
+    ? contacts.find((c) => c.id === task.linked_contact_id)
     : undefined;
   const completedSubtasks = task.subtasks.filter((s) => s.done).length;
 
@@ -76,12 +77,14 @@ export function TaskCard({
         <span className="text-sm font-medium text-[var(--foreground)] line-clamp-2">
           {task.title}
         </span>
-        <Badge
-          variant="outline"
-          className={cn("text-[10px] px-1.5 py-0 shrink-0", priorityCfg.className)}
-        >
-          {priorityCfg.label}
-        </Badge>
+        {priorityCfg && (
+          <Badge
+            variant="outline"
+            className={cn("text-[10px] px-1.5 py-0 shrink-0", priorityCfg.className)}
+          >
+            {priorityCfg.label}
+          </Badge>
+        )}
       </div>
 
       {/* Overdue indicator */}
@@ -93,19 +96,21 @@ export function TaskCard({
       )}
 
       {/* Due date */}
-      <div className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)] mb-1.5">
-        <Clock className="w-3 h-3" />
-        {new Date(task.dueDate).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        })}
-      </div>
+      {task.due_date && (
+        <div className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)] mb-1.5">
+          <Clock className="w-3 h-3" />
+          {new Date(task.due_date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })}
+        </div>
+      )}
 
       {/* Timer */}
-      {task.timeTrackedMinutes > 0 && (
+      {task.time_tracked_minutes > 0 && (
         <div className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)] mb-1.5">
           <Timer className="w-3 h-3" />
-          {formatMinutes(task.timeTrackedMinutes)}
+          {formatMinutes(task.time_tracked_minutes)}
         </div>
       )}
 
@@ -114,7 +119,7 @@ export function TaskCard({
         <div className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)] mb-1.5">
           <LinkIcon className="w-3 h-3" />
           <span className="truncate">
-            {linkedDeal ? linkedDeal.clientCompany : ""}
+            {linkedDeal ? linkedDeal.client_company : ""}
             {linkedDeal && linkedContact ? " / " : ""}
             {linkedContact ? linkedContact.name : ""}
           </span>

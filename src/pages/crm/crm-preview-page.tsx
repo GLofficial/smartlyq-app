@@ -1,32 +1,25 @@
-import { useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { useCrmStore } from "@/stores/crm-store";
-import type { ContentItem } from "@/lib/crm-data";
+import {
+  useCrmDealGet,
+  type ApiContentItem,
+} from "@/api/crm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle2, MessageSquare, FileText, Megaphone, PenLine, Sparkles } from "lucide-react";
+import {
+  CheckCircle2,
+  MessageSquare,
+  FileText,
+  Loader2,
+} from "lucide-react";
+import { useCrmContentItemStatus } from "@/api/crm";
 
 // ---------------------------------------------------------------------------
-// Content-type icons
+// Status styles
 // ---------------------------------------------------------------------------
 
-const TYPE_ICON: Record<ContentItem["type"], React.ReactNode> = {
-  "seo-article": <FileText className="w-4 h-4" />,
-  "social-post": <Megaphone className="w-4 h-4" />,
-  "ad-copy": <Sparkles className="w-4 h-4" />,
-  "blog-post": <PenLine className="w-4 h-4" />,
-};
-
-const TYPE_LABEL: Record<ContentItem["type"], string> = {
-  "seo-article": "SEO Article",
-  "social-post": "Social Post",
-  "ad-copy": "Ad Copy",
-  "blog-post": "Blog Post",
-};
-
-const STATUS_STYLE: Record<ContentItem["status"], string> = {
+const STATUS_STYLE: Record<string, string> = {
   queued: "bg-gray-100 text-gray-600 border-gray-200",
   generating: "bg-blue-50 text-blue-600 border-blue-200",
   draft: "bg-yellow-50 text-yellow-700 border-yellow-200",
@@ -40,10 +33,20 @@ const STATUS_STYLE: Record<ContentItem["status"], string> = {
 
 export function CrmPreviewPage() {
   const { dealId } = useParams<{ dealId: string }>();
-  const deals = useCrmStore((s) => s.deals);
-  const updateContentItemStatus = useCrmStore((s) => s.updateContentItemStatus);
+  const numericId = dealId ? Number(dealId) : null;
+  const { data, isLoading } = useCrmDealGet(numericId);
+  const statusMutation = useCrmContentItemStatus();
 
-  const deal = useMemo(() => deals.find((d) => d.id === dealId), [deals, dealId]);
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[var(--background)]">
+        <Loader2 className="w-6 h-6 animate-spin text-[var(--muted-foreground)]" />
+      </div>
+    );
+  }
+
+  const deal = data?.deal;
+  const project = data?.project;
 
   if (!deal) {
     return (
@@ -53,9 +56,9 @@ export function CrmPreviewPage() {
     );
   }
 
-  const project = deal.project;
+  const items = project?.content_items ?? [];
 
-  if (!project || project.items.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[var(--background)]">
         <p className="text-[var(--muted-foreground)] text-lg">
@@ -65,16 +68,26 @@ export function CrmPreviewPage() {
     );
   }
 
-  const approvedCount = project.items.filter(
+  const approvedCount = items.filter(
     (i) => i.status === "approved" || i.status === "published",
   ).length;
 
-  function handleApprove(itemId: string) {
-    updateContentItemStatus(project!.id, itemId, "approved");
+  function handleApprove(item: ApiContentItem) {
+    if (!project) return;
+    statusMutation.mutate({
+      id: item.id,
+      project_id: project.id,
+      status: "approved",
+    });
   }
 
-  function handleRequestChanges(itemId: string) {
-    updateContentItemStatus(project!.id, itemId, "draft");
+  function handleRequestChanges(item: ApiContentItem) {
+    if (!project) return;
+    statusMutation.mutate({
+      id: item.id,
+      project_id: project.id,
+      status: "draft",
+    });
   }
 
   return (
@@ -93,9 +106,11 @@ export function CrmPreviewPage() {
       <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
         {/* Project header */}
         <div>
-          <h1 className="text-2xl font-bold text-[var(--foreground)]">{project.name}</h1>
+          <h1 className="text-2xl font-bold text-[var(--foreground)]">
+            {project?.name ?? "Project"}
+          </h1>
           <p className="text-sm text-[var(--muted-foreground)] mt-1">
-            {deal.clientCompany} &mdash; {approvedCount} of {project.items.length} items approved
+            {deal.client_company} &mdash; {approvedCount} of {items.length} items approved
           </p>
         </div>
 
@@ -103,23 +118,25 @@ export function CrmPreviewPage() {
 
         {/* Items list */}
         <div className="space-y-4">
-          {project.items.map((item) => (
+          {items.map((item) => (
             <Card key={item.id}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="text-[var(--muted-foreground)]">{TYPE_ICON[item.type]}</div>
+                    <div className="text-[var(--muted-foreground)]">
+                      <FileText className="w-4 h-4" />
+                    </div>
                     <CardTitle className="text-base truncate">{item.title}</CardTitle>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <Badge
                       variant="outline"
-                      className={STATUS_STYLE[item.status]}
+                      className={STATUS_STYLE[item.status] ?? ""}
                     >
                       {item.status}
                     </Badge>
                     <Badge variant="secondary" className="text-xs">
-                      {TYPE_LABEL[item.type]}
+                      {item.type}
                     </Badge>
                   </div>
                 </div>
@@ -127,9 +144,9 @@ export function CrmPreviewPage() {
 
               <CardContent className="space-y-4">
                 {/* Word count */}
-                {item.wordCount && (
+                {item.word_count > 0 && (
                   <p className="text-xs text-[var(--muted-foreground)]">
-                    {item.wordCount.toLocaleString()} words
+                    {item.word_count.toLocaleString()} words
                   </p>
                 )}
 
@@ -146,17 +163,17 @@ export function CrmPreviewPage() {
                   </div>
                 )}
 
-                {/* Action buttons — only show for draft / generating items */}
+                {/* Action buttons */}
                 {(item.status === "draft" || item.status === "generating") && item.content && (
                   <div className="flex items-center gap-3 pt-2">
-                    <Button size="sm" onClick={() => handleApprove(item.id)}>
+                    <Button size="sm" onClick={() => handleApprove(item)}>
                       <CheckCircle2 className="w-4 h-4 mr-1.5" />
                       Approve
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleRequestChanges(item.id)}
+                      onClick={() => handleRequestChanges(item)}
                     >
                       <MessageSquare className="w-4 h-4 mr-1.5" />
                       Request Changes

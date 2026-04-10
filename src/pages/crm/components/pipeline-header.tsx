@@ -1,9 +1,10 @@
-import { formatCurrency, type Deal } from "@/lib/crm-data";
+import { type ApiDeal } from "@/api/crm";
+import { formatCurrency } from "@/lib/crm-data";
 import { Button } from "@/components/ui/button";
 import { Plus, Settings2 } from "lucide-react";
 
 interface PipelineHeaderProps {
-  deals: Deal[];
+  deals: ApiDeal[];
   onNewDeal: () => void;
   onManageStages: () => void;
 }

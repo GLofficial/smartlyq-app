@@ -1,11 +1,12 @@
 import { cn } from "@/lib/cn";
-import { type Deal, formatCurrency, getContentProgress } from "@/lib/crm-data";
-import { Calendar, Sparkles } from "lucide-react";
+import { type ApiDeal } from "@/api/crm";
+import { formatCurrency } from "@/lib/crm-data";
+import { Calendar } from "lucide-react";
 
 interface DealCardProps {
-  deal: Deal;
+  deal: ApiDeal;
   isDragging: boolean;
-  onDragStart: (id: string) => void;
+  onDragStart: (id: number) => void;
   onDragEnd: () => void;
   onClick: () => void;
   isSelected: boolean;
@@ -19,8 +20,7 @@ export function DealCard({
   onClick,
   isSelected,
 }: DealCardProps) {
-  const progress = getContentProgress(deal.project);
-  const initials = deal.clientName
+  const initials = deal.client_name
     .split(" ")
     .map((n) => n[0])
     .join("")
@@ -44,18 +44,18 @@ export function DealCard({
         <div
           className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0"
           style={{
-            backgroundColor: `hsl(${hashToHue(deal.clientName)} 40% 92%)`,
-            color: `hsl(${hashToHue(deal.clientName)} 40% 35%)`,
+            backgroundColor: `hsl(${hashToHue(deal.client_name)} 40% 92%)`,
+            color: `hsl(${hashToHue(deal.client_name)} 40% 35%)`,
           }}
         >
           {initials}
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-sm font-medium text-[var(--foreground)] truncate">
-            {deal.clientName}
+            {deal.client_name}
           </div>
           <div className="text-xs text-[var(--muted-foreground)] truncate">
-            {deal.clientCompany}
+            {deal.client_company}
           </div>
         </div>
       </div>
@@ -67,32 +67,19 @@ export function DealCard({
         </div>
       )}
 
-      {/* Content progress */}
-      {deal.project && (
-        <div className="mb-2">
-          <div className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
-            <Sparkles className="w-3 h-3" />
-            <span>
-              {progress.done} of {progress.total} ready
-            </span>
-          </div>
-          <div className="mt-1.5 h-1 rounded-full bg-[var(--muted)] overflow-hidden">
-            <div
-              className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-              style={{
-                width: `${progress.total > 0 ? (progress.done / progress.total) * 100 : 0}%`,
-              }}
-            />
-          </div>
+      {/* Project name */}
+      {deal.project_name && (
+        <div className="text-xs text-[var(--muted-foreground)] mb-2 truncate">
+          Project: {deal.project_name}
         </div>
       )}
 
       {/* Next action date */}
-      {deal.nextActionDate && (
+      {deal.next_action_date && (
         <div className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)] mt-2">
           <Calendar className="w-3 h-3" />
           <span>
-            {new Date(deal.nextActionDate).toLocaleDateString("en-US", {
+            {new Date(deal.next_action_date).toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
             })}

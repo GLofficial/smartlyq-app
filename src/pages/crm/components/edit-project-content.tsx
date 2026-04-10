@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ContentItem, SmartlyQProject } from "@/lib/crm-data";
+import type { ApiContentItem } from "@/api/crm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,30 +15,20 @@ import {
   Plus,
   X,
   FileText,
-  Megaphone,
-  Sparkles,
-  PenLine,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
-// Config (shared with projects page)
+// Config
 // ---------------------------------------------------------------------------
 
-const CONTENT_TYPES: { value: ContentItem["type"]; label: string }[] = [
+const CONTENT_TYPES: { value: string; label: string }[] = [
   { value: "seo-article", label: "SEO Article" },
   { value: "social-post", label: "Social Post" },
   { value: "ad-copy", label: "Ad Copy" },
   { value: "blog-post", label: "Blog Post" },
 ];
 
-const TYPE_ICON: Record<ContentItem["type"], React.ReactNode> = {
-  "seo-article": <FileText className="w-3.5 h-3.5" />,
-  "social-post": <Megaphone className="w-3.5 h-3.5" />,
-  "ad-copy": <Sparkles className="w-3.5 h-3.5" />,
-  "blog-post": <PenLine className="w-3.5 h-3.5" />,
-};
-
-const CONTENT_STATUSES: ContentItem["status"][] = [
+const CONTENT_STATUSES: string[] = [
   "queued",
   "generating",
   "draft",
@@ -51,19 +41,22 @@ const CONTENT_STATUSES: ContentItem["status"][] = [
 // ---------------------------------------------------------------------------
 
 interface EditProjectContentProps {
-  project: SmartlyQProject;
+  projectId: number;
+  projectName: string;
+  items: ApiContentItem[];
   onRename: (name: string) => void;
-  onRemoveItem: (itemId: string) => void;
-  onStatusChange: (itemId: string, status: ContentItem["status"]) => void;
+  onRemoveItem: (itemId: number) => void;
+  onStatusChange: (itemId: number, status: string) => void;
   addTitle: string;
   setAddTitle: (v: string) => void;
-  addType: ContentItem["type"];
-  setAddType: (v: ContentItem["type"]) => void;
+  addType: string;
+  setAddType: (v: string) => void;
   onAddItem: () => void;
 }
 
 export function EditProjectContent({
-  project,
+  projectName,
+  items,
   onRename,
   onRemoveItem,
   onStatusChange,
@@ -73,7 +66,7 @@ export function EditProjectContent({
   setAddType,
   onAddItem,
 }: EditProjectContentProps) {
-  const [localName, setLocalName] = useState(project.name);
+  const [localName, setLocalName] = useState(projectName);
 
   return (
     <div className="space-y-5">
@@ -88,7 +81,7 @@ export function EditProjectContent({
           <Button
             variant="outline"
             size="sm"
-            disabled={localName.trim() === project.name}
+            disabled={localName.trim() === projectName}
             onClick={() => onRename(localName.trim())}
           >
             Rename
@@ -98,17 +91,19 @@ export function EditProjectContent({
 
       {/* Content items */}
       <div className="space-y-2">
-        <Label>Content Items ({project.items.length})</Label>
-        {project.items.length === 0 && (
+        <Label>Content Items ({items.length})</Label>
+        {items.length === 0 && (
           <p className="text-sm text-[var(--muted-foreground)] py-2">No content items yet.</p>
         )}
         <div className="space-y-2 max-h-[300px] overflow-y-auto">
-          {project.items.map((item) => (
+          {items.map((item) => (
             <div
               key={item.id}
               className="flex items-center gap-2 p-2.5 rounded-md border border-[var(--border)] bg-[var(--card)]"
             >
-              <div className="text-[var(--muted-foreground)]">{TYPE_ICON[item.type]}</div>
+              <div className="text-[var(--muted-foreground)]">
+                <FileText className="w-3.5 h-3.5" />
+              </div>
               <div className="min-w-0 flex-1">
                 <span className="text-sm font-medium text-[var(--foreground)] truncate block">
                   {item.title}
@@ -116,7 +111,7 @@ export function EditProjectContent({
               </div>
               <Select
                 value={item.status}
-                onValueChange={(v) => onStatusChange(item.id, v as ContentItem["status"])}
+                onValueChange={(v) => onStatusChange(item.id, v)}
               >
                 <SelectTrigger className="w-[120px] h-8 text-xs">
                   <SelectValue />
@@ -155,7 +150,7 @@ export function EditProjectContent({
               onChange={(e) => setAddTitle(e.target.value)}
               className="flex-1"
             />
-            <Select value={addType} onValueChange={(v) => setAddType(v as ContentItem["type"])}>
+            <Select value={addType} onValueChange={setAddType}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue />
               </SelectTrigger>

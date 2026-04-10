@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
-import { useCrmStore } from "@/stores/crm-store";
-import type { CrmTask, TaskStatus, TaskPriority, Subtask } from "@/lib/crm-data";
+import {
+  useCrmTaskSave,
+  type ApiTask,
+  type ApiDeal,
+  type ApiContact,
+} from "@/api/crm";
+import type { TaskStatus, TaskPriority } from "@/lib/crm-data";
 import { TASK_STATUS_CONFIG, PRIORITY_CONFIG } from "@/lib/crm-data";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
@@ -50,14 +55,14 @@ function formatMinutes(mins: number): string {
 // ---------------------------------------------------------------------------
 
 interface TaskDetailSheetProps {
-  task: CrmTask | null;
+  task: ApiTask | null;
+  deals: ApiDeal[];
+  contacts: ApiContact[];
   onClose: () => void;
 }
 
-export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
-  const deals = useCrmStore((s) => s.deals);
-  const contacts = useCrmStore((s) => s.contacts);
-  const updateTask = useCrmStore((s) => s.updateTask);
+export function TaskDetailSheet({ task, deals, contacts, onClose }: TaskDetailSheetProps) {
+  const saveTask = useCrmTaskSave();
 
   // Timer state
   const [timerRunning, setTimerRunning] = useState(false);
@@ -81,8 +86,9 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
     if (!task) return;
     if (timerRunning && timerStart) {
       const elapsed = Math.round((Date.now() - timerStart) / 60000);
-      updateTask(task.id, {
-        timeTrackedMinutes: task.timeTrackedMinutes + elapsed,
+      saveTask.mutate({
+        id: task.id,
+        time_tracked_minutes: task.time_tracked_minutes + elapsed,
       });
       setTimerRunning(false);
       setTimerStart(null);
@@ -94,74 +100,66 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
 
   function handleStatusChange(status: TaskStatus) {
     if (!task) return;
-    updateTask(task.id, { status });
+    saveTask.mutate({ id: task.id, status });
   }
 
   function handlePriorityChange(priority: TaskPriority) {
     if (!task) return;
-    updateTask(task.id, { priority });
+    saveTask.mutate({ id: task.id, priority });
   }
 
   function handleDueDateChange(date: string) {
     if (!task) return;
-    updateTask(task.id, { dueDate: date });
+    saveTask.mutate({ id: task.id, due_date: date });
   }
 
   function handleLinkedDealChange(dealId: string) {
     if (!task) return;
-    updateTask(task.id, { linkedDealId: dealId === "none" ? undefined : dealId });
+    saveTask.mutate({
+      id: task.id,
+      linked_deal_id: dealId === "none" ? null : Number(dealId),
+    });
   }
 
   function handleLinkedContactChange(contactId: string) {
     if (!task) return;
-    updateTask(task.id, {
-      linkedContactId: contactId === "none" ? undefined : contactId,
+    saveTask.mutate({
+      id: task.id,
+      linked_contact_id: contactId === "none" ? null : Number(contactId),
     });
   }
 
   function handleRecurrenceChange(freq: string) {
     if (!task) return;
-    if (freq === "none") {
-      updateTask(task.id, { recurrence: undefined });
-    } else {
-      const nextDate = new Date();
-      nextDate.setDate(
-        nextDate.getDate() +
-          (freq === "daily" ? 1 : freq === "weekly" ? 7 : freq === "biweekly" ? 14 : 30),
-      );
-      updateTask(task.id, {
-        recurrence: {
-          frequency: freq as CrmTask["recurrence"] extends undefined ? never : NonNullable<CrmTask["recurrence"]>["frequency"],
-          nextDate: nextDate.toISOString().slice(0, 10),
-        },
-      });
-    }
+    saveTask.mutate({
+      id: task.id,
+      recurrence: freq === "none" ? null : freq,
+    });
   }
 
   // Subtasks
-  function toggleSubtask(subtaskId: string) {
+  function toggleSubtask(idx: number) {
     if (!task) return;
-    const updated = task.subtasks.map((s) =>
-      s.id === subtaskId ? { ...s, done: !s.done } : s,
+    const updated = task.subtasks.map((s, i) =>
+      i === idx ? { ...s, done: !s.done } : s,
     );
-    updateTask(task.id, { subtasks: updated });
+    saveTask.mutate({ id: task.id, subtasks: updated });
   }
 
   function addSubtask() {
     if (!task || !newSubtask.trim()) return;
-    const st: Subtask = {
-      id: `st-${Date.now()}`,
-      title: newSubtask.trim(),
-      done: false,
-    };
-    updateTask(task.id, { subtasks: [...task.subtasks, st] });
+    saveTask.mutate({
+      id: task.id,
+      subtasks: [...task.subtasks, { title: newSubtask.trim(), done: false }],
+    });
     setNewSubtask("");
   }
 
-  function removeSubtask(subtaskId: string) {
+  function removeSubtask(idx: number) {
     if (!task) return;
-    updateTask(task.id, {
-      subtasks: task.subtasks.filter((s) => s.id !== subtaskId),
+    saveTask.mutate({
+      id: task.id,
+      subtasks: task.subtasks.filter((_, i) => i !== idx),
     });
   }
 
@@ -169,13 +167,13 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
   function addTag() {
     if (!task || !newTag.trim()) return;
     if (task.tags.includes(newTag.trim())) return;
-    updateTask(task.id, { tags: [...task.tags, newTag.trim()] });
+    saveTask.mutate({ id: task.id, tags: [...task.tags, newTag.trim()] });
     setNewTag("");
   }
 
   function removeTag(tag: string) {
     if (!task) return;
-    updateTask(task.id, { tags: task.tags.filter((t) => t !== tag) });
+    saveTask.mutate({ id: task.id, tags: task.tags.filter((t) => t !== tag) });
   }
 
   return (
@@ -191,7 +189,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
           <Timer className="w-5 h-5 text-[var(--muted-foreground)]" />
           <div className="flex-1">
             <span className="text-sm font-medium text-[var(--foreground)]">
-              {formatMinutes(task.timeTrackedMinutes)}
+              {formatMinutes(task.time_tracked_minutes)}
             </span>
             <span className="text-xs text-[var(--muted-foreground)] ml-1">tracked</span>
           </div>
@@ -248,7 +246,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
             <CalendarIcon className="w-4 h-4 text-[var(--muted-foreground)]" />
             <Input
               type="date"
-              value={task.dueDate}
+              value={task.due_date ?? ""}
               onChange={(e) => handleDueDateChange(e.target.value)}
               className="h-9"
             />
@@ -261,7 +259,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
             <RefreshCw className="w-3 h-3" /> Recurrence
           </Label>
           <Select
-            value={task.recurrence?.frequency ?? "none"}
+            value={task.recurrence ?? "none"}
             onValueChange={handleRecurrenceChange}
           >
             <SelectTrigger className="h-9">
@@ -282,7 +280,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
           <div className="space-y-1.5">
             <Label className="text-xs">Linked Deal</Label>
             <Select
-              value={task.linkedDealId ?? "none"}
+              value={task.linked_deal_id ? String(task.linked_deal_id) : "none"}
               onValueChange={handleLinkedDealChange}
             >
               <SelectTrigger className="h-9">
@@ -291,8 +289,8 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
               <SelectContent>
                 <SelectItem value="none">None</SelectItem>
                 {deals.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {d.clientCompany}
+                  <SelectItem key={d.id} value={String(d.id)}>
+                    {d.client_company}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -301,7 +299,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
           <div className="space-y-1.5">
             <Label className="text-xs">Linked Contact</Label>
             <Select
-              value={task.linkedContactId ?? "none"}
+              value={task.linked_contact_id ? String(task.linked_contact_id) : "none"}
               onValueChange={handleLinkedContactChange}
             >
               <SelectTrigger className="h-9">
@@ -310,7 +308,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
               <SelectContent>
                 <SelectItem value="none">None</SelectItem>
                 {contacts.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
+                  <SelectItem key={c.id} value={String(c.id)}>
                     {c.name}
                   </SelectItem>
                 ))}
@@ -327,11 +325,11 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
             Subtasks ({task.subtasks.filter((s) => s.done).length}/{task.subtasks.length})
           </Label>
           <div className="space-y-1.5">
-            {task.subtasks.map((st) => (
-              <div key={st.id} className="flex items-center gap-2 group">
+            {task.subtasks.map((st, idx) => (
+              <div key={idx} className="flex items-center gap-2 group">
                 <Checkbox
                   checked={st.done}
-                  onCheckedChange={() => toggleSubtask(st.id)}
+                  onCheckedChange={() => toggleSubtask(idx)}
                 />
                 <span
                   className={cn(
@@ -345,7 +343,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                  onClick={() => removeSubtask(st.id)}
+                  onClick={() => removeSubtask(idx)}
                 >
                   <X className="w-3 h-3" />
                 </Button>
@@ -402,7 +400,7 @@ export function TaskDetailSheet({ task, onClose }: TaskDetailSheetProps) {
         {/* Created date */}
         <div className="text-xs text-[var(--muted-foreground)] mt-6">
           Created{" "}
-          {new Date(task.createdAt).toLocaleDateString("en-US", {
+          {new Date(task.created_at).toLocaleDateString("en-US", {
             month: "long",
             day: "numeric",
             year: "numeric",

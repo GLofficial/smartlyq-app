@@ -12,14 +12,19 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { useCrmStore } from "@/stores/crm-store";
 import {
-  STAGE_CONFIG,
-  STAGE_ORDER,
+  useCrmDashboard,
+  useCrmDeals,
+  useCrmTasks,
+  useCrmStages,
+  type ApiDeal,
+  type ApiTask,
+  type ApiStage,
+} from "@/api/crm";
+import {
   PRIORITY_CONFIG,
   formatCurrency,
-  type Deal,
-  type CrmTask,
+  type TaskPriority,
 } from "@/lib/crm-data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,14 +38,15 @@ import {
   CheckSquare,
   BarChart3,
   ArrowRight,
-  Clock,
+  Loader2,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function isThisWeek(dateStr: string): boolean {
+function isThisWeek(dateStr: string | null): boolean {
+  if (!dateStr) return false;
   const d = new Date(dateStr);
   const now = new Date();
   const startOfWeek = new Date(now);
@@ -51,19 +57,9 @@ function isThisWeek(dateStr: string): boolean {
   return d >= startOfWeek && d < endOfWeek;
 }
 
-function isOverdue(dateStr: string): boolean {
+function isOverdue(dateStr: string | null): boolean {
+  if (!dateStr) return false;
   return new Date(dateStr) < new Date(new Date().toDateString());
-}
-
-function relativeDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffDays = Math.floor(diffMs / 86400000);
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays} days ago`;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 // ---------------------------------------------------------------------------
@@ -71,99 +67,78 @@ function relativeDate(dateStr: string): string {
 // ---------------------------------------------------------------------------
 
 export function CrmDashboardPage() {
-  const deals = useCrmStore((s) => s.deals);
-  const tasks = useCrmStore((s) => s.tasks);
-  const contacts = useCrmStore((s) => s.contacts);
+  const { data: dashData, isLoading: dashLoading } = useCrmDashboard();
+  const { data: dealsData, isLoading: dealsLoading } = useCrmDeals();
+  const { data: tasksData, isLoading: tasksLoading } = useCrmTasks();
+  const { data: stagesData } = useCrmStages();
 
-  // --- KPI data ---
-  const totalPipelineValue = useMemo(
-    () => deals.reduce((sum, d) => sum + d.value, 0),
-    [deals],
-  );
+  const dashboard = dashData?.dashboard;
+  const deals = dealsData?.deals ?? [];
+  const tasks = tasksData?.tasks ?? [];
+  const stages = stagesData?.stages ?? [];
 
-  const activeDeals = useMemo(
-    () => deals.filter((d) => d.stage !== "closed" && d.stage !== "published"),
-    [deals],
-  );
+  const stageMap = useMemo(() => {
+    const m: Record<string, ApiStage> = {};
+    for (const s of stages) m[s.stage_key] = s;
+    return m;
+  }, [stages]);
 
-  const overdueDeals = useMemo(
-    () => activeDeals.filter((d) => isOverdue(d.nextActionDate)),
-    [activeDeals],
-  );
+  const isLoading = dashLoading || dealsLoading || tasksLoading;
 
+  // --- Derived data ---
   const overdueTasks = useMemo(
-    () => tasks.filter((t) => t.status !== "done" && isOverdue(t.dueDate)),
+    () => tasks.filter((t) => t.status !== "done" && isOverdue(t.due_date)),
     [tasks],
   );
 
   const tasksThisWeek = useMemo(
-    () => tasks.filter((t) => t.status !== "done" && isThisWeek(t.dueDate)),
+    () => tasks.filter((t) => t.status !== "done" && isThisWeek(t.due_date)),
     [tasks],
   );
 
-  const completedTasks = useMemo(
-    () => tasks.filter((t) => t.status === "done"),
-    [tasks],
+  const overdueDeals = useMemo(
+    () =>
+      deals.filter(
+        (d) =>
+          d.stage !== "closed" &&
+          d.stage !== "published" &&
+          isOverdue(d.next_action_date),
+      ),
+    [deals],
   );
 
   // --- Pipeline value chart data (by stage) ---
   const pipelineChartData = useMemo(
     () =>
-      STAGE_ORDER.filter((s) => s !== "closed").map((stage) => {
-        const stageDeals = deals.filter((d) => d.stage === stage);
-        return {
-          name: STAGE_CONFIG[stage]?.label ?? stage,
-          value: stageDeals.reduce((sum, d) => sum + d.value, 0),
-        };
-      }),
-    [deals],
+      (dashboard?.deal_count_by_stage ?? [])
+        .filter((s) => s.stage !== "closed")
+        .map((s) => ({
+          name: stageMap[s.stage]?.label ?? s.stage,
+          value: s.value,
+        })),
+    [dashboard, stageMap],
   );
 
   // --- Deal distribution pie data ---
   const pieData = useMemo(
     () =>
-      STAGE_ORDER.map((stage) => {
-        const count = deals.filter((d) => d.stage === stage).length;
-        return {
-          name: STAGE_CONFIG[stage]?.label ?? stage,
-          value: count,
-          color: STAGE_CONFIG[stage]?.color ?? "220 14% 46%",
-        };
-      }).filter((d) => d.value > 0),
-    [deals],
+      (dashboard?.deal_count_by_stage ?? [])
+        .filter((s) => s.count > 0)
+        .map((s) => ({
+          name: stageMap[s.stage]?.label ?? s.stage,
+          value: s.count,
+          color: stageMap[s.stage]?.color ?? "220 14% 46%",
+        })),
+    [dashboard, stageMap],
   );
 
-  // --- Recent activity (communication history, newest first) ---
-  const recentActivity = useMemo(() => {
-    const items: { deal: Deal; date: string; message: string; from: string }[] = [];
-    for (const deal of deals) {
-      for (const entry of deal.communicationHistory) {
-        items.push({ deal, ...entry });
-      }
-    }
-    items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    return items.slice(0, 8);
-  }, [deals]);
-
-  // --- Quick stats ---
-  const totalContentItems = useMemo(
-    () =>
-      deals.reduce((sum, d) => sum + (d.project?.items.length ?? 0), 0),
-    [deals],
-  );
-
-  const approvedItems = useMemo(
-    () =>
-      deals.reduce(
-        (sum, d) =>
-          sum +
-          (d.project?.items.filter(
-            (i) => i.status === "approved" || i.status === "published",
-          ).length ?? 0),
-        0,
-      ),
-    [deals],
-  );
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-6 h-6 animate-spin text-[var(--muted-foreground)]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -179,27 +154,27 @@ export function CrmDashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           title="Pipeline Value"
-          value={formatCurrency(totalPipelineValue)}
-          subtitle={`${activeDeals.length} active deals`}
+          value={formatCurrency(dashboard?.total_pipeline_value ?? 0)}
+          subtitle={`${dashboard?.active_deals_count ?? 0} active deals`}
           icon={<DollarSign className="w-4 h-4" />}
         />
         <KpiCard
           title="Contacts"
-          value={String(contacts.length)}
-          subtitle={`${contacts.filter((c) => c.status === "active").length} active`}
+          value={String(dashboard?.total_contacts ?? 0)}
+          subtitle="total contacts"
           icon={<Users className="w-4 h-4" />}
         />
         <KpiCard
-          title="Tasks Completed"
-          value={`${completedTasks.length}/${tasks.length}`}
-          subtitle={`${overdueTasks.length} overdue`}
+          title="Tasks"
+          value={`${dashboard?.total_tasks ?? 0}`}
+          subtitle={`${dashboard?.overdue_tasks ?? 0} overdue`}
           icon={<CheckSquare className="w-4 h-4" />}
-          alert={overdueTasks.length > 0}
+          alert={(dashboard?.overdue_tasks ?? 0) > 0}
         />
         <KpiCard
-          title="Content Items"
-          value={`${approvedItems}/${totalContentItems}`}
-          subtitle="approved / total"
+          title="Won Revenue"
+          value={formatCurrency(dashboard?.won_revenue ?? 0)}
+          subtitle="closed/won"
           icon={<BarChart3 className="w-4 h-4" />}
         />
       </div>
@@ -306,7 +281,7 @@ export function CrmDashboardPage() {
         </Card>
       </div>
 
-      {/* Bottom row: tasks + activity */}
+      {/* Bottom row: tasks + overdue deals */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Tasks this week */}
         <Card>
@@ -350,14 +325,16 @@ export function CrmDashboardPage() {
                     className="flex items-center justify-between py-1.5 px-2 rounded-md bg-orange-50 text-sm"
                   >
                     <span className="font-medium text-[var(--foreground)]">
-                      {deal.clientName}
+                      {deal.client_name}
                     </span>
                     <span className="text-xs text-orange-600">
                       Due{" "}
-                      {new Date(deal.nextActionDate).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
+                      {deal.next_action_date
+                        ? new Date(deal.next_action_date).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : "N/A"}
                     </span>
                   </div>
                 ))}
@@ -366,13 +343,13 @@ export function CrmDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Recent activity */}
+        {/* Quick stats */}
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-base">Recent Activity</CardTitle>
-                <CardDescription>Latest communication across deals</CardDescription>
+                <CardTitle className="text-base">Quick Stats</CardTitle>
+                <CardDescription>At-a-glance metrics</CardDescription>
               </div>
               <Link
                 to="/my/crm/pipeline"
@@ -382,50 +359,33 @@ export function CrmDashboardPage() {
               </Link>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {recentActivity.map((entry, idx) => (
-              <div key={idx} className="flex gap-3">
-                <div className="mt-0.5">
-                  <Clock className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
-                    <span className="font-medium text-[var(--foreground)]">{entry.from}</span>
-                    <span>&middot;</span>
-                    <span>{relativeDate(entry.date)}</span>
-                    <span>&middot;</span>
-                    <span className="truncate">{entry.deal.clientCompany}</span>
-                  </div>
-                  <p className="text-sm text-[var(--foreground)] mt-0.5 line-clamp-2">
-                    {entry.message}
-                  </p>
-                </div>
-              </div>
-            ))}
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4 text-center py-4">
+              <QuickStat
+                label="Active Deals"
+                value={dashboard?.active_deals_count ?? 0}
+                icon={<TrendingUp className="w-4 h-4" />}
+              />
+              <QuickStat
+                label="Open Tasks"
+                value={dashboard?.open_tasks ?? 0}
+                icon={<CheckSquare className="w-4 h-4" />}
+              />
+              <QuickStat
+                label="Tasks This Week"
+                value={dashboard?.tasks_due_this_week ?? 0}
+                icon={<CalendarCheck className="w-4 h-4" />}
+              />
+              <QuickStat
+                label="Overdue Items"
+                value={overdueTasks.length + overdueDeals.length}
+                icon={<AlertTriangle className="w-4 h-4" />}
+                alert={overdueTasks.length + overdueDeals.length > 0}
+              />
+            </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Quick stats bar */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-            <QuickStat label="Active Deals" value={activeDeals.length} icon={<TrendingUp className="w-4 h-4" />} />
-            <QuickStat
-              label="Avg Deal Value"
-              value={formatCurrency(Math.round(totalPipelineValue / Math.max(activeDeals.length, 1)))}
-              icon={<DollarSign className="w-4 h-4" />}
-            />
-            <QuickStat label="Tasks This Week" value={tasksThisWeek.length} icon={<CalendarCheck className="w-4 h-4" />} />
-            <QuickStat
-              label="Overdue Items"
-              value={overdueTasks.length + overdueDeals.length}
-              icon={<AlertTriangle className="w-4 h-4" />}
-              alert={overdueTasks.length + overdueDeals.length > 0}
-            />
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
@@ -451,10 +411,12 @@ function KpiCard({ title, value, subtitle, icon, alert = false }: {
   );
 }
 
-function TaskRow({ task, deals }: { task: CrmTask; deals: Deal[] }) {
-  const linkedDeal = task.linkedDealId ? deals.find((d) => d.id === task.linkedDealId) : undefined;
-  const priorityCfg = PRIORITY_CONFIG[task.priority];
-  const overdue = isOverdue(task.dueDate);
+function TaskRow({ task, deals }: { task: ApiTask; deals: ApiDeal[] }) {
+  const linkedDeal = task.linked_deal_id
+    ? deals.find((d) => d.id === task.linked_deal_id)
+    : undefined;
+  const priorityCfg = PRIORITY_CONFIG[task.priority as TaskPriority];
+  const overdue = isOverdue(task.due_date);
 
   return (
     <div className="flex items-center justify-between py-2 px-2 rounded-md hover:bg-[var(--muted)]/50 transition-colors">
@@ -463,21 +425,25 @@ function TaskRow({ task, deals }: { task: CrmTask; deals: Deal[] }) {
           <span className="text-sm font-medium text-[var(--foreground)] truncate">
             {task.title}
           </span>
-          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${priorityCfg.className}`}>
-            {priorityCfg.label}
-          </Badge>
+          {priorityCfg && (
+            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${priorityCfg.className}`}>
+              {priorityCfg.label}
+            </Badge>
+          )}
         </div>
         {linkedDeal && (
           <span className="text-xs text-[var(--muted-foreground)]">
-            {linkedDeal.clientCompany}
+            {linkedDeal.client_company}
           </span>
         )}
       </div>
       <span className={`text-xs shrink-0 ml-3 ${overdue ? "text-red-500 font-medium" : "text-[var(--muted-foreground)]"}`}>
-        {new Date(task.dueDate).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        })}
+        {task.due_date
+          ? new Date(task.due_date).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            })
+          : "No date"}
       </span>
     </div>
   );

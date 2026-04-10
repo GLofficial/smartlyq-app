@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { type Deal } from "@/lib/crm-data";
-import { useCrmStore } from "@/stores/crm-store";
+import { useCrmDealSave, useCrmProjects } from "@/api/crm";
 import {
   Dialog,
   DialogContent,
@@ -23,7 +22,6 @@ import {
 interface NewDealDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreate: (deal: Deal) => void;
   stageOrder: string[];
   stageConfig: Record<string, { label: string; color: string }>;
 }
@@ -31,11 +29,13 @@ interface NewDealDialogProps {
 export function NewDealDialog({
   open,
   onOpenChange,
-  onCreate,
   stageOrder,
   stageConfig,
 }: NewDealDialogProps) {
-  const projects = useCrmStore((s) => s.projects);
+  const { data: projectsData } = useCrmProjects();
+  const saveDeal = useCrmDealSave();
+
+  const projects = projectsData?.projects ?? [];
 
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
@@ -49,23 +49,15 @@ export function NewDealDialog({
     e.preventDefault();
     if (!clientName.trim()) return;
 
-    const linkedProject = projects.find((p) => p.id === projectId);
-
-    const deal: Deal = {
-      id: `deal-${Date.now()}`,
-      clientName: clientName.trim(),
-      clientEmail: clientEmail.trim(),
-      clientCompany: clientCompany.trim(),
+    saveDeal.mutate({
+      client_name: clientName.trim(),
+      client_email: clientEmail.trim(),
+      client_company: clientCompany.trim(),
       value: parseFloat(value) || 0,
       stage,
-      nextActionDate: "",
       notes: notes.trim(),
-      project: linkedProject,
-      createdAt: new Date().toISOString().slice(0, 10),
-      communicationHistory: [],
-    };
-
-    onCreate(deal);
+      project_id: projectId && projectId !== "none" ? Number(projectId) : null,
+    });
     resetForm();
     onOpenChange(false);
   }
@@ -160,7 +152,7 @@ export function NewDealDialog({
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
                   {projects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
+                    <SelectItem key={p.id} value={String(p.id)}>
                       {p.name}
                     </SelectItem>
                   ))}

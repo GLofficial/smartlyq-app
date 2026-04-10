@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { useCrmStore } from "@/stores/crm-store";
-import type { Contact } from "@/lib/crm-data";
+import {
+  useCrmContactSave,
+  type ApiContact,
+} from "@/api/crm";
 import { formatCurrency } from "@/lib/crm-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,29 +20,26 @@ import {
   Phone,
   Building2,
   Briefcase,
-  StickyNote,
-  LinkIcon,
   Save,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
-// Status styles
+// Status options
 // ---------------------------------------------------------------------------
 
-const STATUSES: Contact["status"][] = ["active", "prospect", "inactive"];
+const STATUSES: ApiContact["status"][] = ["active", "prospect", "inactive"];
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 interface ContactDetailSheetProps {
-  contact: Contact | null;
+  contact: ApiContact | null;
   onClose: () => void;
 }
 
 export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps) {
-  const deals = useCrmStore((s) => s.deals);
-  const updateContact = useCrmStore((s) => s.updateContact);
+  const saveContact = useCrmContactSave();
 
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
@@ -48,7 +47,6 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
   const [editPhone, setEditPhone] = useState("");
   const [editCompany, setEditCompany] = useState("");
   const [editRole, setEditRole] = useState("");
-  const [editNotes, setEditNotes] = useState("");
 
   function startEditing() {
     if (!contact) return;
@@ -57,39 +55,26 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
     setEditPhone(contact.phone);
     setEditCompany(contact.company);
     setEditRole(contact.role);
-    setEditNotes(contact.notes);
     setEditing(true);
   }
 
   function handleSave() {
     if (!contact) return;
-    const initials = editName
-      .trim()
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-    updateContact(contact.id, {
+    saveContact.mutate({
+      id: contact.id,
       name: editName.trim(),
-      initials,
       email: editEmail.trim(),
       phone: editPhone.trim(),
       company: editCompany.trim(),
       role: editRole.trim(),
-      notes: editNotes.trim(),
     });
     setEditing(false);
   }
 
-  function handleStatusChange(status: Contact["status"]) {
+  function handleStatusChange(status: ApiContact["status"]) {
     if (!contact) return;
-    updateContact(contact.id, { status });
+    saveContact.mutate({ id: contact.id, status });
   }
-
-  const linkedDeals = contact
-    ? deals.filter((d) => contact.linkedDealIds.includes(d.id))
-    : [];
 
   return (
     <Sheet open={!!contact} onOpenChange={(open) => { if (!open) { setEditing(false); onClose(); } }}>
@@ -133,17 +118,9 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
                 <InfoRow icon={<Building2 className="w-4 h-4" />} label="Company" value={contact.company} />
                 <InfoRow icon={<Briefcase className="w-4 h-4" />} label="Role" value={contact.role || "N/A"} />
 
-                {contact.notes && (
-                  <div>
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-[var(--muted-foreground)] mb-1">
-                      <StickyNote className="w-3.5 h-3.5" />
-                      Notes
-                    </div>
-                    <p className="text-sm text-[var(--foreground)] whitespace-pre-wrap">
-                      {contact.notes}
-                    </p>
-                  </div>
-                )}
+                <div className="text-sm text-[var(--muted-foreground)]">
+                  {contact.deal_count} deal{contact.deal_count !== 1 ? "s" : ""} &middot; {formatCurrency(contact.total_value)} total
+                </div>
 
                 <Button variant="outline" size="sm" onClick={startEditing} className="w-full mt-2">
                   Edit Contact
@@ -171,14 +148,6 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
                   <Label className="text-xs">Role</Label>
                   <Input value={editRole} onChange={(e) => setEditRole(e.target.value)} />
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Notes</Label>
-                  <textarea
-                    className="w-full min-h-[80px] rounded-md border border-[var(--input)] bg-[var(--background)] px-3 py-2 text-sm"
-                    value={editNotes}
-                    onChange={(e) => setEditNotes(e.target.value)}
-                  />
-                </div>
                 <div className="flex gap-2">
                   <Button size="sm" onClick={handleSave} className="flex-1">
                     <Save className="w-4 h-4 mr-1.5" />
@@ -196,45 +165,10 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
               </div>
             )}
 
-            {/* Linked deals */}
-            {linkedDeals.length > 0 && (
-              <>
-                <Separator className="my-4" />
-                <div>
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-[var(--muted-foreground)] mb-3">
-                    <LinkIcon className="w-3.5 h-3.5" />
-                    Linked Deals ({linkedDeals.length})
-                  </div>
-                  <div className="space-y-2">
-                    {linkedDeals.map((deal) => (
-                      <div
-                        key={deal.id}
-                        className="flex items-center justify-between p-2.5 rounded-md border border-[var(--border)] bg-[var(--card)]"
-                      >
-                        <div className="min-w-0">
-                          <div className="text-sm font-medium text-[var(--foreground)] truncate">
-                            {deal.clientCompany}
-                          </div>
-                          <div className="text-xs text-[var(--muted-foreground)]">
-                            {deal.stage}
-                          </div>
-                        </div>
-                        {deal.value > 0 && (
-                          <span className="text-sm font-bold text-orange-500 shrink-0 ml-2">
-                            {formatCurrency(deal.value)}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
             {/* Created date */}
             <div className="text-xs text-[var(--muted-foreground)] mt-6">
               Added{" "}
-              {new Date(contact.createdAt).toLocaleDateString("en-US", {
+              {new Date(contact.created_at).toLocaleDateString("en-US", {
                 month: "long",
                 day: "numeric",
                 year: "numeric",

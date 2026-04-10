@@ -1,6 +1,10 @@
 import { useState, useMemo } from "react";
-import { useCrmStore } from "@/stores/crm-store";
-import type { Contact } from "@/lib/crm-data";
+import {
+  useCrmContacts,
+  useCrmContactSave,
+  useCrmContactDelete,
+  type ApiContact,
+} from "@/api/crm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,6 +49,7 @@ import {
   Trash2,
   ArrowUpDown,
   Building2,
+  Loader2,
 } from "lucide-react";
 import { ContactDetailSheet } from "./components/contact-detail-sheet";
 
@@ -52,7 +57,7 @@ import { ContactDetailSheet } from "./components/contact-detail-sheet";
 // Config
 // ---------------------------------------------------------------------------
 
-const STATUS_STYLE: Record<Contact["status"], string> = {
+const STATUS_STYLE: Record<string, string> = {
   active: "bg-green-50 text-green-700 border-green-200",
   prospect: "bg-blue-50 text-blue-600 border-blue-200",
   inactive: "bg-gray-100 text-gray-500 border-gray-200",
@@ -66,10 +71,11 @@ type SortDir = "asc" | "desc";
 // ---------------------------------------------------------------------------
 
 export function CrmContactsPage() {
-  const contacts = useCrmStore((s) => s.contacts);
-  const deals = useCrmStore((s) => s.deals);
-  const createContact = useCrmStore((s) => s.createContact);
-  const deleteContact = useCrmStore((s) => s.deleteContact);
+  const { data: contactsData, isLoading: contactsLoading } = useCrmContacts();
+  const saveContact = useCrmContactSave();
+  const deleteContactMut = useCrmContactDelete();
+
+  const contacts = contactsData?.contacts ?? [];
 
   const [search, setSearch] = useState("");
   const [searchField, setSearchField] = useState<"all" | "name" | "email" | "company">("all");
@@ -79,8 +85,8 @@ export function CrmContactsPage() {
 
   // Dialogs
   const [createOpen, setCreateOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null);
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ApiContact | null>(null);
+  const [selectedContactId, setSelectedContactId] = useState<number | null>(null);
 
   // Create form
   const [formName, setFormName] = useState("");
@@ -88,7 +94,7 @@ export function CrmContactsPage() {
   const [formCompany, setFormCompany] = useState("");
   const [formPhone, setFormPhone] = useState("");
   const [formRole, setFormRole] = useState("");
-  const [formStatus, setFormStatus] = useState<Contact["status"]>("prospect");
+  const [formStatus, setFormStatus] = useState<string>("prospect");
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // --- Filtering & sorting ---
@@ -119,7 +125,7 @@ export function CrmContactsPage() {
       if (sortKey === "name") cmp = a.name.localeCompare(b.name);
       else if (sortKey === "company") cmp = a.company.localeCompare(b.company);
       else if (sortKey === "status") cmp = a.status.localeCompare(b.status);
-      else cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      else cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       return sortDir === "asc" ? cmp : -cmp;
     });
 
@@ -148,27 +154,14 @@ export function CrmContactsPage() {
 
   function handleCreate() {
     if (!validateForm()) return;
-    const initials = formName
-      .trim()
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-    const contact: Contact = {
-      id: `contact-${Date.now()}`,
+    saveContact.mutate({
       name: formName.trim(),
-      initials,
       email: formEmail.trim(),
       company: formCompany.trim(),
       phone: formPhone.trim(),
       role: formRole.trim(),
       status: formStatus,
-      notes: "",
-      linkedDealIds: [],
-      createdAt: new Date().toISOString().slice(0, 10),
-    };
-    createContact(contact);
+    });
     resetForm();
     setCreateOpen(false);
   }
@@ -185,14 +178,21 @@ export function CrmContactsPage() {
 
   function handleDelete() {
     if (!deleteTarget) return;
-    deleteContact(deleteTarget.id);
+    deleteContactMut.mutate(deleteTarget.id);
     setDeleteTarget(null);
   }
 
-  // Keep selectedContact in sync with store
-  const liveSelectedContact = selectedContact
-    ? contacts.find((c) => c.id === selectedContact.id) ?? null
+  const selectedContact = selectedContactId
+    ? contacts.find((c) => c.id === selectedContactId) ?? null
     : null;
+
+  if (contactsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-6 h-6 animate-spin text-[var(--muted-foreground)]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -288,68 +288,63 @@ export function CrmContactsPage() {
                   </TableCell>
                 </TableRow>
               )}
-              {filtered.map((contact) => {
-                const linkedDeals = deals.filter((d) =>
-                  contact.linkedDealIds.includes(d.id),
-                );
-                return (
-                  <TableRow
-                    key={contact.id}
-                    className="cursor-pointer"
-                    onClick={() => setSelectedContact(contact)}
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-xs font-semibold shrink-0">
-                          {contact.initials}
+              {filtered.map((contact) => (
+                <TableRow
+                  key={contact.id}
+                  className="cursor-pointer"
+                  onClick={() => setSelectedContactId(contact.id)}
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-xs font-semibold shrink-0">
+                        {contact.initials}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-medium text-[var(--foreground)] truncate">
+                          {contact.name}
                         </div>
-                        <div className="min-w-0">
-                          <div className="font-medium text-[var(--foreground)] truncate">
-                            {contact.name}
-                          </div>
-                          <div className="text-xs text-[var(--muted-foreground)] truncate">
-                            {contact.email}
-                          </div>
+                        <div className="text-xs text-[var(--muted-foreground)] truncate">
+                          {contact.email}
                         </div>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5 text-sm">
-                        <Building2 className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
-                        {contact.company}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-[var(--muted-foreground)]">
-                      {contact.role}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={STATUS_STYLE[contact.status]}>
-                        {contact.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {linkedDeals.length > 0 ? (
-                        <span className="text-sm font-medium">{linkedDeals.length}</span>
-                      ) : (
-                        <span className="text-xs text-[var(--muted-foreground)]">None</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-red-500 hover:text-red-600"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteTarget(contact);
-                        }}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <Building2 className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
+                      {contact.company}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-[var(--muted-foreground)]">
+                    {contact.role}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={STATUS_STYLE[contact.status] ?? ""}>
+                      {contact.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {contact.deal_count > 0 ? (
+                      <span className="text-sm font-medium">{contact.deal_count}</span>
+                    ) : (
+                      <span className="text-xs text-[var(--muted-foreground)]">None</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-red-500 hover:text-red-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteTarget(contact);
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </CardContent>
@@ -357,8 +352,8 @@ export function CrmContactsPage() {
 
       {/* Contact detail sheet */}
       <ContactDetailSheet
-        contact={liveSelectedContact}
-        onClose={() => setSelectedContact(null)}
+        contact={selectedContact}
+        onClose={() => setSelectedContactId(null)}
       />
 
       {/* --- Create dialog --- */}
@@ -426,7 +421,7 @@ export function CrmContactsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
-                <Select value={formStatus} onValueChange={(v) => setFormStatus(v as Contact["status"])}>
+                <Select value={formStatus} onValueChange={setFormStatus}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
