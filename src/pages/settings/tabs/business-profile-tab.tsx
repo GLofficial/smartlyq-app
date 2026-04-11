@@ -65,37 +65,38 @@ export function BusinessProfileTab() {
 				)}
 			</div>
 
-			{/* General Information */}
+			{/* General Information + Physical Address side by side */}
 			<Card>
-				<CardHeader><CardTitle>General Information</CardTitle></CardHeader>
-				<CardContent className="grid gap-4 sm:grid-cols-2">
-					<Field label="Friendly Business Name" value={f("friendly_business_name")} onChange={(v) => set("friendly_business_name", v)} />
-					<Field label="Legal Business Name" value={f("legal_business_name")} onChange={(v) => set("legal_business_name", v)} />
-					<Field label="Business Email" value={f("business_email")} onChange={(v) => set("business_email", v)} type="email" />
-					<Field label="Business Phone" value={f("business_phone")} onChange={(v) => set("business_phone", v)} />
-					<Field label="Branded Domain" value={f("branded_domain")} onChange={(v) => set("branded_domain", v)} />
-					<Field label="Business Website" value={f("business_website")} onChange={(v) => set("business_website", v)} />
-					<Field label="Business Niche" value={f("business_niche")} onChange={(v) => set("business_niche", v)} />
-					<div className="space-y-1.5">
-						<label className="text-sm font-medium">Business Currency</label>
-						<select value={f("business_currency")} onChange={(e) => set("business_currency", e.target.value)} className="flex h-10 w-full rounded-md border border-[var(--input)] bg-[var(--background)] px-3 py-2 text-sm">
-							<option value="">Choose...</option>
-							{CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
-						</select>
+				<CardContent className="grid gap-8 p-6 lg:grid-cols-2">
+					{/* Left: General Information */}
+					<div className="space-y-4">
+						<h3 className="text-lg font-semibold">General Information</h3>
+						<Field label="Friendly Business Name" value={f("friendly_business_name")} onChange={(v) => set("friendly_business_name", v)} />
+						<Field label="Legal Business Name" value={f("legal_business_name")} onChange={(v) => set("legal_business_name", v)} />
+						<Field label="Business Email" value={f("business_email")} onChange={(v) => set("business_email", v)} type="email" />
+						<Field label="Business Phone" value={f("business_phone")} onChange={(v) => set("business_phone", v)} />
+						<Field label="Branded Domain" value={f("branded_domain")} onChange={(v) => set("branded_domain", v)} />
+						<Field label="Business Website" value={f("business_website")} onChange={(v) => set("business_website", v)} />
+						<Field label="Business Niche" value={f("business_niche")} onChange={(v) => set("business_niche", v)} />
+						<div className="space-y-1.5">
+							<label className="text-sm font-medium">Business Currency</label>
+							<select value={f("business_currency")} onChange={(e) => set("business_currency", e.target.value)} className="flex h-10 w-full rounded-md border border-[var(--input)] bg-[var(--background)] px-3 py-2 text-sm">
+								<option value="">Choose...</option>
+								{CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+							</select>
+						</div>
 					</div>
-				</CardContent>
-			</Card>
 
-			{/* Physical Address */}
-			<Card>
-				<CardHeader><CardTitle>Business Physical Address</CardTitle></CardHeader>
-				<CardContent className="grid gap-4 sm:grid-cols-2">
-					<div className="sm:col-span-2"><Field label="Street Address" value={f("address_street")} onChange={(v) => set("address_street", v)} /></div>
-					<Field label="City" value={f("address_city")} onChange={(v) => set("address_city", v)} />
-					<Field label="Postal / Zip Code" value={f("address_postal_code")} onChange={(v) => set("address_postal_code", v)} />
-					<Field label="State / Province / Region" value={f("address_region")} onChange={(v) => set("address_region", v)} />
-					<Field label="Country" value={f("address_country")} onChange={(v) => set("address_country", v)} />
-					<Field label="Time Zone" value={f("time_zone")} onChange={(v) => set("time_zone", v)} placeholder="e.g. Europe/Athens" />
+					{/* Right: Physical Address */}
+					<div className="space-y-4">
+						<h3 className="text-lg font-semibold">Business Physical Address</h3>
+						<Field label="Street Address" value={f("address_street")} onChange={(v) => set("address_street", v)} />
+						<Field label="City" value={f("address_city")} onChange={(v) => set("address_city", v)} />
+						<Field label="Postal / Zip Code" value={f("address_postal_code")} onChange={(v) => set("address_postal_code", v)} />
+						<Field label="State / Province / Region" value={f("address_region")} onChange={(v) => set("address_region", v)} />
+						<Field label="Country" value={f("address_country")} onChange={(v) => set("address_country", v)} />
+						<Field label="Time Zone" value={f("time_zone")} onChange={(v) => set("time_zone", v)} placeholder="e.g. Europe/Athens" />
+					</div>
 				</CardContent>
 			</Card>
 
