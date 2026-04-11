@@ -172,9 +172,11 @@ function LogoUpload({ logoUrl }: { logoUrl?: string | null }) {
 		if (!file) return;
 		e.target.value = "";
 		if (file.size > 2.5 * 1024 * 1024) { toast.error("File too large. Max 2.5 MB."); return; }
+		// Show preview immediately using local blob URL
+		setLocalUrl(URL.createObjectURL(file));
 		uploadMut.mutate(file, {
-			onSuccess: (res) => { setLocalUrl(res.logo_url); toast.success("Logo uploaded."); },
-			onError: () => toast.error("Upload failed."),
+			onSuccess: (res) => { if (res.logo_url) setLocalUrl(res.logo_url); toast.success("Logo uploaded."); },
+			onError: () => { setLocalUrl(null); toast.error("Upload failed."); },
 		});
 	};
 
