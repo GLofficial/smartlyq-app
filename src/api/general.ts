@@ -17,6 +17,7 @@ export function useIntegrations() {
 			apiClient.get<{
 				platforms: Record<string, { name: string; category: string }>;
 				connected: ConnectedAccount[];
+				integrations: { key: string; name: string; category: string; connected: boolean }[];
 			}>("/api/spa/integrations"),
 	});
 }
