@@ -27,6 +27,21 @@ export function useDeleteAccount() {
 	});
 }
 
+export function useUpdateAccount() {
+	return useMutation({
+		mutationFn: (data: { name: string }) =>
+			apiClient.post<{ message: string }>("/api/spa/account/update", data),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bootstrap"] }),
+	});
+}
+
+export function useChangePassword() {
+	return useMutation({
+		mutationFn: (data: { current_password: string; new_password: string }) =>
+			apiClient.post<{ message: string }>("/api/spa/account/password", data),
+	});
+}
+
 export interface ApiKey {
 	id: number; name: string; prefix: string; scopes: string;
 	status: string; rate_limit: number; is_test: boolean;

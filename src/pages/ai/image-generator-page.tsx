@@ -18,7 +18,7 @@ export function ImageGeneratorPage() {
 		if (!prompt.trim()) { toast.error("Enter a prompt."); return; }
 		setGenerating(true);
 		try {
-			const res = await apiClient.post<{ message: string; image_url: string }>("/api/spa/generate/image", { prompt });
+			const res = await apiClient.post<{ message: string; image_url: string }>("/api/spa/ai/image", { prompt });
 			toast.success(res.message);
 			setPrompt("");
 			// Refresh gallery

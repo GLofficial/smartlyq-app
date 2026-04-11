@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiClient } from "@/lib/api-client";
 import { useSocialHub, type SocialAccount } from "@/api/social";
+import { useCreatePost } from "@/api/social-posts";
 import { CreatePostEditor } from "./create-post-editor";
 import { PreviewPanel } from "./previews/preview-panel";
 import { toast } from "sonner";
@@ -16,7 +16,7 @@ export function CreatePostPage() {
 	const [selectedAccounts, setSelectedAccounts] = useState<number[]>([]);
 	const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
 	const [scheduledTime, setScheduledTime] = useState("");
-	const [submitting, setSubmitting] = useState(false);
+	const createMut = useCreatePost();
 
 	const toggleAccount = (acc: SocialAccount) => {
 		const isSelected = selectedAccounts.includes(acc.id);
@@ -47,38 +47,19 @@ export function CreatePostPage() {
 			}
 		: null;
 
-	const handleSubmit = async (action: "save_draft" | "scheduled" | "post_now") => {
-		if (!content.trim() && !title.trim()) {
-			toast.error("Enter content or a title.");
-			return;
-		}
-		if (action !== "save_draft" && selectedPlatforms.length === 0) {
-			toast.error("Select at least one account.");
-			return;
-		}
-		if (action === "scheduled" && !scheduledTime) {
-			toast.error("Pick a scheduled time.");
-			return;
-		}
+	const handleSubmit = (action: "save_draft" | "scheduled" | "post_now") => {
+		if (!content.trim() && !title.trim()) { toast.error("Enter content or a title."); return; }
+		if (action !== "save_draft" && selectedPlatforms.length === 0) { toast.error("Select at least one account."); return; }
+		if (action === "scheduled" && !scheduledTime) { toast.error("Pick a scheduled time."); return; }
 
-		setSubmitting(true);
-		try {
-			const res = await apiClient.post<{ message: string }>("/api/spa/social/posts/create", {
-				title,
-				content,
-				platforms: selectedPlatforms,
-				selected_accounts: selectedAccounts,
-				action,
-				scheduled_time: scheduledTime || null,
-				media_urls: [],
-			});
-			toast.success(res.message);
-			navigate("/my/social-media");
-		} catch (err) {
-			toast.error((err as { message?: string })?.message ?? "Failed to create post.");
-		} finally {
-			setSubmitting(false);
-		}
+		createMut.mutate({
+			title, content, platforms: selectedPlatforms,
+			selected_accounts: selectedAccounts, action,
+			scheduled_time: scheduledTime || null, media_urls: [],
+		}, {
+			onSuccess: (res) => { toast.success(res.message); navigate("/my/social-media"); },
+			onError: (err) => toast.error((err as { message?: string })?.message ?? "Failed to create post."),
+		});
 	};
 
 	return (
@@ -94,7 +75,7 @@ export function CreatePostPage() {
 						content={content}
 						selectedAccounts={selectedAccounts}
 						scheduledTime={scheduledTime}
-						submitting={submitting}
+						submitting={createMut.isPending}
 						onTitleChange={setTitle}
 						onContentChange={setContent}
 						onToggleAccount={toggleAccount}

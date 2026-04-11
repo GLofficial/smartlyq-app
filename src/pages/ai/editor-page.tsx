@@ -15,7 +15,7 @@ export function EditorPage() {
 		if (!content.trim()) { toast.error("Write something first."); return; }
 		setAssisting(true);
 		try {
-			const res = await apiClient.post<{ result: string }>("/api/spa/generate/editor-assist", { content, action });
+			const res = await apiClient.post<{ result: string }>("/api/spa/ai/editor-assist", { content, action });
 			setContent(res.result);
 			toast.success("AI applied.");
 		} catch (err) { toast.error((err as { message?: string })?.message ?? "Failed."); }

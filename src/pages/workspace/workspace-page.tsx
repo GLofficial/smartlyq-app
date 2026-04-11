@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pencil, Check, X, Copy, ChevronLeft, ChevronRight } from "lucide-react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
-import { queryClient } from "@/lib/query-client";
 import { useWorkspaceMembers, useInviteMember, useCancelInvite, useRemoveMember } from "@/api/workspace-members";
+import {
+	useWorkspaceOverview, useWorkspaceBilling, useWorkspaceActivity,
+	useWorkspaceDefaults, useRenameWorkspace, useToggleApproval, useSaveWorkspaceDefaults,
+} from "@/api/workspace/settings";
 import { toast } from "sonner";
 
 const TABS = ["Overview", "Members", "Billing", "Activity", "Workspace defaults", "BYOK (AI Providers)"];
@@ -37,11 +38,11 @@ export function WorkspacePage() {
 }
 
 function OverviewTab() {
-	const { data } = useQuery({ queryKey: ["workspace", "overview"], queryFn: () => apiClient.get<{ workspace: { id: number; name: string; icon_url: string; require_post_approval: boolean }; seats: { active: number; included: number; billable: number; max: number | null } }>("/api/spa/workspace/overview") });
+	const { data } = useWorkspaceOverview();
+	const renameMut = useRenameWorkspace();
+	const approvalMut = useToggleApproval();
 	const [editing, setEditing] = useState(false);
 	const [name, setName] = useState("");
-	const renameMut = useMutation({ mutationFn: (n: string) => apiClient.post<{ message: string }>("/api/spa/workspace/rename", { name: n }), onSuccess: () => { toast.success("Renamed."); setEditing(false); queryClient.invalidateQueries({ queryKey: ["workspace"] }); } });
-	const approvalMut = useMutation({ mutationFn: (v: boolean) => apiClient.post<{ message: string }>("/api/spa/workspace/toggle-approval", { enabled: v ? 1 : 0 }), onSuccess: () => { toast.success("Updated."); queryClient.invalidateQueries({ queryKey: ["workspace"] }); } });
 
 	if (!data) return <Spinner />;
 	const ws = data.workspace; const s = data.seats;
@@ -49,7 +50,7 @@ function OverviewTab() {
 		<div className="grid gap-6 lg:grid-cols-2">
 			<Card><CardHeader><CardTitle>Workspace name</CardTitle></CardHeader><CardContent className="space-y-3">
 				<p className="text-xs text-[var(--muted-foreground)]">Workspace ID: {ws.id} <button onClick={() => { navigator.clipboard.writeText(String(ws.id)); toast.success("Copied!"); }}><Copy size={12} className="inline" /></button></p>
-				{editing ? <div className="flex gap-2"><Input value={name} onChange={(e) => setName(e.target.value)} /><Button onClick={() => renameMut.mutate(name)}><Check size={14} /></Button><Button variant="outline" onClick={() => setEditing(false)}><X size={14} /></Button></div>
+				{editing ? <div className="flex gap-2"><Input value={name} onChange={(e) => setName(e.target.value)} /><Button onClick={() => renameMut.mutate(name, { onSuccess: () => { toast.success("Renamed."); setEditing(false); } })}><Check size={14} /></Button><Button variant="outline" onClick={() => setEditing(false)}><X size={14} /></Button></div>
 				: <div className="flex gap-2 items-center"><Input value={ws.name} disabled /><Button variant="outline" onClick={() => { setName(ws.name); setEditing(true); }}><Pencil size={14} /></Button></div>}
 				<p className="text-xs text-[var(--muted-foreground)]">Only the owner can rename the workspace.</p>
 			</CardContent></Card>
@@ -58,7 +59,7 @@ function OverviewTab() {
 			</CardContent></Card>
 			<Card className="lg:col-span-2"><CardHeader><CardTitle>Post Approval</CardTitle></CardHeader><CardContent className="flex items-center justify-between">
 				<p className="text-sm text-[var(--muted-foreground)]">When enabled, posts need approval before publishing. Invite clients as <strong>Approver</strong> role.</p>
-				<button onClick={() => approvalMut.mutate(!ws.require_post_approval)} className={`relative h-6 w-11 rounded-full transition-colors ${ws.require_post_approval ? "bg-[var(--sq-primary)]" : "bg-gray-300"}`}>
+				<button onClick={() => approvalMut.mutate(!ws.require_post_approval, { onSuccess: () => toast.success("Updated.") })} className={`relative h-6 w-11 rounded-full transition-colors ${ws.require_post_approval ? "bg-[var(--sq-primary)]" : "bg-gray-300"}`}>
 					<span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${ws.require_post_approval ? "translate-x-5" : "translate-x-0.5"}`} /></button>
 			</CardContent></Card>
 		</div>
@@ -83,7 +84,7 @@ function MembersTab() {
 }
 
 function BillingTab() {
-	const { data } = useQuery({ queryKey: ["workspace", "billing"], queryFn: () => apiClient.get<{ plan: { name: string; price: number; seat_price_monthly: number; seat_price_yearly: number; seats_included: number; seats_max: number } | null; credits: number | null; subscription: { expires_at?: string } | null; stripe: { has_subscription: boolean; seat_quantity: number; extra_storage_gb: number } | null }>("/api/spa/workspace/billing") });
+	const { data } = useWorkspaceBilling();
 	if (!data) return <Spinner />;
 	return (
 		<div className="space-y-6">
@@ -103,7 +104,7 @@ function BillingTab() {
 
 function ActivityTab() {
 	const [page, setPage] = useState(1);
-	const { data } = useQuery({ queryKey: ["workspace", "activity", page], queryFn: () => apiClient.get<{ activity: { id: number; event: string; meta: string; who: string; created_at: string }[]; total: number; page: number; pages: number }>(`/api/spa/workspace/activity?page=${page}`) });
+	const { data } = useWorkspaceActivity(page);
 	if (!data) return <Spinner />;
 	return (
 		<Card><CardHeader><CardTitle>Activity</CardTitle></CardHeader><CardContent>
@@ -114,8 +115,8 @@ function ActivityTab() {
 }
 
 function DefaultsTab() {
-	const { data } = useQuery({ queryKey: ["workspace", "defaults"], queryFn: () => apiClient.get<{ defaults: { id: number; feature: string; allow_owner: boolean; allow_admin: boolean; allow_member: boolean }[] }>("/api/spa/workspace/defaults") });
-	const saveMut = useMutation({ mutationFn: (d: unknown[]) => apiClient.post<{ message: string }>("/api/spa/workspace/defaults/save", { defaults: d }), onSuccess: () => { toast.success("Saved."); queryClient.invalidateQueries({ queryKey: ["workspace", "defaults"] }); } });
+	const { data } = useWorkspaceDefaults();
+	const saveMut = useSaveWorkspaceDefaults();
 	const [edits, setEdits] = useState<Record<number, { allow_admin: boolean; allow_member: boolean }>>({});
 	if (!data) return <Spinner />;
 	return (

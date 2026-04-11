@@ -14,7 +14,7 @@ export function AudioPage() {
 		if (!text.trim()) { toast.error("Enter text."); return; }
 		setGenerating(true);
 		try {
-			const res = await apiClient.post<{ message: string; url: string }>("/api/spa/generate/tts", { text });
+			const res = await apiClient.post<{ message: string; url: string }>("/api/spa/ai/tts", { text });
 			toast.success(res.message);
 			setAudioUrl(res.url);
 		} catch (err) {

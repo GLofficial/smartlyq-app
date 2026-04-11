@@ -29,7 +29,7 @@ export function ContentRewriterPage() {
 							if (!input.trim()) { toast.error("Enter content."); return; }
 							setRewriting(true);
 							try {
-								const res = await apiClient.post<{ rewritten: string }>("/api/spa/generate/rewrite", { content: input });
+								const res = await apiClient.post<{ rewritten: string }>("/api/spa/ai/rewrite", { content: input });
 								setOutput(res.rewritten);
 								toast.success("Rewritten!");
 							} catch (err) { toast.error((err as { message?: string })?.message ?? "Failed."); }

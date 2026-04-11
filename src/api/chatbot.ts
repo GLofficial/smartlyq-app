@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { queryClient } from "@/lib/query-client";
 
 export interface Chatbot {
 	id: number;
@@ -68,5 +69,20 @@ export function useLiveAgent() {
 			apiClient.get<{ escalations: Escalation[]; pending: number; assigned: number }>(
 				"/api/spa/chatbot/live-agent",
 			),
+	});
+}
+
+export function useChatbotSettings() {
+	return useQuery({
+		queryKey: ["chatbot", "settings"],
+		queryFn: () => apiClient.get<{ settings: Record<string, string> }>("/api/spa/chatbot/settings"),
+	});
+}
+
+export function useSaveChatbotSettings() {
+	return useMutation({
+		mutationFn: (settings: Record<string, string>) =>
+			apiClient.post<{ message: string }>("/api/spa/chatbot/settings/save", settings),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["chatbot", "settings"] }),
 	});
 }

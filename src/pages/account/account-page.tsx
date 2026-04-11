@@ -4,8 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { UserCog, Mail, Shield, Calendar, Save, Camera, Trash2, Key, Plus, XCircle, Copy } from "lucide-react";
 import { useAccount } from "@/api/general";
-import { useUploadAvatar, useDeleteAvatar, useApiKeys, useApiKeyCreate, useApiKeyRevoke } from "@/api/account";
-import { apiClient } from "@/lib/api-client";
+import { useUploadAvatar, useDeleteAvatar, useUpdateAccount, useChangePassword, useApiKeys, useApiKeyCreate, useApiKeyRevoke } from "@/api/account";
 import { toast } from "sonner";
 
 export function AccountPage() {
@@ -14,12 +13,13 @@ export function AccountPage() {
 
 	const [name, setName] = useState("");
 	const [nameLoaded, setNameLoaded] = useState(false);
-	const [savingProfile, setSavingProfile] = useState(false);
 
 	const [currentPw, setCurrentPw] = useState("");
 	const [newPw, setNewPw] = useState("");
 	const [confirmPw, setConfirmPw] = useState("");
-	const [savingPw, setSavingPw] = useState(false);
+
+	const updateMut = useUpdateAccount();
+	const passwordMut = useChangePassword();
 
 	// Initialize name from API data once
 	if (user?.name && !nameLoaded) {
@@ -27,47 +27,21 @@ export function AccountPage() {
 		setNameLoaded(true);
 	}
 
-	const handleSaveProfile = async () => {
-		if (!name.trim()) {
-			toast.error("Name is required.");
-			return;
-		}
-		setSavingProfile(true);
-		try {
-			const res = await apiClient.post<{ message: string }>("/api/spa/account/update", { name });
-			toast.success(res.message);
-			refetch();
-		} catch (err) {
-			toast.error((err as { message?: string })?.message ?? "Failed to save.");
-		} finally {
-			setSavingProfile(false);
-		}
+	const handleSaveProfile = () => {
+		if (!name.trim()) { toast.error("Name is required."); return; }
+		updateMut.mutate({ name }, {
+			onSuccess: (res) => { toast.success(res.message); refetch(); },
+			onError: (err) => toast.error((err as { message?: string })?.message ?? "Failed to save."),
+		});
 	};
 
-	const handleChangePassword = async () => {
-		if (newPw.length < 8) {
-			toast.error("New password must be at least 8 characters.");
-			return;
-		}
-		if (newPw !== confirmPw) {
-			toast.error("Passwords do not match.");
-			return;
-		}
-		setSavingPw(true);
-		try {
-			const res = await apiClient.post<{ message: string }>("/api/spa/account/password", {
-				current_password: currentPw,
-				new_password: newPw,
-			});
-			toast.success(res.message);
-			setCurrentPw("");
-			setNewPw("");
-			setConfirmPw("");
-		} catch (err) {
-			toast.error((err as { message?: string })?.message ?? "Failed to change password.");
-		} finally {
-			setSavingPw(false);
-		}
+	const handleChangePassword = () => {
+		if (newPw.length < 8) { toast.error("New password must be at least 8 characters."); return; }
+		if (newPw !== confirmPw) { toast.error("Passwords do not match."); return; }
+		passwordMut.mutate({ current_password: currentPw, new_password: newPw }, {
+			onSuccess: (res) => { toast.success(res.message); setCurrentPw(""); setNewPw(""); setConfirmPw(""); },
+			onError: (err) => toast.error((err as { message?: string })?.message ?? "Failed to change password."),
+		});
 	};
 
 	if (isLoading) {
@@ -110,8 +84,8 @@ export function AccountPage() {
 							</span>
 						)}
 					</div>
-					<Button onClick={handleSaveProfile} disabled={savingProfile}>
-						<Save size={16} /> {savingProfile ? "Saving..." : "Save Changes"}
+					<Button onClick={handleSaveProfile} disabled={updateMut.isPending}>
+						<Save size={16} /> {updateMut.isPending ? "Saving..." : "Save Changes"}
 					</Button>
 				</CardContent>
 			</Card>
@@ -133,8 +107,8 @@ export function AccountPage() {
 						<label className="text-sm font-medium">Confirm New Password</label>
 						<Input type="password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} placeholder="Confirm new password" />
 					</div>
-					<Button variant="outline" onClick={handleChangePassword} disabled={savingPw}>
-						{savingPw ? "Updating..." : "Update Password"}
+					<Button variant="outline" onClick={handleChangePassword} disabled={passwordMut.isPending}>
+						{passwordMut.isPending ? "Updating..." : "Update Password"}
 					</Button>
 				</CardContent>
 			</Card>

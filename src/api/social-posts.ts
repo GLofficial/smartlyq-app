@@ -6,6 +6,24 @@ const invalidatePosts = () => {
 	queryClient.invalidateQueries({ queryKey: ["social"] });
 };
 
+export interface CreatePostData {
+	title: string;
+	content: string;
+	platforms: string[];
+	selected_accounts: number[];
+	action: "save_draft" | "scheduled" | "post_now";
+	scheduled_time: string | null;
+	media_urls: string[];
+}
+
+export function useCreatePost() {
+	return useMutation({
+		mutationFn: (data: CreatePostData) =>
+			apiClient.post<{ message: string }>("/api/spa/social/posts/create", data),
+		onSuccess: invalidatePosts,
+	});
+}
+
 export function useEditPost() {
 	return useMutation({
 		mutationFn: (data: { post_id: number; content?: string; platforms?: string[]; scheduled_time?: string; account_ids?: number[]; media_urls?: string[] }) =>
