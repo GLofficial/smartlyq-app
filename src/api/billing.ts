@@ -87,3 +87,71 @@ export function useCancelSubscription() {
 		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["billing"] }),
 	});
 }
+
+// Payment method + billing address
+export interface PaymentMethodData {
+	card: { brand: string; last4: string; exp_month: number; exp_year: number } | null;
+	billing_address: { address: string; city: string; state: string; country: string; postal: string };
+	customer_id: string;
+}
+
+export function usePaymentMethod() {
+	return useQuery({
+		queryKey: ["billing", "payment-method"],
+		queryFn: () => apiClient.get<PaymentMethodData>("/api/spa/billing/payment-method"),
+	});
+}
+
+export function useSaveBillingAddress() {
+	return useMutation({
+		mutationFn: (data: { address: string; city: string; state: string; country: string; postal: string }) =>
+			apiClient.post<{ message: string }>("/api/spa/billing/billing-address", data),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["billing", "payment-method"] }),
+	});
+}
+
+// Auto-recharge
+export interface AutoRechargeData {
+	enabled: boolean;
+	threshold: number;
+	pack_plan_id: number;
+	packs: { id: number; name: string; price: number; credits: number }[];
+}
+
+export function useAutoRecharge() {
+	return useQuery({
+		queryKey: ["billing", "auto-recharge"],
+		queryFn: () => apiClient.get<AutoRechargeData>("/api/spa/billing/auto-recharge"),
+	});
+}
+
+export function useSaveAutoRecharge() {
+	return useMutation({
+		mutationFn: (data: { enabled: boolean; threshold: number; pack_plan_id: number }) =>
+			apiClient.post<{ message: string }>("/api/spa/billing/auto-recharge", data),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["billing", "auto-recharge"] }),
+	});
+}
+
+// Spending alerts
+export interface SpendingAlertData {
+	enabled: boolean;
+	threshold: number;
+	frequency: string;
+	recipients: string[];
+}
+
+export function useSpendingAlerts() {
+	return useQuery({
+		queryKey: ["billing", "spending-alerts"],
+		queryFn: () => apiClient.get<SpendingAlertData>("/api/spa/billing/spending-alerts"),
+	});
+}
+
+export function useSaveSpendingAlerts() {
+	return useMutation({
+		mutationFn: (data: { enabled: boolean; threshold: number; frequency: string; recipients: string[] }) =>
+			apiClient.post<{ message: string }>("/api/spa/billing/spending-alerts", data),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["billing", "spending-alerts"] }),
+	});
+}
