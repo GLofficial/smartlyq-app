@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { PanelLeftClose, PanelLeft } from "lucide-react";
+import { PanelLeftClose, PanelLeft, Settings } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useUiStore } from "@/stores/ui-store";
 import { useTenantStore } from "@/stores/tenant-store";
@@ -15,7 +15,6 @@ export function Sidebar() {
 	const toggleSidebar = useUiStore((s) => s.toggleSidebar);
 	const branding = useTenantStore((s) => s.branding);
 	const user = useAuthStore((s) => s.user);
-	const plan = useAuthStore((s) => s.plan);
 	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
 	const isAdmin = user?.role === 1;
 	const navGroups = getNavGroups(wsHash ?? "");
@@ -67,24 +66,26 @@ export function Sidebar() {
 				{isAdmin && <SidebarSection group={ADMIN_GROUP} collapsed={collapsed} />}
 			</nav>
 
-			{/* User info — bottom */}
+			{/* Settings + User — bottom */}
 			{!collapsed && user && (
-				<div className="border-t border-[var(--sidebar-border)] px-3 py-2.5">
-					<div className="flex items-center gap-2.5">
+				<div className="border-t border-[var(--sidebar-border)] px-3 py-2">
+					<Link
+						to={wsHash ? `/w/${wsHash}/settings` : "/my"}
+						className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)] transition-colors"
+					>
+						<Settings size={16} className="shrink-0 text-[var(--muted-foreground)]" />
+						<span className="text-[13px] font-medium">Settings</span>
+					</Link>
+					<div className="flex items-center gap-2.5 px-2 pt-1.5">
 						{user.avatar_url ? (
-							<img src={user.avatar_url} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+							<img src={user.avatar_url} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
 						) : (
-							<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--sq-primary)] text-xs font-bold text-white">
+							<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--sq-primary)] text-[10px] font-bold text-white">
 								{user.name.charAt(0).toUpperCase()}
 							</div>
 						)}
 						<div className="min-w-0 flex-1">
-							<p className="truncate text-[13px] font-medium text-[var(--sidebar-foreground)]">
-								{user.name}
-							</p>
-							<p className="truncate text-[11px] text-[var(--muted-foreground)]">
-								{plan?.name ?? "Free"} Plan
-							</p>
+							<p className="truncate text-[12px] font-medium text-[var(--sidebar-foreground)]">{user.name}</p>
 						</div>
 						<div className="flex h-5 items-center rounded bg-[color-mix(in_srgb,var(--sq-primary)_12%,transparent)] px-1.5">
 							<span className="text-[10px] font-semibold text-[var(--sq-primary)]">●</span>

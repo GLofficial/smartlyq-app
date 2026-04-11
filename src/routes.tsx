@@ -100,6 +100,7 @@ const CrmProjectsPage = lazy(() => import("@/pages/crm/crm-projects-page").then(
 const CrmContactsPage = lazy(() => import("@/pages/crm/crm-contacts-page").then((m) => ({ default: m.CrmContactsPage })));
 const CrmTasksPage = lazy(() => import("@/pages/crm/crm-tasks-page").then((m) => ({ default: m.CrmTasksPage })));
 const CrmPreviewPage = lazy(() => import("@/pages/crm/crm-preview-page").then((m) => ({ default: m.CrmPreviewPage })));
+const SettingsPage = lazy(() => import("@/pages/settings/settings-page").then((m) => ({ default: m.SettingsPage })));
 
 function S({ children }: { children: React.ReactNode }) {
 	return <Suspense fallback={<div className="flex h-[50vh] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" /></div>}>{children}</Suspense>;
@@ -215,7 +216,10 @@ export const router = createBrowserRouter([
 					{ path: "integrations/woocommerce/stores", element: <S><WoocommercePage /></S> },
 					{ path: "integrations/woocommerce/insights", element: <S><WoocommercePage /></S> },
 
-					/* Workspace + Billing */
+					/* Settings (GHL-style settings sidebar) */
+					{ path: "settings", element: <S><SettingsPage /></S> },
+
+					/* Workspace + Billing (legacy direct routes still work) */
 					{ path: "workspace", element: <S><WorkspacePage /></S> },
 					{ path: "workspace/members", element: <S><MembersPage /></S> },
 					{ path: "billing", element: <S><BillingPage /></S> },

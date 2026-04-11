@@ -6,7 +6,7 @@ import {
 	Building2, Briefcase, Globe, Shield, Receipt, ClipboardList, Settings, Activity,
 	CreditCard, MessageSquare, LayoutGrid, Presentation, Database, FileAudio, Film,
 	Clapperboard, CircleDollarSign, TrendingUp, ShoppingCart, SquareStack, FileImage,
-	ScrollText, History, Headphones, FolderOpen, FileCode2, Wallet, PieChart,
+	ScrollText, History, Headphones, FolderOpen, FileCode2, PieChart,
 	BookOpen, FileQuestion, LifeBuoy, Bug, Brain, Wrench,
 	type LucideIcon,
 } from "lucide-react";
@@ -33,11 +33,11 @@ export function getNavGroups(wsHash: string): NavGroup[] {
 		{
 			label: "",
 			items: [
-				{ label: "Dashboard", path: p("dashboard"), icon: LayoutDashboard },
+				{ label: "Launchpad", path: p("dashboard"), icon: LayoutDashboard },
 				{
 					label: "Sales", path: p("crm"), icon: Briefcase,
 					children: [
-						{ label: "Overview", path: p("crm"), icon: LayoutDashboard },
+						{ label: "Dashboard", path: p("crm"), icon: LayoutDashboard },
 						{ label: "Pipeline", path: p("crm/pipeline"), icon: LayoutGrid },
 						{ label: "Projects", path: p("crm/projects"), icon: FolderOpen },
 						{ label: "Contacts", path: p("crm/contacts"), icon: Users },
@@ -130,16 +130,13 @@ export function getNavGroups(wsHash: string): NavGroup[] {
 			],
 		},
 		{
-			label: "Workspace", icon: Building2, path: p("workspace"),
+			label: "Workspace", icon: Building2, path: p("brands"),
 			items: [
-				{ label: "Overview", path: p("workspace"), icon: Building2 },
-				{ label: "Members", path: p("workspace?tab=Members"), icon: Users },
 				{ label: "Brands", path: p("brands"), icon: Briefcase },
 				{ label: "Business Groups", path: p("businesses"), icon: Building2 },
 				{ label: "Media Library", path: p("media"), icon: FolderOpen },
 				{ label: "Documents", path: p("documents"), icon: FileText },
 				{ label: "Developer API", path: p("developer"), icon: FileCode2 },
-				{ label: "Billing", path: p("billing"), icon: Wallet },
 			],
 		},
 		{
