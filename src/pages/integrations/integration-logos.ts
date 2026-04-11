@@ -1,9 +1,8 @@
 /** Brand colors, logos and descriptions for integrations.
- * Uses simple-icons.org CDN (reliable, all brands available).
- * Fallback: first letter of brand name in brand color.
+ * Uses jsdelivr CDN for simple-icons SVGs (reliable).
  */
 
-const SI = (slug: string) => `https://cdn.simpleicons.org/${slug}`;
+const SI = (slug: string) => `https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/${slug}.svg`;
 
 export const INTEGRATION_BRANDS: Record<string, { logo: string; color: string; description: string }> = {
 	google_analytics: {
@@ -47,7 +46,7 @@ export const INTEGRATION_BRANDS: Record<string, { logo: string; color: string; d
 		description: "Connect your Shopify store for product and order sync",
 	},
 	ghl: {
-		logo: "https://images.leadconnectorhq.com/image/f_webp/assets/builder/favicon/favicon.png",
+		logo: "https://app.gohighlevel.com/favicon.ico",
 		color: "#29B473",
 		description: "Sync contacts, calendars, and workflows with LeadConnector",
 	},
