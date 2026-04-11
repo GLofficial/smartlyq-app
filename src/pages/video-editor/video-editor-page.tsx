@@ -14,7 +14,7 @@ export function VideoEditorPage() {
 			// The PHP endpoint /my/video-editor normally mints a JWT and redirects.
 			// We already have a JWT, so we call the video editor API to get the editor URL.
 			try {
-				const res = await fetch("/api/video-editor/token", {
+				const res = await fetch("/api/spa/external/video-editor/token", {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
@@ -22,15 +22,14 @@ export function VideoEditorPage() {
 					},
 				});
 				const data = await res.json();
-				if (data.url) {
-					setSrc(data.url);
+				if (data.editor_url) {
+					setSrc(data.editor_url);
 				} else if (data.token) {
-					// Fallback: construct URL with token
-					const editorUrl = data.editor_url || "https://video.smartlyq.com";
+					const editorUrl = "https://video.smartlyq.com";
 					setSrc(`${editorUrl}?token=${encodeURIComponent(data.token)}`);
 				}
 			} catch {
-				// Fallback: pass our JWT directly
+				// Fallback: pass our JWT directly (already contains workspace_hash)
 				const editorUrl = "https://video.smartlyq.com";
 				setSrc(`${editorUrl}?token=${encodeURIComponent(token ?? "")}`);
 			}
