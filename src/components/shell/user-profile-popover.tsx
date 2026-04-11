@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
 	Sparkles, PlayCircle, User, Puzzle, Home, HelpCircle, LogOut,
 	ChevronRight, ExternalLink, ArrowRightLeft, Monitor,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/constants";
 
 interface UserProfilePopoverProps {
@@ -19,7 +22,10 @@ interface UserProfilePopoverProps {
 export function UserProfilePopover({
 	children, userName, userEmail, planName, credits, avatarUrl, onLogout,
 }: UserProfilePopoverProps) {
+	const [creditsDialogOpen, setCreditsDialogOpen] = useState(false);
+
 	return (
+		<>
 		<Popover>
 			<PopoverTrigger asChild>{children}</PopoverTrigger>
 			<PopoverContent className="w-72 p-0" align="end" sideOffset={8}>
@@ -58,20 +64,24 @@ export function UserProfilePopover({
 							Upgrade
 						</Link>
 					</div>
-					<Link
-						to={ROUTES.HISTORY}
-						className="flex items-center justify-between px-4 py-2.5 hover:bg-[var(--muted)] transition-colors rounded-b-lg"
-					>
+					<div className="flex items-center justify-between px-4 py-2.5 rounded-b-lg">
 						<div className="flex items-center gap-2 text-sm text-[var(--foreground)]">
 							<Sparkles size={15} className="text-amber-500" />
 							Credits
-							<span className="text-xs text-[var(--muted-foreground)] cursor-help" title="SmartlyQ Credits (SQC)">&#9432;</span>
+							<button
+								type="button"
+								onClick={() => setCreditsDialogOpen(true)}
+								className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+								aria-label="About credits"
+							>
+								<HelpCircle size={14} />
+							</button>
 						</div>
-						<div className="flex items-center gap-1 text-sm font-medium text-[var(--foreground)]">
+						<Link to={ROUTES.HISTORY} className="flex items-center gap-1 text-sm font-medium text-[var(--foreground)] hover:text-[var(--sq-primary)] transition-colors">
 							{credits !== undefined ? Math.round(credits).toLocaleString() : "—"}
 							<ChevronRight size={14} className="text-[var(--muted-foreground)]" />
-						</div>
-					</Link>
+						</Link>
+					</div>
 				</div>
 
 				{/* Menu items */}
@@ -100,6 +110,31 @@ export function UserProfilePopover({
 				</div>
 			</PopoverContent>
 		</Popover>
+
+		{/* Credits explainer dialog */}
+		<Dialog open={creditsDialogOpen} onOpenChange={setCreditsDialogOpen}>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>About credits</DialogTitle>
+					<DialogDescription asChild>
+						<ul className="mt-3 space-y-2 text-sm text-[var(--foreground)] list-disc pl-4">
+							<li><strong>One balance</strong>: SmartlyQ shows a single "Available credits" number everywhere.</li>
+							<li><strong>How credits are used</strong>: Each AI action burns credits based on the feature/model usage. After completion, your balance updates.</li>
+							<li><strong>Workspaces</strong>: Members spend from the workspace credits pool.</li>
+							<li><strong>Whitelabel (agency)</strong>: If you're inside a whitelabel workspace, usage is paid from the agency credits pool.</li>
+							<li><strong>No daily refresh / free buckets</strong>: SmartlyQ does not split credits into "free/daily/monthly" buckets.</li>
+						</ul>
+					</DialogDescription>
+				</DialogHeader>
+				<DialogFooter>
+					<Link to={ROUTES.BILLING} onClick={() => setCreditsDialogOpen(false)}>
+						<Button size="sm">View usage</Button>
+					</Link>
+					<Button variant="outline" size="sm" onClick={() => setCreditsDialogOpen(false)}>Close</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+		</>
 	);
 }
 
