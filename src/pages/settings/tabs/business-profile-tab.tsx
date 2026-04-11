@@ -46,6 +46,9 @@ export function BusinessProfileTab() {
 		});
 	};
 
+	// eslint-disable-next-line no-console
+	console.log("[BusinessProfile] profile:", profile ? { logo: profile.business_logo_url, name: profile.friendly_business_name, id: profile.id } : "loading...");
+
 	if (isLoading) {
 		return <div className="flex h-40 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" /></div>;
 	}
