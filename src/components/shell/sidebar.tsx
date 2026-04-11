@@ -66,8 +66,8 @@ export function Sidebar() {
 				{isAdmin && <SidebarSection group={ADMIN_GROUP} collapsed={collapsed} />}
 			</nav>
 
-			{/* Settings + User — bottom */}
-			{!collapsed && user && (
+			{/* Settings — bottom */}
+			{!collapsed && (
 				<div className="border-t border-[var(--sidebar-border)] px-3 py-2">
 					<Link
 						to={wsHash ? `/w/${wsHash}/settings` : "/my"}
@@ -76,21 +76,6 @@ export function Sidebar() {
 						<Settings size={16} className="shrink-0 text-[var(--muted-foreground)]" />
 						<span className="text-[13px] font-medium">Settings</span>
 					</Link>
-					<div className="flex items-center gap-2.5 px-2 pt-1.5">
-						{user.avatar_url ? (
-							<img src={user.avatar_url} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
-						) : (
-							<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--sq-primary)] text-[10px] font-bold text-white">
-								{user.name.charAt(0).toUpperCase()}
-							</div>
-						)}
-						<div className="min-w-0 flex-1">
-							<p className="truncate text-[12px] font-medium text-[var(--sidebar-foreground)]">{user.name}</p>
-						</div>
-						<div className="flex h-5 items-center rounded bg-[color-mix(in_srgb,var(--sq-primary)_12%,transparent)] px-1.5">
-							<span className="text-[10px] font-semibold text-[var(--sq-primary)]">●</span>
-						</div>
-					</div>
 				</div>
 			)}
 		</aside>

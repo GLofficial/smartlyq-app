@@ -6,7 +6,7 @@ import {
 	Building2, Briefcase, Globe, Shield, Receipt, ClipboardList, Settings, Activity,
 	CreditCard, MessageSquare, LayoutGrid, Presentation, Database, FileAudio, Film,
 	Clapperboard, CircleDollarSign, TrendingUp, ShoppingCart, SquareStack, FileImage,
-	ScrollText, History, Headphones, FolderOpen, FileCode2, PieChart,
+	ScrollText, History, Headphones, FolderOpen, PieChart,
 	BookOpen, FileQuestion, LifeBuoy, Bug, Brain, Wrench,
 	type LucideIcon,
 } from "lucide-react";
@@ -130,13 +130,9 @@ export function getNavGroups(wsHash: string): NavGroup[] {
 			],
 		},
 		{
-			label: "Workspace", icon: Building2, path: p("brands"),
+			label: "",
 			items: [
-				{ label: "Brands", path: p("brands"), icon: Briefcase },
-				{ label: "Business Groups", path: p("businesses"), icon: Building2 },
 				{ label: "Media Library", path: p("media"), icon: FolderOpen },
-				{ label: "Documents", path: p("documents"), icon: FileText },
-				{ label: "Developer API", path: p("developer"), icon: FileCode2 },
 			],
 		},
 		{
