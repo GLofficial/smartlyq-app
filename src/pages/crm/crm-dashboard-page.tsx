@@ -198,7 +198,7 @@ export function CrmDashboardPage() {
                   />
                   <YAxis
                     tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
-                    tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                    tickFormatter={(v: number) => formatCurrency(v)}
                   />
                   <Tooltip
                     formatter={(value: number) => [formatCurrency(value), "Value"]}

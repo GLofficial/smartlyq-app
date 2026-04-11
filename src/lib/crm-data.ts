@@ -2,6 +2,8 @@
 // Deal-Flow CRM — Types & helpers (API-aligned, snake_case)
 // ---------------------------------------------------------------------------
 
+import { useAuthStore } from "@/stores/auth-store";
+
 export type DealStage = string;
 
 export interface StageConfig {
@@ -52,7 +54,7 @@ export interface Contact {
   company: string;
   phone: string;
   role: string;
-  status: "active" | "prospect" | "inactive";
+  status: "active" | "prospect" | "in_progress" | "lost";
   initials: string;
   tags: string[];
   deal_count: number;
@@ -140,9 +142,10 @@ export function getDealsForStage(deals: Deal[], stage: DealStage): Deal[] {
 }
 
 export function formatCurrency(value: number): string {
+  const currency = useAuthStore.getState().currency || "USD";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);

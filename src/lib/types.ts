@@ -65,6 +65,7 @@ export interface BootstrapResponse {
 	user: User | null;
 	plan: Plan | null;
 	credits: number;
+	currency: string;
 	workspaces: Workspace[];
 	active_workspace_id: number | null;
 	active_workspace_hash: string;
