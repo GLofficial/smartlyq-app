@@ -123,7 +123,9 @@ export function IntegrationsPage() {
 													<span className="flex items-center gap-1.5 text-xs font-medium text-green-600">
 														<CheckCircle size={14} /> Connected
 													</span>
-													<Button size="sm" variant="ghost" className="h-7 text-xs text-[var(--muted-foreground)]">Manage</Button>
+													<a href={CONNECT_URLS[integ.key] ?? "#"}>
+														<Button size="sm" variant="ghost" className="h-7 text-xs text-[var(--muted-foreground)]">Manage</Button>
+													</a>
 												</>
 											) : (
 												<>
