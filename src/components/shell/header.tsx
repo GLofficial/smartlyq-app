@@ -1,10 +1,9 @@
-import { Link } from "react-router-dom";
-import { LogOut, Moon, Sun, User, Coins } from "lucide-react";
+import { Moon, Sun, User, Coins } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
 import { useUiStore } from "@/stores/ui-store";
 import { apiClient } from "@/lib/api-client";
-import { ROUTES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
+import { UserProfilePopover } from "./user-profile-popover";
 
 export function Header() {
 	const user = useAuthStore((s) => s.user);
@@ -26,23 +25,12 @@ export function Header() {
 			<div />
 
 			<div className="flex items-center gap-2">
-				{/* Credits badge — shows remaining user credits, not plan allowance */}
+				{/* Credits badge */}
 				{plan && (
-					<Link to={ROUTES.BILLING}>
-						<div className="flex items-center gap-1.5 rounded-full bg-[color-mix(in_srgb,var(--sq-primary)_10%,transparent)] px-3 py-1.5 text-xs font-medium text-[var(--sq-primary)] hover:bg-[color-mix(in_srgb,var(--sq-primary)_15%,transparent)] transition-colors">
-							<Coins size={14} />
-							<span>{Math.round(credits).toLocaleString()}</span>
-						</div>
-					</Link>
-				)}
-
-				{/* Plan badge */}
-				{plan && (
-					<Link to={ROUTES.BILLING}>
-						<span className="rounded-full bg-[var(--muted)] px-2.5 py-1 text-xs font-medium text-[var(--muted-foreground)]">
-							{plan.name}
-						</span>
-					</Link>
+					<div className="flex items-center gap-1.5 rounded-full bg-[color-mix(in_srgb,var(--sq-primary)_10%,transparent)] px-3 py-1.5 text-xs font-medium text-[var(--sq-primary)]">
+						<Coins size={14} />
+						<span>{Math.round(credits).toLocaleString()}</span>
+					</div>
 				)}
 
 				{/* Theme toggle */}
@@ -55,25 +43,26 @@ export function Header() {
 					{theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
 				</Button>
 
-				{/* User */}
+				{/* User profile popover */}
 				{user && (
-					<>
-						<span className="text-sm text-[var(--muted-foreground)] hidden sm:inline">
-							{user.name}
-						</span>
-						<Link to={ROUTES.ACCOUNT}>
+					<UserProfilePopover
+						userName={user.name}
+						userEmail={user.email}
+						planName={plan?.name}
+						credits={credits}
+						avatarUrl={user.avatar_url}
+						onLogout={handleLogout}
+					>
+						<button className="flex items-center gap-0 rounded-full hover:ring-2 hover:ring-[var(--sq-primary)] transition-shadow">
 							{user.avatar_url ? (
-								<img src={user.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover hover:ring-2 hover:ring-[var(--sq-primary)] transition-shadow" />
+								<img src={user.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover" />
 							) : (
-								<Button variant="ghost" size="icon" className="h-8 w-8">
-									<User size={16} />
-								</Button>
+								<div className="h-8 w-8 rounded-full bg-[color-mix(in_srgb,var(--sq-primary)_15%,transparent)] flex items-center justify-center">
+									<User size={16} className="text-[var(--sq-primary)]" />
+								</div>
 							)}
-						</Link>
-						<Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleLogout}>
-							<LogOut size={16} />
-						</Button>
-					</>
+						</button>
+					</UserProfilePopover>
 				)}
 			</div>
 		</header>
