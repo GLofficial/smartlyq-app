@@ -5,17 +5,18 @@ import { useIntegrations } from "@/api/general";
 import { useStartOAuth, useDisconnectAccount, useSyncAccount } from "@/api/social-accounts";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { INTEGRATION_BRANDS } from "./integration-logos";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { queryClient } from "@/lib/query-client";
 
-const CONNECT_URLS: Record<string, string> = {
-	google_analytics: "/my/integrations/google/start",
-	google_search_console: "/my/integrations/google/start",
-	google_ads: "/my/integrations/google-ads/start",
-	facebook_ads: "/my/integrations/facebook-ads/start",
-	tiktok_ads: "/my/integrations/tiktok-ads/start",
-	linkedin_ads: "/my/integrations/linkedin-ads/start",
-	slack: "/my/integrations/slack/start",
+// Integrations that use the SPA OAuth flow (JWT state, no sessions)
+const OAUTH_INTEGRATIONS = new Set([
+	"google_analytics", "google_search_console", "google_ads",
+	"facebook_ads", "tiktok_ads", "linkedin_ads", "slack",
+]);
+
+// Fallback URLs for integrations that don't have SPA OAuth yet
+const FALLBACK_URLS: Record<string, string> = {
 	woocommerce: "/my/integrations/woocommerce/stores",
 	shopify: "/shopify/auth",
 	canva: "/my/canva/connect",
@@ -53,6 +54,35 @@ export function IntegrationsPage() {
 
 	const handleConnect = (platform: string) => {
 		oauthMut.mutate(platform, { onError: (e) => toast.error((e as { error?: string })?.error ?? "OAuth failed") });
+	};
+
+	const handleIntegrationConnect = async (key: string) => {
+		if (OAUTH_INTEGRATIONS.has(key)) {
+			try {
+				const res = await apiClient.get<{ redirect_url: string }>(`/api/spa/integrations/oauth/start?integration=${key}`);
+				if (res.redirect_url) {
+					window.location.href = res.redirect_url;
+				} else {
+					toast.error("Failed to start OAuth flow.");
+				}
+			} catch (err) {
+				toast.error((err as { error?: string })?.error ?? "Integration not configured.");
+			}
+		} else {
+			const url = FALLBACK_URLS[key];
+			if (url) window.open(url, "_blank");
+		}
+	};
+
+	const handleIntegrationDisconnect = async (key: string, name: string) => {
+		if (!confirm(`Disconnect ${name}?`)) return;
+		try {
+			await apiClient.post("/api/spa/integrations/disconnect", { integration: key });
+			toast.success("Disconnected.");
+			queryClient.invalidateQueries({ queryKey: ["integrations"] });
+		} catch {
+			toast.error("Failed to disconnect.");
+		}
 	};
 
 	const handleDisconnect = (accountId: number, name: string) => {
@@ -124,18 +154,16 @@ export function IntegrationsPage() {
 													<span className="flex items-center gap-1.5 text-xs font-medium text-green-600">
 														<CheckCircle size={14} /> Connected
 													</span>
-													<a href={CONNECT_URLS[integ.key] ?? "#"} target="_blank" rel="noopener noreferrer">
-														<Button size="sm" variant="ghost" className="h-7 text-xs text-[var(--muted-foreground)]">Manage</Button>
-													</a>
+													<Button size="sm" variant="ghost" className="h-7 text-xs text-red-500" onClick={() => handleIntegrationDisconnect(integ.key, integ.name)}>
+														Disconnect
+													</Button>
 												</>
 											) : (
 												<>
 													<span className="text-xs text-[var(--muted-foreground)]">Not connected</span>
-													<a href={CONNECT_URLS[integ.key] ?? "#"} target="_blank" rel="noopener noreferrer">
-														<Button size="sm" className="h-7 text-xs" style={{ backgroundColor: brand?.color ?? "var(--sq-primary)" }}>
+													<Button size="sm" className="h-7 text-xs text-white" style={{ backgroundColor: brand?.color ?? "var(--sq-primary)" }} onClick={() => handleIntegrationConnect(integ.key)}>
 															Connect
 														</Button>
-													</a>
 												</>
 											)}
 										</div>
