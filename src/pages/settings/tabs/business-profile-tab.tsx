@@ -72,8 +72,6 @@ export function BusinessProfileTab() {
 							)}
 						</div>
 
-						{/* Debug: remove after fix */}
-						{profile && !profile.business_logo_url && <p className="text-xs text-red-500">DEBUG: logo_url is "{String(profile.business_logo_url)}" — keys: {Object.keys(profile).filter(k => k.includes('logo')).join(', ') || 'none with logo'}</p>}
 						<LogoUpload logoUrl={profile?.business_logo_url || null} />
 
 						<Field label="Friendly Business Name" value={f("friendly_business_name")} onChange={(v) => set("friendly_business_name", v)} />
