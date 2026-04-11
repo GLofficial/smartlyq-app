@@ -5,7 +5,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
+import { useTenantStore } from "@/stores/tenant-store";
 import { Header } from "@/components/shell/header";
+import { SidebarSearch } from "@/components/shell/sidebar-search";
 
 const SECTIONS = [
 	{
@@ -37,11 +39,28 @@ export function SettingsLayout() {
 	const [params, setParams] = useSearchParams();
 	const tab = params.get("tab") || "business-profile";
 	const wp = useWorkspacePath();
+	const branding = useTenantStore((s) => s.branding);
 
 	return (
 		<div className="flex h-screen overflow-hidden">
 			{/* Settings sidebar */}
 			<aside className="flex w-56 shrink-0 flex-col border-r border-[var(--sidebar-border)] bg-[var(--sidebar-background)]">
+				{/* Logo */}
+				<div className="flex items-center px-3 pt-3 pb-2">
+					<Link to={wp("dashboard")} className="flex items-center gap-2 min-w-0">
+						{branding.logo_url ? (
+							<img src={branding.logo_url} alt={branding.site_name} className="h-7 w-auto" />
+						) : (
+							<span className="text-lg font-bold text-[var(--sidebar-foreground)]">{branding.site_name}</span>
+						)}
+					</Link>
+				</div>
+
+				{/* Search + Quick Actions */}
+				<div className="px-3 pb-2 border-b border-[var(--sidebar-border)]">
+					<SidebarSearch collapsed={false} />
+				</div>
+
 				{/* Go Back */}
 				<div className="px-3 pt-3 pb-1">
 					<Link
@@ -53,7 +72,7 @@ export function SettingsLayout() {
 					</Link>
 				</div>
 
-				<div className="px-4 pt-2 pb-3">
+				<div className="px-4 pt-1 pb-3">
 					<h2 className="text-lg font-bold text-[var(--sidebar-foreground)]">Settings</h2>
 				</div>
 
