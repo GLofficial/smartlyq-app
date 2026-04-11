@@ -4,6 +4,7 @@ import { ENDPOINTS } from "@/lib/constants";
 
 export interface DashboardData {
 	credits: number;
+	currency: string;
 	scheduled_posts: number;
 	chatbot_count: number;
 	social_accounts: number;
