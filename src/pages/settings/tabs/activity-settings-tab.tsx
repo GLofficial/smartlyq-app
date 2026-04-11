@@ -64,7 +64,7 @@ function formatEvent(event: string): string {
 		.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function formatMeta(event: string, meta: string): string | null {
+function formatMeta(_event: string, meta: string): string | null {
 	if (!meta) return null;
 	try {
 		const parsed = JSON.parse(meta);
