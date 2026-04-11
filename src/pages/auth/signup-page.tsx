@@ -17,10 +17,11 @@ export function SignupPage() {
 		e.preventDefault();
 		setLoading(true);
 		try {
-			const data = await apiClient.post<{ access_token: string }>("/api/spa/signup", { name, email, password });
+			const data = await apiClient.post<{ access_token: string; active_workspace_hash?: string }>("/api/spa/signup", { name, email, password });
 			apiClient.login(data.access_token);
 			const base = import.meta.env.BASE_URL || "/";
-			window.location.href = `${base}my`;
+			const hash = data.active_workspace_hash;
+			window.location.href = hash ? `${base}w/${hash}/dashboard` : `${base}my`;
 		} catch (err) {
 			toast.error((err as { message?: string })?.message ?? "Signup failed.");
 		} finally {

@@ -87,13 +87,13 @@ export function UserProfilePopover({
 
 				{/* Menu items */}
 				<div className="border-t border-[var(--border)] py-1">
-					<MenuItem icon={PlayCircle} label="Tutorials" to={wp("tutorials")} />
 					<MenuItem icon={User} label="Account" to={wp("account")} />
 					<MenuItem icon={Puzzle} label="Integrations" to={wp("integrations")} />
 				</div>
 
 				{/* External links */}
 				<div className="border-t border-[var(--border)] py-1">
+					<ExternalMenuItem icon={PlayCircle} label="Tutorials" href="https://www.youtube.com/@SmartlyQ" />
 					<ExternalMenuItem icon={Home} label="Homepage" href="https://smartlyq.com" />
 					<ExternalMenuItem icon={Monitor} label="Usage" href="https://app.smartlyq.com/my/history" />
 					<ExternalMenuItem icon={HelpCircle} label="Get help" href="https://docs.smartlyq.com/" />

@@ -58,7 +58,7 @@ export function ChatbotListPage() {
 									</p>
 								)}
 								<div className="flex items-center gap-2">
-									<Link to={`/my/chatbot/edit/${bot.id}`}>
+									<Link to={`../chatbot/edit/${bot.id}`}>
 										<Button variant="outline" size="sm">Edit</Button>
 									</Link>
 									<a

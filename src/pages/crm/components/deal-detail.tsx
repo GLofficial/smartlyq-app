@@ -249,7 +249,7 @@ export function DealDetail({ deal, stageConfig, onClose }: DealDetailProps) {
                     className="h-7 text-xs gap-1"
                     asChild
                   >
-                    <a href={`/my/crm/preview/${deal.id}`}>
+                    <a href={`../crm/preview/${deal.id}`}>
                       <ExternalLink className="w-3 h-3" />
                       Client Preview
                     </a>
