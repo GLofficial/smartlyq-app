@@ -7,6 +7,7 @@ import { WorkspaceRouteGuard } from "@/components/shared/workspace-route-guard";
 import { LegacyRedirect } from "@/components/shared/legacy-redirect";
 import { IframeBridge } from "@/components/shared/iframe-bridge";
 import { AdminLayout } from "@/layouts/admin-layout";
+import { SettingsLayout } from "@/layouts/settings-layout";
 
 // ── All pages lazy-loaded ──
 const LoginPage = lazy(() => import("@/pages/auth/login-page").then((m) => ({ default: m.LoginPage })));
@@ -216,9 +217,6 @@ export const router = createBrowserRouter([
 					{ path: "integrations/woocommerce/stores", element: <S><WoocommercePage /></S> },
 					{ path: "integrations/woocommerce/insights", element: <S><WoocommercePage /></S> },
 
-					/* Settings (GHL-style settings sidebar) */
-					{ path: "settings", element: <S><SettingsPage /></S> },
-
 					/* Workspace + Billing (legacy direct routes still work) */
 					{ path: "workspace", element: <S><WorkspacePage /></S> },
 					{ path: "workspace/members", element: <S><MembersPage /></S> },
@@ -259,6 +257,20 @@ export const router = createBrowserRouter([
 
 					/* 404 within workspace */
 					{ path: "*", element: <S><NotFoundPage /></S> },
+				],
+			},
+		],
+	},
+
+	/* ── Settings (full-page takeover with own sidebar, like GHL) ── */
+	{
+		path: "/w/:hashId/settings",
+		element: <AuthGuard><WorkspaceRouteGuard /></AuthGuard>,
+		children: [
+			{
+				element: <SettingsLayout />,
+				children: [
+					{ index: true, element: <S><SettingsPage /></S> },
 				],
 			},
 		],
