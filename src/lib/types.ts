@@ -36,6 +36,7 @@ export interface PlanFeatures {
 export interface Workspace {
 	id: number;
 	name: string;
+	hash_id: string;
 	slug: string;
 	is_active: boolean;
 }
@@ -66,6 +67,7 @@ export interface BootstrapResponse {
 	credits: number;
 	workspaces: Workspace[];
 	active_workspace_id: number | null;
+	active_workspace_hash: string;
 	is_whitelabel: boolean;
 	csrf_token: string;
 }
@@ -96,6 +98,7 @@ export interface AuthResponse {
 	plan: Plan;
 	workspaces: Workspace[];
 	active_workspace_id: number;
+	active_workspace_hash: string;
 }
 
 /** Navigation item for sidebar */

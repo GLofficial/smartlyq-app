@@ -13,7 +13,7 @@ export function SuspendedPage() {
 					<p className="text-sm text-[var(--muted-foreground)]">
 						Your account has been suspended due to a billing issue. Please update your payment method to restore access.
 					</p>
-					<Link to="/my/billing">
+					<Link to="../billing">
 						<Button>Go to Billing</Button>
 					</Link>
 				</CardContent>

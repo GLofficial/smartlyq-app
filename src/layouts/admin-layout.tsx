@@ -35,7 +35,7 @@ export function AdminLayout() {
 	const user = useAuthStore((s) => s.user);
 	const location = useLocation();
 
-	if (!user || user.role !== 1) return <Navigate to="/my" replace />;
+	if (!user || user.role !== 1) return <Navigate to="/" replace />;
 
 	return (
 		<div className="flex h-screen overflow-hidden">
@@ -67,7 +67,7 @@ export function AdminLayout() {
 					})}
 				</nav>
 				<div className="border-t border-[var(--sidebar-border)] p-1.5">
-					<Link to="/my" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]">
+					<Link to="/" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]">
 						<ArrowLeft size={15} /> Back to App
 					</Link>
 				</div>

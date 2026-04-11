@@ -4,7 +4,8 @@ import { cn } from "@/lib/cn";
 import { useUiStore } from "@/stores/ui-store";
 import { useTenantStore } from "@/stores/tenant-store";
 import { useAuthStore } from "@/stores/auth-store";
-import { NAV_GROUPS, ADMIN_GROUP } from "./sidebar-nav-config";
+import { getNavGroups, ADMIN_GROUP } from "./sidebar-nav-config";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 import { SidebarSection } from "./sidebar-section";
 import { WorkspaceSwitcher } from "./workspace-switcher";
 import { SidebarSearch } from "./sidebar-search";
@@ -15,7 +16,9 @@ export function Sidebar() {
 	const branding = useTenantStore((s) => s.branding);
 	const user = useAuthStore((s) => s.user);
 	const plan = useAuthStore((s) => s.plan);
+	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
 	const isAdmin = user?.role === 1;
+	const navGroups = getNavGroups(wsHash ?? "");
 
 	return (
 		<aside
@@ -27,7 +30,7 @@ export function Sidebar() {
 			{/* Logo */}
 			<div className="flex items-center justify-between px-3 pt-3 pb-2">
 				{!collapsed && (
-					<Link to="/my" className="flex items-center gap-2 min-w-0">
+					<Link to={wsHash ? `/w/${wsHash}/dashboard` : "/my"} className="flex items-center gap-2 min-w-0">
 						{branding.logo_url ? (
 							<img src={branding.logo_url} alt={branding.site_name} className="h-7 w-auto" />
 						) : (
@@ -58,7 +61,7 @@ export function Sidebar() {
 
 			{/* Navigation */}
 			<nav className="flex-1 overflow-y-auto px-1.5 py-1">
-				{NAV_GROUPS.map((group) => (
+				{navGroups.map((group) => (
 					<SidebarSection key={group.label || "top"} group={group} collapsed={collapsed} />
 				))}
 				{isAdmin && <SidebarSection group={ADMIN_GROUP} collapsed={collapsed} />}

@@ -294,7 +294,7 @@ export function CrmDashboardPage() {
                 </CardDescription>
               </div>
               <Link
-                to="/my/crm/tasks"
+                to="../crm/tasks"
                 className="text-xs text-[var(--primary)] hover:underline flex items-center gap-1"
               >
                 View all <ArrowRight className="w-3 h-3" />
@@ -352,7 +352,7 @@ export function CrmDashboardPage() {
                 <CardDescription>At-a-glance metrics</CardDescription>
               </div>
               <Link
-                to="/my/crm/pipeline"
+                to="../crm/pipeline"
                 className="text-xs text-[var(--primary)] hover:underline flex items-center gap-1"
               >
                 Pipeline <ArrowRight className="w-3 h-3" />

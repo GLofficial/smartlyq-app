@@ -57,7 +57,7 @@ export function CreatePostPage() {
 			selected_accounts: selectedAccounts, action,
 			scheduled_time: scheduledTime || null, media_urls: [],
 		}, {
-			onSuccess: (res) => { toast.success(res.message); navigate("/my/social-media"); },
+			onSuccess: (res) => { toast.success(res.message); navigate("../social-media"); },
 			onError: (err) => toast.error((err as { message?: string })?.message ?? "Failed to create post."),
 		});
 	};

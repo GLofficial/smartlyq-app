@@ -18,6 +18,7 @@ import {
 	X,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 
 interface QuickAction {
 	label: string;
@@ -27,18 +28,21 @@ interface QuickAction {
 	keywords: string[];
 }
 
-const QUICK_ACTIONS: QuickAction[] = [
-	{ label: "Create Post", description: "Compose a new social media post", icon: PenSquare, path: "/my/social-media/create-post", keywords: ["post", "social", "publish"] },
-	{ label: "AI Captain", description: "Start an AI-powered task", icon: Sparkles, path: "/my/captain", keywords: ["ai", "captain", "assistant"] },
-	{ label: "New Contact", description: "Add a new CRM contact", icon: UserPlus, path: "/my/crm/contacts", keywords: ["contact", "crm", "client"] },
-	{ label: "New Deal", description: "Create a deal in the pipeline", icon: Briefcase, path: "/my/crm/pipeline", keywords: ["deal", "pipeline", "sale"] },
-	{ label: "Generate Image", description: "Create an AI-generated image", icon: ImagePlus, path: "/my/image-generator", keywords: ["image", "generate", "art"] },
-	{ label: "Generate Video", description: "Create an AI-generated video", icon: VideoIcon, path: "/my/text-to-video", keywords: ["video", "generate", "clip"] },
-	{ label: "Create Chatbot", description: "Build a new chatbot", icon: Bot, path: "/my/chatbot/create", keywords: ["chatbot", "bot", "automate"] },
-	{ label: "Use Template", description: "Start from an AI template", icon: FileText, path: "/my/templates", keywords: ["template", "ai", "content"] },
-	{ label: "View Analytics", description: "Check your social analytics", icon: BarChart3, path: "/my/social-media/analytics", keywords: ["analytics", "stats", "report"] },
-	{ label: "Media Library", description: "Browse your uploaded files", icon: FolderOpen, path: "/my/media", keywords: ["media", "files", "upload"] },
-];
+function getQuickActions(wsHash: string): QuickAction[] {
+	const p = (sub: string) => `/w/${wsHash}/${sub}`;
+	return [
+		{ label: "Create Post", description: "Compose a new social media post", icon: PenSquare, path: p("social-media/create-post"), keywords: ["post", "social", "publish"] },
+		{ label: "AI Captain", description: "Start an AI-powered task", icon: Sparkles, path: p("captain"), keywords: ["ai", "captain", "assistant"] },
+		{ label: "New Contact", description: "Add a new CRM contact", icon: UserPlus, path: p("crm/contacts"), keywords: ["contact", "crm", "client"] },
+		{ label: "New Deal", description: "Create a deal in the pipeline", icon: Briefcase, path: p("crm/pipeline"), keywords: ["deal", "pipeline", "sale"] },
+		{ label: "Generate Image", description: "Create an AI-generated image", icon: ImagePlus, path: p("image-generator"), keywords: ["image", "generate", "art"] },
+		{ label: "Generate Video", description: "Create an AI-generated video", icon: VideoIcon, path: p("text-to-video"), keywords: ["video", "generate", "clip"] },
+		{ label: "Create Chatbot", description: "Build a new chatbot", icon: Bot, path: p("chatbot/create"), keywords: ["chatbot", "bot", "automate"] },
+		{ label: "Use Template", description: "Start from an AI template", icon: FileText, path: p("templates"), keywords: ["template", "ai", "content"] },
+		{ label: "View Analytics", description: "Check your social analytics", icon: BarChart3, path: p("social-media/analytics"), keywords: ["analytics", "stats", "report"] },
+		{ label: "Media Library", description: "Browse your uploaded files", icon: FolderOpen, path: p("media"), keywords: ["media", "files", "upload"] },
+	];
+}
 
 export function SidebarSearch({ collapsed }: { collapsed: boolean }) {
 	const [searchOpen, setSearchOpen] = useState(false);
@@ -123,6 +127,8 @@ function QuickActionsTrigger({ collapsed, open, setOpen }: { collapsed: boolean;
 function SearchModal({ onClose }: { onClose: () => void }) {
 	const [search, setSearch] = useState("");
 	const [selectedIdx, setSelectedIdx] = useState(0);
+	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
+	const QUICK_ACTIONS = useMemo(() => getQuickActions(wsHash ?? ""), [wsHash]);
 	const navigate = useNavigate();
 	const inputRef = useRef<HTMLInputElement>(null);
 
@@ -245,6 +251,8 @@ function SearchModal({ onClose }: { onClose: () => void }) {
 function QuickActionsPanel({ onClose }: { onClose: () => void }) {
 	const navigate = useNavigate();
 	const panelRef = useRef<HTMLDivElement>(null);
+	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
+	const QUICK_ACTIONS = useMemo(() => getQuickActions(wsHash ?? ""), [wsHash]);
 
 	useEffect(() => {
 		function handleClick(e: MouseEvent) {

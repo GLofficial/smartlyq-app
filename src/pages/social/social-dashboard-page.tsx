@@ -22,7 +22,7 @@ export function SocialDashboardPage() {
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<h1 className="text-2xl font-bold">Social Media</h1>
-				<Link to="/my/social-media/create-post">
+				<Link to="../social-media/create-post">
 					<Button>
 						<Plus size={16} />
 						Create Post
@@ -166,7 +166,7 @@ export function SocialDashboardPage() {
 			<Card>
 				<CardHeader className="flex flex-row items-center justify-between">
 					<CardTitle className="text-lg">Recent Posts</CardTitle>
-					<Link to="/my/social-media/posts">
+					<Link to="../social-media/posts">
 						<Button variant="outline" size="sm">
 							View All
 						</Button>

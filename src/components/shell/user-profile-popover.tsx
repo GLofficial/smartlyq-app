@@ -7,7 +7,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ROUTES } from "@/lib/constants";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
 
 interface UserProfilePopoverProps {
 	children: React.ReactNode;
@@ -23,6 +23,7 @@ export function UserProfilePopover({
 	children, userName, userEmail, planName, credits, avatarUrl, onLogout,
 }: UserProfilePopoverProps) {
 	const [creditsDialogOpen, setCreditsDialogOpen] = useState(false);
+	const wp = useWorkspacePath();
 
 	return (
 		<>
@@ -45,7 +46,7 @@ export function UserProfilePopover({
 						<p className="text-xs text-[var(--muted-foreground)] truncate">{userEmail || ""}</p>
 					</div>
 					<Link
-						to={ROUTES.ACCOUNT}
+						to={wp("account")}
 						className="shrink-0 h-8 w-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
 						title="Switch account"
 					>
@@ -58,7 +59,7 @@ export function UserProfilePopover({
 					<div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--border)]">
 						<span className="text-sm font-medium text-[var(--foreground)]">{planName || "Free"}</span>
 						<Link
-							to={ROUTES.BILLING}
+							to={wp("billing")}
 							className="rounded-md bg-[var(--foreground)] px-3 py-1 text-xs font-medium text-[var(--background)] hover:opacity-90 transition-opacity"
 						>
 							Upgrade
@@ -77,7 +78,7 @@ export function UserProfilePopover({
 								<HelpCircle size={14} />
 							</button>
 						</div>
-						<Link to={ROUTES.HISTORY} className="flex items-center gap-1 text-sm font-medium text-[var(--foreground)] hover:text-[var(--sq-primary)] transition-colors">
+						<Link to={wp("history")} className="flex items-center gap-1 text-sm font-medium text-[var(--foreground)] hover:text-[var(--sq-primary)] transition-colors">
 							{credits !== undefined ? Math.round(credits).toLocaleString() : "—"}
 							<ChevronRight size={14} className="text-[var(--muted-foreground)]" />
 						</Link>
@@ -86,9 +87,9 @@ export function UserProfilePopover({
 
 				{/* Menu items */}
 				<div className="border-t border-[var(--border)] py-1">
-					<MenuItem icon={PlayCircle} label="Tutorials" to="/my/tutorials" />
-					<MenuItem icon={User} label="Account" to={ROUTES.ACCOUNT} />
-					<MenuItem icon={Puzzle} label="Integrations" to={ROUTES.INTEGRATIONS} />
+					<MenuItem icon={PlayCircle} label="Tutorials" to={wp("tutorials")} />
+					<MenuItem icon={User} label="Account" to={wp("account")} />
+					<MenuItem icon={Puzzle} label="Integrations" to={wp("integrations")} />
 				</div>
 
 				{/* External links */}
@@ -127,7 +128,7 @@ export function UserProfilePopover({
 					</DialogDescription>
 				</DialogHeader>
 				<DialogFooter>
-					<Link to={ROUTES.BILLING} onClick={() => setCreditsDialogOpen(false)}>
+					<Link to={wp("billing")} onClick={() => setCreditsDialogOpen(false)}>
 						<Button size="sm">View usage</Button>
 					</Link>
 					<Button variant="outline" size="sm" onClick={() => setCreditsDialogOpen(false)}>Close</Button>

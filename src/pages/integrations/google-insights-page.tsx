@@ -19,7 +19,7 @@ export function GoogleInsightsPage() {
 					<CardContent className="flex flex-col items-center gap-4 py-12">
 						<BarChart3 size={48} className="text-[var(--muted-foreground)]" />
 						<p className="text-[var(--muted-foreground)]">No Google Analytics properties connected.</p>
-						<a href="/my/integrations/google/start" target="_blank" rel="noopener noreferrer">
+						<a href="../integrations/google/start" target="_blank" rel="noopener noreferrer">
 							<Button><ExternalLink size={16} /> Connect Google Analytics</Button>
 						</a>
 					</CardContent>

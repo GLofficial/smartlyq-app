@@ -19,28 +19,32 @@ export const ENDPOINTS = {
 	DASHBOARD: `${API.SPA}/dashboard`,
 } as const;
 
-/** Client-side route paths */
+/** Client-side route paths (auth routes are absolute, workspace routes are relative segments) */
 export const ROUTES = {
 	LOGIN: "/login",
 	SIGNUP: "/signup",
 	RESET: "/reset",
-	DASHBOARD: "/my",
-	SOCIAL: "/my/social-media",
-	CAPTAIN: "/my/captain",
-	CHATBOT: "/my/chatbot",
-	INTEGRATIONS: "/my/integrations",
-	AD_MANAGER: "/my/ad-manager",
-	BILLING: "/my/billing",
-	WORKSPACE: "/my/workspace",
-	ACCOUNT: "/my/account",
-	AGENCY: "/my/agency",
-	WHITELABEL: "/my/whitelabel",
-	MEDIA: "/my/media",
-	VIDEO_EDITOR: "/my/video-editor",
-	PRESENTATIONS: "/my/presentations",
-	TEMPLATES: "/my/templates",
-	HISTORY: "/my/history",
-	DOCUMENTS: "/my/documents",
+} as const;
+
+/** Workspace-relative path segments (use with useWorkspacePath hook) */
+export const WS_PATHS = {
+	DASHBOARD: "dashboard",
+	SOCIAL: "social-media",
+	CAPTAIN: "captain",
+	CHATBOT: "chatbot",
+	INTEGRATIONS: "integrations",
+	AD_MANAGER: "ad-manager",
+	BILLING: "billing",
+	WORKSPACE: "workspace",
+	ACCOUNT: "account",
+	AGENCY: "agency",
+	WHITELABEL: "whitelabel",
+	MEDIA: "media",
+	VIDEO_EDITOR: "video-editor",
+	PRESENTATIONS: "presentations",
+	TEMPLATES: "templates",
+	HISTORY: "history",
+	DOCUMENTS: "documents",
 } as const;
 
 /** Local storage keys */

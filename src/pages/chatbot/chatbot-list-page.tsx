@@ -11,7 +11,7 @@ export function ChatbotListPage() {
 		<div className="space-y-6">
 			<div className="flex items-center justify-between">
 				<h1 className="text-2xl font-bold">Chatbots</h1>
-				<Link to="/my/chatbot/create">
+				<Link to="../chatbot/create">
 					<Button><Plus size={16} /> Create Chatbot</Button>
 				</Link>
 			</div>
@@ -25,7 +25,7 @@ export function ChatbotListPage() {
 					<CardContent className="flex flex-col items-center gap-4 py-12">
 						<Bot size={48} className="text-[var(--muted-foreground)]" />
 						<p className="text-[var(--muted-foreground)]">No chatbots yet. Create your first one.</p>
-						<Link to="/my/chatbot/create">
+						<Link to="../chatbot/create">
 							<Button><Plus size={16} /> Create Chatbot</Button>
 						</Link>
 					</CardContent>

@@ -28,10 +28,11 @@ export function LoginPage() {
 				password,
 			});
 
-			// Store JWT then reload — bootstrap will pick up the token and hydrate
+			// Store JWT then navigate to the active workspace dashboard
 			apiClient.login(data.access_token);
 			const base = import.meta.env.BASE_URL || "/";
-			window.location.href = `${base}my`;
+			const hash = data.active_workspace_hash;
+			window.location.href = hash ? `${base}w/${hash}/dashboard` : `${base}my`;
 		} catch (err) {
 			const message = (err as { message?: string })?.message ?? "Login failed";
 			toast.error(message);

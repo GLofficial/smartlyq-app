@@ -3,6 +3,8 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "@/layouts/app-layout";
 import { AuthLayout } from "@/layouts/auth-layout";
 import { AuthGuard } from "@/components/shared/auth-guard";
+import { WorkspaceRouteGuard } from "@/components/shared/workspace-route-guard";
+import { LegacyRedirect } from "@/components/shared/legacy-redirect";
 import { IframeBridge } from "@/components/shared/iframe-bridge";
 import { AdminLayout } from "@/layouts/admin-layout";
 
@@ -109,6 +111,8 @@ function Bridge({ path, title }: { path: string; title: string }) {
 
 export const router = createBrowserRouter([
 	{ path: "/", element: <Navigate to="/my" replace /> },
+
+	/* ── Auth (public) ── */
 	{
 		element: <AuthLayout />,
 		children: [
@@ -117,145 +121,145 @@ export const router = createBrowserRouter([
 			{ path: "/reset", element: <S><ResetPage /></S> },
 		],
 	},
+
+	/* ── Legacy /my/* redirects → /w/{hash}/* ── */
+	{ path: "/my", element: <AuthGuard><LegacyRedirect /></AuthGuard> },
+	{ path: "/my/*", element: <AuthGuard><LegacyRedirect /></AuthGuard> },
+
+	/* ── Workspace-scoped routes (/w/:hashId/*) ── */
 	{
-		element: <AuthGuard><AppLayout /></AuthGuard>,
+		path: "/w/:hashId",
+		element: <AuthGuard><WorkspaceRouteGuard /></AuthGuard>,
 		children: [
-			/* ── Dashboard ── */
-			{ path: "/my", element: <S><DashboardPage /></S> },
+			{
+				element: <AppLayout />,
+				children: [
+					/* Dashboard */
+					{ index: true, element: <S><DashboardPage /></S> },
+					{ path: "dashboard", element: <S><DashboardPage /></S> },
 
-			/* ── AI Captain (embedded inside shell) ── */
-			{ path: "/my/captain", element: <S><CaptainPage /></S> },
-			{ path: "/my/ai-captain/boards", element: <S><CaptainBoardsPage /></S> },
+					/* AI Captain (embedded) */
+					{ path: "captain", element: <S><CaptainPage /></S> },
+					{ path: "ai-captain/boards", element: <S><CaptainBoardsPage /></S> },
 
-			/* ── Social Media (all native) ── */
-			{ path: "/my/social-media", element: <S><SocialDashboardPage /></S> },
-			{ path: "/my/social-media/create-post", element: <S><CreatePostPage /></S> },
-			{ path: "/my/social-media/posts", element: <S><ManagePostsPage /></S> },
-			{ path: "/my/social-media/calendar", element: <S><CalendarPage /></S> },
-			{ path: "/my/social-media/comments", element: <S><CommentsPage /></S> },
-			{ path: "/my/social-media/inbox", element: <S><InboxPage /></S> },
-			{ path: "/my/social-media/analytics", element: <S><AnalyticsPage /></S> },
-			{ path: "/my/social-media/accounts", element: <S><IntegrationsPage /></S> },
+					/* Social Media */
+					{ path: "social-media", element: <S><SocialDashboardPage /></S> },
+					{ path: "social-media/create-post", element: <S><CreatePostPage /></S> },
+					{ path: "social-media/posts", element: <S><ManagePostsPage /></S> },
+					{ path: "social-media/calendar", element: <S><CalendarPage /></S> },
+					{ path: "social-media/comments", element: <S><CommentsPage /></S> },
+					{ path: "social-media/inbox", element: <S><InboxPage /></S> },
+					{ path: "social-media/analytics", element: <S><AnalyticsPage /></S> },
+					{ path: "social-media/accounts", element: <S><IntegrationsPage /></S> },
+					{ path: "social-media/labels", element: <S><LabelsPage /></S> },
+					{ path: "social-media/queues", element: <S><QueuesPage /></S> },
+					{ path: "social-media/report", element: <S><ReportsPage /></S> },
+					{ path: "social-media/custom-report", element: <S><ReportsPage /></S> },
+					{ path: "social-media/schedule-report", element: <S><ScheduledReportsPage /></S> },
 
-			/* ── Chatbot (native + iframe for create) ── */
-			{ path: "/my/chatbot", element: <S><ChatbotListPage /></S> },
-			{ path: "/my/chatbot/create", element: <S><ChatbotCreatePage /></S> },
-			{ path: "/my/chatbot/live-agent", element: <S><LiveAgentPage /></S> },
-			{ path: "/my/chatbot/templates", element: <S><ChatbotTemplatesPage /></S> },
-			{ path: "/my/chatbot/analytics", element: <S><ChatbotAnalyticsPage /></S> },
-			{ path: "/my/chatbot/settings", element: <S><ChatbotSettingsPage /></S> },
-			{ path: "/my/chatbot/history", element: <S><ChatbotHistoryPage /></S> },
-			{ path: "/my/chatbot/*", element: <Bridge path="/my/chatbot" title="Chatbot" /> },
+					/* Chatbot */
+					{ path: "chatbot", element: <S><ChatbotListPage /></S> },
+					{ path: "chatbot/create", element: <S><ChatbotCreatePage /></S> },
+					{ path: "chatbot/live-agent", element: <S><LiveAgentPage /></S> },
+					{ path: "chatbot/templates", element: <S><ChatbotTemplatesPage /></S> },
+					{ path: "chatbot/analytics", element: <S><ChatbotAnalyticsPage /></S> },
+					{ path: "chatbot/settings", element: <S><ChatbotSettingsPage /></S> },
+					{ path: "chatbot/history", element: <S><ChatbotHistoryPage /></S> },
+					{ path: "chatbot/*", element: <Bridge path="/my/chatbot" title="Chatbot" /> },
 
-			/* ── AI Tools (all native) ── */
-			{ path: "/my/templates", element: <S><TemplatesPage /></S> },
-			{ path: "/my/image-generator", element: <S><ImageGeneratorPage /></S> },
-			{ path: "/my/text-to-video", element: <S><VideoGeneratorPage /></S> },
-			{ path: "/my/text-to-audio", element: <S><AudioPage /></S> },
-			{ path: "/my/article-generator", element: <S><ArticleGeneratorPage /></S> },
+					/* AI Tools */
+					{ path: "templates", element: <S><TemplatesPage /></S> },
+					{ path: "image-generator", element: <S><ImageGeneratorPage /></S> },
+					{ path: "text-to-video", element: <S><VideoGeneratorPage /></S> },
+					{ path: "text-to-audio", element: <S><AudioPage /></S> },
+					{ path: "article-generator", element: <S><ArticleGeneratorPage /></S> },
+					{ path: "content-rewriter", element: <S><ContentRewriterPage /></S> },
+					{ path: "editor", element: <S><EditorPage /></S> },
+					{ path: "chat", element: <S><ChatPage /></S> },
+					{ path: "chat/assistants", element: <S><ChatPage /></S> },
+					{ path: "analyst", element: <S><AnalystPage /></S> },
+					{ path: "articles", element: <S><ArticlesPage /></S> },
+					{ path: "audio-to-text", element: <S><AudioPage /></S> },
+					{ path: "image-to-video", element: <S><VideoGeneratorPage /></S> },
 
-			/* ── Ad Manager (native) ── */
-			{ path: "/my/ad-manager", element: <S><AdManagerPage /></S> },
-			{ path: "/my/ad-manager/ad-sets", element: <S><AdSetsPage /></S> },
-			{ path: "/my/ad-manager/ads", element: <S><AdsPage /></S> },
-			{ path: "/my/ad-manager/audit-log", element: <S><AdAuditLogPage /></S> },
-			{ path: "/my/ad-manager/settings", element: <S><AdSettingsPage /></S> },
-			{ path: "/my/ad-manager/campaigns", element: <S><AdCampaignsPage /></S> },
-			{ path: "/my/ad-manager/creatives", element: <S><AdCreativesPage /></S> },
-			{ path: "/my/ad-manager/audiences", element: <S><AdAudiencesPage /></S> },
-			{ path: "/my/ad-manager/analytics", element: <S><AdAnalyticsPage /></S> },
-			{ path: "/my/ad-manager/*", element: <S><AdManagerPage /></S> },
+					/* Ad Manager */
+					{ path: "ad-manager", element: <S><AdManagerPage /></S> },
+					{ path: "ad-manager/ad-sets", element: <S><AdSetsPage /></S> },
+					{ path: "ad-manager/ads", element: <S><AdsPage /></S> },
+					{ path: "ad-manager/audit-log", element: <S><AdAuditLogPage /></S> },
+					{ path: "ad-manager/settings", element: <S><AdSettingsPage /></S> },
+					{ path: "ad-manager/campaigns", element: <S><AdCampaignsPage /></S> },
+					{ path: "ad-manager/creatives", element: <S><AdCreativesPage /></S> },
+					{ path: "ad-manager/audiences", element: <S><AdAudiencesPage /></S> },
+					{ path: "ad-manager/analytics", element: <S><AdAnalyticsPage /></S> },
+					{ path: "ad-manager/*", element: <S><AdManagerPage /></S> },
 
-			/* ── Media Library (native) ── */
-			{ path: "/my/media", element: <S><MediaLibraryPage /></S> },
+					/* Media, Video Editor, Presentations */
+					{ path: "media", element: <S><MediaLibraryPage /></S> },
+					{ path: "video-editor", element: <S><VideoEditorPage /></S> },
+					{ path: "presentations", element: <S><PresentationsPage /></S> },
 
-			/* ── Video Editor + Presentations (embedded inside shell) ── */
-			{ path: "/my/video-editor", element: <S><VideoEditorPage /></S> },
-			{ path: "/my/presentations", element: <S><PresentationsPage /></S> },
+					/* Integrations */
+					{ path: "integrations", element: <S><IntegrationsPage /></S> },
+					{ path: "integrations/*", element: <S><IntegrationsPage /></S> },
+					{ path: "integrations/facebook/ads", element: <S><AdsInsightsPage /></S> },
+					{ path: "integrations/facebook-ads/*", element: <S><AdsInsightsPage /></S> },
+					{ path: "integrations/google/ads", element: <S><AdsInsightsPage /></S> },
+					{ path: "integrations/google-ads/*", element: <S><AdsInsightsPage /></S> },
+					{ path: "integrations/tiktok/ads", element: <S><AdsInsightsPage /></S> },
+					{ path: "integrations/tiktok-ads/*", element: <S><AdsInsightsPage /></S> },
+					{ path: "integrations/linkedin/ads", element: <S><AdsInsightsPage /></S> },
+					{ path: "integrations/linkedin-ads/*", element: <S><AdsInsightsPage /></S> },
+					{ path: "integrations/google/projects", element: <S><GoogleInsightsPage /></S> },
+					{ path: "integrations/google/traffic", element: <S><GoogleInsightsPage /></S> },
+					{ path: "integrations/woocommerce/stores", element: <S><WoocommercePage /></S> },
+					{ path: "integrations/woocommerce/insights", element: <S><WoocommercePage /></S> },
 
-			/* ── Integrations (native) ── */
-			{ path: "/my/integrations", element: <S><IntegrationsPage /></S> },
-			{ path: "/my/integrations/*", element: <S><IntegrationsPage /></S> },
+					/* Workspace + Billing */
+					{ path: "workspace", element: <S><WorkspacePage /></S> },
+					{ path: "workspace/members", element: <S><MembersPage /></S> },
+					{ path: "billing", element: <S><BillingPage /></S> },
+					{ path: "billing/*", element: <S><BillingPage /></S> },
+					{ path: "account", element: <S><AccountPage /></S> },
+					{ path: "history", element: <S><HistoryPage /></S> },
+					{ path: "documents", element: <S><HistoryPage /></S> },
+					{ path: "plans", element: <S><PlansPage /></S> },
+					{ path: "suspended", element: <S><SuspendedPage /></S> },
 
-			/* ── Billing (native) ── */
-			{ path: "/my/billing", element: <S><BillingPage /></S> },
-			{ path: "/my/billing/*", element: <S><BillingPage /></S> },
+					/* Connect */
+					{ path: "url-shortener", element: <S><UrlShortenerPage /></S> },
+					{ path: "canva", element: <S><IntegrationsPage /></S> },
+					{ path: "developer", element: <S><DeveloperPage /></S> },
+					{ path: "bulk-scheduler", element: <S><QueuesPage /></S> },
 
-			/* ── Workspace + Account + History (native) ── */
-			{ path: "/my/workspace", element: <S><WorkspacePage /></S> },
-			{ path: "/my/account", element: <S><AccountPage /></S> },
-			{ path: "/my/history", element: <S><HistoryPage /></S> },
-			{ path: "/my/documents", element: <S><HistoryPage /></S> },
+					/* Workspace extras */
+					{ path: "brands", element: <S><BrandsPage /></S> },
+					{ path: "businesses", element: <S><BusinessesPage /></S> },
+					{ path: "business-details", element: <S><BusinessesPage /></S> },
+					{ path: "campaigns", element: <S><BrandsPage /></S> },
 
-			/* ── Publish extras ── */
-			{ path: "/my/social-media/labels", element: <S><LabelsPage /></S> },
-			{ path: "/my/social-media/queues", element: <S><QueuesPage /></S> },
-			{ path: "/my/bulk-scheduler", element: <S><QueuesPage /></S> },
+					/* CRM */
+					{ path: "crm", element: <S><CrmDashboardPage /></S> },
+					{ path: "crm/pipeline", element: <S><CrmPipelinePage /></S> },
+					{ path: "crm/projects", element: <S><CrmProjectsPage /></S> },
+					{ path: "crm/contacts", element: <S><CrmContactsPage /></S> },
+					{ path: "crm/tasks", element: <S><CrmTasksPage /></S> },
+					{ path: "crm/preview/:dealId", element: <S><CrmPreviewPage /></S> },
 
-			/* ── Analyze ── */
-			{ path: "/my/social-media/report", element: <S><ReportsPage /></S> },
-			{ path: "/my/social-media/custom-report", element: <S><ReportsPage /></S> },
-			{ path: "/my/social-media/schedule-report", element: <S><ScheduledReportsPage /></S> },
+					/* Whitelabel + Agency */
+					{ path: "agency", element: <S><AgencyPage /></S> },
+					{ path: "agency/billing", element: <S><AgencyBillingPage /></S> },
+					{ path: "agency/reports", element: <S><AgencyReportsPage /></S> },
+					{ path: "agency/*", element: <S><AgencyPage /></S> },
+					{ path: "whitelabel", element: <S><WhitelabelPage /></S> },
 
-			/* ── Content / AI (dedicated pages — NOT wrong mappings) ── */
-			{ path: "/my/content-rewriter", element: <S><ContentRewriterPage /></S> },
-			{ path: "/my/editor", element: <S><EditorPage /></S> },
-			{ path: "/my/chat", element: <S><ChatPage /></S> },
-			{ path: "/my/chat/assistants", element: <S><ChatPage /></S> },
-			{ path: "/my/analyst", element: <S><AnalystPage /></S> },
-			{ path: "/my/articles", element: <S><ArticlesPage /></S> },
-			{ path: "/my/audio-to-text", element: <S><AudioPage /></S> },
-			{ path: "/my/image-to-video", element: <S><VideoGeneratorPage /></S> },
-
-			/* ── Plans ── */
-			{ path: "/my/plans", element: <S><PlansPage /></S> },
-			{ path: "/my/suspended", element: <S><SuspendedPage /></S> },
-
-			/* ── Connect ── */
-			{ path: "/my/url-shortener", element: <S><UrlShortenerPage /></S> },
-			{ path: "/my/canva", element: <S><IntegrationsPage /></S> },
-			{ path: "/my/developer", element: <S><DeveloperPage /></S> },
-
-			/* ── Integration insights (ads, analytics, woocommerce) ── */
-			{ path: "/my/integrations/facebook/ads", element: <S><AdsInsightsPage /></S> },
-			{ path: "/my/integrations/facebook-ads/*", element: <S><AdsInsightsPage /></S> },
-			{ path: "/my/integrations/google/ads", element: <S><AdsInsightsPage /></S> },
-			{ path: "/my/integrations/google-ads/*", element: <S><AdsInsightsPage /></S> },
-			{ path: "/my/integrations/tiktok/ads", element: <S><AdsInsightsPage /></S> },
-			{ path: "/my/integrations/tiktok-ads/*", element: <S><AdsInsightsPage /></S> },
-			{ path: "/my/integrations/linkedin/ads", element: <S><AdsInsightsPage /></S> },
-			{ path: "/my/integrations/linkedin-ads/*", element: <S><AdsInsightsPage /></S> },
-			{ path: "/my/integrations/google/projects", element: <S><GoogleInsightsPage /></S> },
-			{ path: "/my/integrations/google/traffic", element: <S><GoogleInsightsPage /></S> },
-			{ path: "/my/integrations/woocommerce/stores", element: <S><WoocommercePage /></S> },
-			{ path: "/my/integrations/woocommerce/insights", element: <S><WoocommercePage /></S> },
-
-			/* ── Workspace extras ── */
-			{ path: "/my/brands", element: <S><BrandsPage /></S> },
-			{ path: "/my/businesses", element: <S><BusinessesPage /></S> },
-			{ path: "/my/business-details", element: <S><BusinessesPage /></S> },
-			{ path: "/my/campaigns", element: <S><BrandsPage /></S> },
-			{ path: "/my/workspace/members", element: <S><MembersPage /></S> },
-
-			/* ── Deal Flow CRM ── */
-			{ path: "/my/crm", element: <S><CrmDashboardPage /></S> },
-			{ path: "/my/crm/pipeline", element: <S><CrmPipelinePage /></S> },
-			{ path: "/my/crm/projects", element: <S><CrmProjectsPage /></S> },
-			{ path: "/my/crm/contacts", element: <S><CrmContactsPage /></S> },
-			{ path: "/my/crm/tasks", element: <S><CrmTasksPage /></S> },
-			{ path: "/my/crm/preview/:dealId", element: <S><CrmPreviewPage /></S> },
-
-			/* ── Agency + Whitelabel (native) ── */
-			{ path: "/my/agency", element: <S><AgencyPage /></S> },
-			{ path: "/my/agency/billing", element: <S><AgencyBillingPage /></S> },
-			{ path: "/my/agency/reports", element: <S><AgencyReportsPage /></S> },
-			{ path: "/my/agency/*", element: <S><AgencyPage /></S> },
-			{ path: "/my/whitelabel", element: <S><WhitelabelPage /></S> },
-
-			/* ── 404 ── */
-			{ path: "*", element: <S><NotFoundPage /></S> },
+					/* 404 within workspace */
+					{ path: "*", element: <S><NotFoundPage /></S> },
+				],
+			},
 		],
 	},
+
 	/* ── Admin Panel (separate layout, role=1 guard) ── */
 	{
 		element: <AuthGuard><AdminLayout /></AuthGuard>,

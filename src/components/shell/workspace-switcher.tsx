@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ChevronDown, Search, Pin, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useWorkspaceStore } from "@/stores/workspace-store";
@@ -73,17 +74,26 @@ export function WorkspaceSwitcher() {
 		});
 	};
 
+	const navigate = useNavigate();
+	const location = useLocation();
+
 	const handleSwitch = async (wsId: number) => {
 		if (wsId === activeId) { setOpen(false); return; }
+		const targetWs = workspaces.find((w) => w.id === wsId);
+		if (!targetWs?.hash_id) { toast.error("Workspace hash not found."); return; }
+
 		try {
-			const res = await apiClient.post<{ access_token: string }>(
+			const res = await apiClient.post<{ access_token: string; active_workspace_hash: string }>(
 				"/api/spa/workspace/switch",
 				{ workspace_id: wsId },
 			);
 			localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, res.access_token);
-			setActiveWorkspace(wsId);
+			setActiveWorkspace(wsId, res.active_workspace_hash);
 			setOpen(false);
-			window.location.reload();
+
+			// Navigate to same subpath under new workspace hash (no full reload)
+			const currentSubpath = location.pathname.replace(/^\/w\/[A-Za-z0-9_-]{22}\/?/, "");
+			navigate(`/w/${res.active_workspace_hash}/${currentSubpath || "dashboard"}`);
 		} catch {
 			toast.error("Failed to switch workspace.");
 		}

@@ -14,15 +14,13 @@ export function SidebarSection({ group, collapsed }: SidebarSectionProps) {
 
 	const hasActiveChild = group.items.some(
 		(item) =>
-			item.path === "/my"
-				? location.pathname === "/my"
-				: location.pathname === item.path ||
-					location.pathname.startsWith(item.path + "/") ||
-					item.children?.some(
-						(c) =>
-							location.pathname === c.path ||
-							location.pathname.startsWith(c.path + "/"),
-					),
+			location.pathname === item.path ||
+			location.pathname.startsWith(item.path + "/") ||
+			item.children?.some(
+				(c) =>
+					location.pathname === c.path ||
+					location.pathname.startsWith(c.path + "/"),
+			),
 	);
 
 	const [open, setOpen] = useState(hasActiveChild);
@@ -188,9 +186,7 @@ function SubNavLink({ item }: { item: NavItem }) {
 	const fullPath = location.pathname + location.search;
 	const active = item.path.includes("?")
 		? fullPath === item.path || fullPath.startsWith(item.path + "&")
-		: item.path === "/my/crm"
-			? location.pathname === "/my/crm"
-			: location.pathname === item.path;
+		: location.pathname === item.path;
 
 	const Icon = item.icon;
 

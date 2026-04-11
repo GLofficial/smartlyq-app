@@ -30,7 +30,7 @@ export function ChatbotCreatePage() {
 	const handleSubmit = () => {
 		if (!form.title.trim()) { toast.error("Enter a chatbot name."); return; }
 		saveMut.mutate(form, {
-			onSuccess: () => { toast.success("Chatbot created!"); navigate("/my/chatbot"); },
+			onSuccess: () => { toast.success("Chatbot created!"); navigate("../chatbot"); },
 			onError: (err) => toast.error((err as { message?: string })?.message ?? "Failed to create chatbot."),
 		});
 	};
