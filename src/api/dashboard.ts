@@ -6,8 +6,11 @@ export interface DashboardData {
 	credits: number;
 	currency: string;
 	scheduled_posts: number;
+	total_posts: number;
 	chatbot_count: number;
 	social_accounts: number;
+	team_members: number;
+	has_business_profile: boolean;
 	recent_articles: { id: number; title: string; created: string }[];
 	recent_posts: {
 		id: number;
