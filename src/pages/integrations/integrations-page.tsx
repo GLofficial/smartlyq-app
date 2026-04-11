@@ -1,11 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, RefreshCw, Unplug, RotateCw, Plug } from "lucide-react";
+import { CheckCircle, RefreshCw, Unplug, RotateCw } from "lucide-react";
 import { useIntegrations } from "@/api/general";
 import { useStartOAuth, useDisconnectAccount, useSyncAccount } from "@/api/social-accounts";
 import { PlatformIcon } from "@/pages/social/platform-icon";
+import { INTEGRATION_BRANDS } from "./integration-logos";
 import { toast } from "sonner";
 import { queryClient } from "@/lib/query-client";
+
 const CONNECT_URLS: Record<string, string> = {
 	google_analytics: "/my/integrations/google/start",
 	google_ads: "/my/integrations/google-ads/start",
@@ -21,13 +23,13 @@ const CONNECT_URLS: Record<string, string> = {
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
-	analytics: "Analytics",
-	advertising: "Advertising",
+	analytics: "Analytics & Tracking",
+	advertising: "Advertising Platforms",
 	communication: "Communication",
 	ecommerce: "E-Commerce",
-	crm: "CRM",
-	design: "Design",
-	payments: "Payments",
+	crm: "CRM & Sales",
+	design: "Design Tools",
+	payments: "Payments & Billing",
 };
 
 interface Integration {
@@ -42,31 +44,25 @@ export function IntegrationsPage() {
 	const connected = data?.connected ?? [];
 	const platforms = data?.platforms ?? {};
 	const integrations: Integration[] = data?.integrations ?? [];
+
 	const oauthMut = useStartOAuth();
 	const disconnectMut = useDisconnectAccount();
 	const syncMut = useSyncAccount();
 	const connectedPlatforms = new Set(connected.map((c: { platform: string }) => c.platform));
 
 	const handleConnect = (platform: string) => {
-		oauthMut.mutate(platform, {
-			onError: (e) => toast.error((e as { error?: string })?.error ?? "OAuth failed"),
-		});
+		oauthMut.mutate(platform, { onError: (e) => toast.error((e as { error?: string })?.error ?? "OAuth failed") });
 	};
 
 	const handleDisconnect = (accountId: number, name: string) => {
 		if (!confirm(`Disconnect ${name}?`)) return;
-		disconnectMut.mutate(accountId, {
-			onSuccess: () => { toast.success("Disconnected."); queryClient.invalidateQueries({ queryKey: ["integrations"] }); },
-		});
+		disconnectMut.mutate(accountId, { onSuccess: () => { toast.success("Disconnected."); queryClient.invalidateQueries({ queryKey: ["integrations"] }); } });
 	};
 
 	const handleSync = (accountId: number) => {
-		syncMut.mutate(accountId, {
-			onSuccess: () => { toast.success("Synced."); queryClient.invalidateQueries({ queryKey: ["integrations"] }); },
-		});
+		syncMut.mutate(accountId, { onSuccess: () => { toast.success("Synced."); queryClient.invalidateQueries({ queryKey: ["integrations"] }); } });
 	};
 
-	// Group integrations by category
 	const byCategory = integrations.reduce<Record<string, Integration[]>>((acc, i) => {
 		(acc[i.category] ??= []).push(i);
 		return acc;
@@ -81,7 +77,7 @@ export function IntegrationsPage() {
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold">Integrations</h1>
-					<p className="text-sm text-[var(--muted-foreground)]">Connect your tools and services</p>
+					<p className="text-sm text-[var(--muted-foreground)]">Connect your favorite tools and services to SmartlyQ</p>
 				</div>
 				<Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ["integrations"] })}>
 					<RefreshCw size={14} /> Refresh
@@ -91,51 +87,76 @@ export function IntegrationsPage() {
 			{/* Third-party integrations by category */}
 			{Object.entries(byCategory).map(([category, items]) => (
 				<div key={category} className="space-y-3">
-					<h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+					<h2 className="text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
 						{CATEGORY_LABELS[category] ?? category}
 					</h2>
-					<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-						{items.map((integ) => (
-							<Card key={integ.key}>
-								<CardContent className="flex items-center gap-4 p-4">
-									<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--muted)]">
-										<Plug size={18} className="text-[var(--muted-foreground)]" />
-									</div>
-									<div className="min-w-0 flex-1">
-										<p className="text-sm font-medium">{integ.name}</p>
-										{integ.connected ? (
-											<span className="text-xs text-green-600">Connected</span>
-										) : (
-											<span className="text-xs text-[var(--muted-foreground)]">Not connected</span>
-										)}
-									</div>
-									{integ.connected ? (
-										<CheckCircle size={18} className="shrink-0 text-green-500" />
-									) : (
-										<a href={CONNECT_URLS[integ.key] ?? "#"}>
-											<Button size="sm" variant="outline">Connect</Button>
-										</a>
-									)}
-								</CardContent>
-							</Card>
-						))}
+					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+						{items.map((integ) => {
+							const brand = INTEGRATION_BRANDS[integ.key];
+							return (
+								<Card key={integ.key} className="group overflow-hidden transition-shadow hover:shadow-md">
+									<CardContent className="p-0">
+										{/* Color accent bar */}
+										<div className="h-1" style={{ backgroundColor: brand?.color ?? "var(--sq-primary)" }} />
+										<div className="flex items-start gap-4 p-5">
+											{/* Brand logo */}
+											<div
+												className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl p-2"
+												style={{ backgroundColor: `${brand?.color ?? "#666"}15` }}
+											>
+												{brand?.logo ? (
+													<img src={brand.logo} alt={integ.name} className="h-7 w-7 object-contain" />
+												) : (
+													<span className="text-lg font-bold" style={{ color: brand?.color }}>{integ.name.charAt(0)}</span>
+												)}
+											</div>
+											<div className="min-w-0 flex-1">
+												<p className="text-sm font-semibold">{integ.name}</p>
+												<p className="mt-0.5 text-xs leading-relaxed text-[var(--muted-foreground)]">
+													{brand?.description ?? "Connect to sync data"}
+												</p>
+											</div>
+										</div>
+										<div className="flex items-center justify-between border-t border-[var(--border)] px-5 py-3">
+											{integ.connected ? (
+												<>
+													<span className="flex items-center gap-1.5 text-xs font-medium text-green-600">
+														<CheckCircle size={14} /> Connected
+													</span>
+													<Button size="sm" variant="ghost" className="h-7 text-xs text-[var(--muted-foreground)]">Manage</Button>
+												</>
+											) : (
+												<>
+													<span className="text-xs text-[var(--muted-foreground)]">Not connected</span>
+													<a href={CONNECT_URLS[integ.key] ?? "#"}>
+														<Button size="sm" className="h-7 text-xs" style={{ backgroundColor: brand?.color ?? "var(--sq-primary)" }}>
+															Connect
+														</Button>
+													</a>
+												</>
+											)}
+										</div>
+									</CardContent>
+								</Card>
+							);
+						})}
 					</div>
 				</div>
 			))}
 
 			{/* Social Media Accounts */}
 			<div className="space-y-3">
-				<h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+				<h2 className="text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
 					Social Media Accounts ({connected.length})
 				</h2>
 
 				{connected.length > 0 && (
 					<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 						{connected.map((acc: { id: number; platform: string; account_name: string; profile_picture: string; token_status: string }) => (
-							<Card key={acc.id}>
+							<Card key={acc.id} className="transition-shadow hover:shadow-sm">
 								<CardContent className="flex items-center gap-3 p-4">
 									{acc.profile_picture ? (
-										<img src={acc.profile_picture} alt="" className="h-10 w-10 rounded-full" />
+										<img src={acc.profile_picture} alt="" className="h-10 w-10 rounded-full ring-2 ring-[var(--border)]" />
 									) : (
 										<PlatformIcon platform={acc.platform} size={24} />
 									)}
@@ -144,7 +165,7 @@ export function IntegrationsPage() {
 										<p className="text-xs capitalize text-[var(--muted-foreground)]">{acc.platform}</p>
 									</div>
 									<div className="flex items-center gap-1">
-										{acc.token_status === "active" ? <CheckCircle size={14} className="text-green-500" /> : <XCircle size={14} className="text-red-500" />}
+										{acc.token_status === "active" ? <CheckCircle size={14} className="text-green-500" /> : <span className="h-2 w-2 rounded-full bg-red-500" />}
 										<Button variant="ghost" size="icon" className="h-7 w-7" title="Sync" onClick={() => handleSync(acc.id)}><RotateCw size={12} /></Button>
 										<Button variant="ghost" size="icon" className="h-7 w-7 text-red-500" title="Disconnect" onClick={() => handleDisconnect(acc.id, acc.account_name)}><Unplug size={12} /></Button>
 									</div>
@@ -154,18 +175,16 @@ export function IntegrationsPage() {
 					</div>
 				)}
 
-				{/* Available social platforms */}
+				{/* Connect new platforms */}
 				<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-					{Object.entries(platforms).map(([key, info]: [string, { name: string }]) => (
-						<Card key={key} className={connectedPlatforms.has(key) ? "opacity-60" : ""}>
+					{Object.entries(platforms)
+						.filter(([key]) => !connectedPlatforms.has(key))
+						.map(([key, info]: [string, { name: string }]) => (
+						<Card key={key} className="border-dashed">
 							<CardContent className="flex items-center gap-3 p-4">
 								<PlatformIcon platform={key} size={24} />
-								<div className="flex-1"><p className="text-sm font-medium">{info.name}</p></div>
-								{connectedPlatforms.has(key) ? (
-									<span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">Connected</span>
-								) : (
-									<Button size="sm" variant="outline" onClick={() => handleConnect(key)}>Connect</Button>
-								)}
+								<div className="flex-1"><p className="text-sm font-medium text-[var(--muted-foreground)]">{info.name}</p></div>
+								<Button size="sm" variant="outline" onClick={() => handleConnect(key)}>Connect</Button>
 							</CardContent>
 						</Card>
 					))}
