@@ -4,7 +4,7 @@ import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronRight, ChevronLeft, Bot, Check } from "lucide-react";
-import { apiClient } from "@/lib/api-client";
+import { useSaveChatbot } from "@/api/chatbot";
 import { toast } from "sonner";
 import { cn } from "@/lib/cn";
 
@@ -13,7 +13,7 @@ const STEPS = ["Bot Type", "Details", "Training", "Appearance"];
 export function ChatbotCreatePage() {
 	const navigate = useNavigate();
 	const [step, setStep] = useState(0);
-	const [submitting, setSubmitting] = useState(false);
+	const saveMut = useSaveChatbot();
 	const [form, setForm] = useState({
 		bot_type: 1,
 		title: "",
@@ -27,21 +27,12 @@ export function ChatbotCreatePage() {
 	const update = (key: string, value: string | number) =>
 		setForm((prev) => ({ ...prev, [key]: value }));
 
-	const handleSubmit = async () => {
-		if (!form.title.trim()) {
-			toast.error("Enter a chatbot name.");
-			return;
-		}
-		setSubmitting(true);
-		try {
-			await apiClient.post("/api/spa/chatbot/save", form);
-			toast.success("Chatbot created!");
-			navigate("/my/chatbot");
-		} catch (err) {
-			toast.error((err as { message?: string })?.message ?? "Failed to create chatbot.");
-		} finally {
-			setSubmitting(false);
-		}
+	const handleSubmit = () => {
+		if (!form.title.trim()) { toast.error("Enter a chatbot name."); return; }
+		saveMut.mutate(form, {
+			onSuccess: () => { toast.success("Chatbot created!"); navigate("/my/chatbot"); },
+			onError: (err) => toast.error((err as { message?: string })?.message ?? "Failed to create chatbot."),
+		});
 	};
 
 	return (
@@ -190,8 +181,8 @@ export function ChatbotCreatePage() {
 						Next <ChevronRight size={16} />
 					</Button>
 				) : (
-					<Button onClick={handleSubmit} disabled={submitting}>
-						<Bot size={16} /> {submitting ? "Creating..." : "Create Chatbot"}
+					<Button onClick={handleSubmit} disabled={saveMut.isPending}>
+						<Bot size={16} /> {saveMut.isPending ? "Creating..." : "Create Chatbot"}
 					</Button>
 				)}
 			</div>

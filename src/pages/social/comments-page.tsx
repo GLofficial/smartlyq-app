@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, MessageCircle, CheckCircle, Send } from "lucide-react";
 import { useSocialComments } from "@/api/social";
+import { useReplyComment } from "@/api/social-posts";
 import { PlatformIcon } from "./platform-icon";
-import { apiClient } from "@/lib/api-client";
-import { queryClient } from "@/lib/query-client";
 import { toast } from "sonner";
 
 export function CommentsPage() {
@@ -101,24 +100,20 @@ function Spinner() {
 
 function ReplyInput({ commentId }: { commentId: number }) {
 	const [reply, setReply] = useState("");
-	const [sending, setSending] = useState(false);
+	const replyMut = useReplyComment();
 
-	const handleReply = async () => {
+	const handleReply = () => {
 		if (!reply.trim()) return;
-		setSending(true);
-		try {
-			await apiClient.post("/api/spa/comments/reply", { comment_id: commentId, reply });
-			toast.success("Reply sent.");
-			setReply("");
-			queryClient.invalidateQueries({ queryKey: ["social", "comments"] });
-		} catch { toast.error("Failed to send reply."); }
-		finally { setSending(false); }
+		replyMut.mutate({ comment_id: commentId, reply }, {
+			onSuccess: () => { toast.success("Reply sent."); setReply(""); },
+			onError: () => toast.error("Failed to send reply."),
+		});
 	};
 
 	return (
 		<div className="mt-2 flex gap-2">
 			<Input placeholder="Write a reply..." value={reply} onChange={(e) => setReply(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleReply()} className="flex-1 h-8 text-xs" />
-			<Button size="sm" variant="outline" className="h-8" disabled={sending} onClick={handleReply}><Send size={12} /></Button>
+			<Button size="sm" variant="outline" className="h-8" disabled={replyMut.isPending} onClick={handleReply}><Send size={12} /></Button>
 		</div>
 	);
 }

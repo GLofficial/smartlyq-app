@@ -72,6 +72,14 @@ export function useLiveAgent() {
 	});
 }
 
+export function useSaveChatbot() {
+	return useMutation({
+		mutationFn: (data: Record<string, string | number>) =>
+			apiClient.post<{ message: string }>("/api/spa/chatbot/save", data),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["chatbot"] }),
+	});
+}
+
 export function useChatbotSettings() {
 	return useQuery({
 		queryKey: ["chatbot", "settings"],
