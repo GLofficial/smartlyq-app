@@ -124,14 +124,14 @@ export function IntegrationsPage() {
 													<span className="flex items-center gap-1.5 text-xs font-medium text-green-600">
 														<CheckCircle size={14} /> Connected
 													</span>
-													<a href={CONNECT_URLS[integ.key] ?? "#"}>
+													<a href={CONNECT_URLS[integ.key] ?? "#"} target="_blank" rel="noopener noreferrer">
 														<Button size="sm" variant="ghost" className="h-7 text-xs text-[var(--muted-foreground)]">Manage</Button>
 													</a>
 												</>
 											) : (
 												<>
 													<span className="text-xs text-[var(--muted-foreground)]">Not connected</span>
-													<a href={CONNECT_URLS[integ.key] ?? "#"}>
+													<a href={CONNECT_URLS[integ.key] ?? "#"} target="_blank" rel="noopener noreferrer">
 														<Button size="sm" className="h-7 text-xs" style={{ backgroundColor: brand?.color ?? "var(--sq-primary)" }}>
 															Connect
 														</Button>
