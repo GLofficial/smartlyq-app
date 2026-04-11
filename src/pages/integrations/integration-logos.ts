@@ -49,7 +49,7 @@ export const INTEGRATION_BRANDS: Record<string, { logo: string; color: string; d
 	ghl: {
 		logo: "https://images.leadconnectorhq.com/image/f_webp/assets/builder/favicon/favicon.png",
 		color: "#29B473",
-		description: "Sync contacts, calendars, and workflows with GoHighLevel",
+		description: "Sync contacts, calendars, and workflows with LeadConnector",
 	},
 	canva: {
 		logo: SI("canva"),
