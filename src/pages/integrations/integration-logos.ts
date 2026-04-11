@@ -7,9 +7,14 @@ const DEVICON = (name: string) => `https://cdn.jsdelivr.net/gh/devicons/devicon@
 
 export const INTEGRATION_BRANDS: Record<string, { logo: string; color: string; description: string }> = {
 	google_analytics: {
-		logo: DEVICON("google"),
+		logo: "https://upload.wikimedia.org/wikipedia/commons/8/89/Logo_Google_Analytics.svg",
 		color: "#E37400",
 		description: "Track website traffic, user behavior, and conversion data",
+	},
+	google_search_console: {
+		logo: "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/googlesearchconsole.svg",
+		color: "#458CF5",
+		description: "Monitor search performance, indexing, and site health",
 	},
 	google_ads: {
 		logo: DEVICON("google"),
@@ -47,7 +52,7 @@ export const INTEGRATION_BRANDS: Record<string, { logo: string; color: string; d
 		description: "Connect your Shopify store for product and order sync",
 	},
 	ghl: {
-		logo: "https://app.gohighlevel.com/favicon.ico",
+		logo: "",
 		color: "#29B473",
 		description: "Sync contacts, calendars, and workflows with LeadConnector",
 	},

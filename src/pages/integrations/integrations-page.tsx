@@ -10,6 +10,7 @@ import { queryClient } from "@/lib/query-client";
 
 const CONNECT_URLS: Record<string, string> = {
 	google_analytics: "/my/integrations/google/start",
+	google_search_console: "/my/integrations/google/start",
 	google_ads: "/my/integrations/google-ads/start",
 	facebook_ads: "/my/integrations/facebook-ads/start",
 	tiktok_ads: "/my/integrations/tiktok-ads/start",
