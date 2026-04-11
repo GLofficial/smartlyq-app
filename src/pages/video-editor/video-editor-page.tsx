@@ -3,7 +3,7 @@ import { STORAGE_KEYS } from "@/lib/constants";
 
 /**
  * Embeds Video Editor (Next.js app) inside the unified shell.
- * The video editor accepts JWT via ?token= param.
+ * Passes the SPA JWT directly — it already contains workspace_hash.
  */
 export function VideoEditorPage() {
 	const [src, setSrc] = useState("");
@@ -11,8 +11,8 @@ export function VideoEditorPage() {
 	useEffect(() => {
 		async function loadUrl() {
 			const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-			// The PHP endpoint /my/video-editor normally mints a JWT and redirects.
-			// We already have a JWT, so we call the video editor API to get the editor URL.
+
+			// Try the SPA endpoint first (returns a properly minted editor JWT)
 			try {
 				const res = await fetch("/api/spa/external/video-editor/token", {
 					method: "POST",
@@ -21,18 +21,18 @@ export function VideoEditorPage() {
 						Authorization: `Bearer ${token}`,
 					},
 				});
-				const data = await res.json();
-				if (data.editor_url) {
-					setSrc(data.editor_url);
-				} else if (data.token) {
-					const editorUrl = "https://video.smartlyq.com";
-					setSrc(`${editorUrl}?token=${encodeURIComponent(data.token)}`);
+				if (res.ok) {
+					const data = await res.json();
+					if (data.editor_url) { setSrc(data.editor_url); return; }
+					if (data.token) {
+						setSrc(`https://video.smartlyq.com?token=${encodeURIComponent(data.token)}`);
+						return;
+					}
 				}
-			} catch {
-				// Fallback: pass our JWT directly (already contains workspace_hash)
-				const editorUrl = "https://video.smartlyq.com";
-				setSrc(`${editorUrl}?token=${encodeURIComponent(token ?? "")}`);
-			}
+			} catch {}
+
+			// Fallback: pass SPA JWT directly (already contains workspace_hash)
+			setSrc(`https://video.smartlyq.com?token=${encodeURIComponent(token ?? "")}`);
 		}
 		loadUrl();
 	}, []);

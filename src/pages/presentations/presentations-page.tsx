@@ -3,15 +3,29 @@ import { STORAGE_KEYS } from "@/lib/constants";
 
 /**
  * Embeds Presentations Editor inside the unified shell.
- * Passes JWT so user stays at app.smartlyq.com.
+ * Uses the SPA endpoint to get a redirect URL with a proper JWT.
  */
 export function PresentationsPage() {
 	const [src, setSrc] = useState("");
 
 	useEffect(() => {
-		const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-		const presUrl = "https://presentations.smartlyq.com";
-		setSrc(`${presUrl}?token=${encodeURIComponent(token ?? "")}`);
+		async function loadUrl() {
+			const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+			try {
+				const res = await fetch("/api/spa/external/presentations", {
+					headers: { Authorization: `Bearer ${token}` },
+				});
+				const data = await res.json();
+				if (data.redirect_url) {
+					setSrc(data.redirect_url);
+					return;
+				}
+			} catch {}
+			// Fallback: pass SPA JWT directly (already contains workspace_hash)
+			const presUrl = "https://presentations.smartlyq.com";
+			setSrc(`${presUrl}?token=${encodeURIComponent(token ?? "")}`);
+		}
+		loadUrl();
 	}, []);
 
 	if (!src) {
