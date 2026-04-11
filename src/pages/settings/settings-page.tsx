@@ -14,7 +14,7 @@ export function SettingsPage() {
 	const wp = useWorkspacePath();
 
 	return (
-		<div className="max-w-4xl">
+		<div>
 			{tab === "business-profile" && <BusinessProfileTab />}
 			{tab === "account" && <AccountSettingsTab />}
 			{tab === "workspace" && <WorkspaceSettingsTab />}

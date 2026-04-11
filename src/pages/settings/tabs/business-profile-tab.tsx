@@ -59,7 +59,7 @@ export function BusinessProfileTab() {
 			</div>
 
 			{/* General Information + Business Physical Address — side by side */}
-			<div className="grid gap-6 xl:grid-cols-[1fr,1fr]">
+			<div className="grid gap-6 lg:grid-cols-2">
 				{/* LEFT: General Information */}
 				<Card>
 					<CardContent className="p-6 space-y-5">
