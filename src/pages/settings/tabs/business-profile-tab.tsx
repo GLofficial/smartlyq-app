@@ -163,6 +163,9 @@ function LogoUpload({ logoUrl }: { logoUrl?: string | null }) {
 	const fileRef = useRef<HTMLInputElement>(null);
 	const uploadMut = useUploadBusinessLogo();
 	const removeMut = useRemoveBusinessLogo();
+	const [localUrl, setLocalUrl] = useState<string | null>(null);
+
+	const displayUrl = localUrl ?? logoUrl;
 
 	const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
@@ -170,7 +173,7 @@ function LogoUpload({ logoUrl }: { logoUrl?: string | null }) {
 		e.target.value = "";
 		if (file.size > 2.5 * 1024 * 1024) { toast.error("File too large. Max 2.5 MB."); return; }
 		uploadMut.mutate(file, {
-			onSuccess: () => toast.success("Logo uploaded."),
+			onSuccess: (res) => { setLocalUrl(res.logo_url); toast.success("Logo uploaded."); },
 			onError: () => toast.error("Upload failed."),
 		});
 	};
@@ -178,8 +181,8 @@ function LogoUpload({ logoUrl }: { logoUrl?: string | null }) {
 	return (
 		<div className="flex items-start gap-4">
 			<div className="h-24 w-36 shrink-0 rounded-lg border border-[var(--border)] bg-[var(--muted)] flex items-center justify-center overflow-hidden">
-				{logoUrl ? (
-					<img src={logoUrl} alt="Business logo" className="h-full w-full object-contain" />
+				{displayUrl ? (
+					<img src={displayUrl} alt="Business logo" className="h-full w-full object-contain" />
 				) : (
 					<span className="text-xs text-[var(--muted-foreground)]">No logo</span>
 				)}
@@ -191,8 +194,8 @@ function LogoUpload({ logoUrl }: { logoUrl?: string | null }) {
 					<Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={uploadMut.isPending}>
 						<Upload size={14} /> {uploadMut.isPending ? "Uploading..." : "Upload"}
 					</Button>
-					{logoUrl && (
-						<Button size="sm" variant="outline" onClick={() => removeMut.mutate(undefined, { onSuccess: () => toast.success("Logo removed.") })} disabled={removeMut.isPending}>
+					{displayUrl && (
+						<Button size="sm" variant="outline" onClick={() => removeMut.mutate(undefined, { onSuccess: () => { setLocalUrl(null); toast.success("Logo removed."); } })} disabled={removeMut.isPending}>
 							<Trash2 size={14} /> Remove
 						</Button>
 					)}
