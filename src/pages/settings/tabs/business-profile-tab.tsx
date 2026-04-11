@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Save, Copy } from "lucide-react";
@@ -51,33 +51,58 @@ export function BusinessProfileTab() {
 	}
 
 	return (
-		<div className="space-y-6 max-w-3xl">
-			<div className="flex items-center justify-between">
-				<div>
-					<h2 className="text-xl font-bold">Business Profile</h2>
-					<p className="text-sm text-[var(--muted-foreground)]">Manage your business information and settings</p>
-				</div>
-				{profile?.location_id && (
-					<div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
-						Location ID: <code className="rounded bg-[var(--muted)] px-1.5 py-0.5 font-mono">{profile.location_id}</code>
-						<button onClick={() => { navigator.clipboard.writeText(profile.location_id); toast.success("Copied!"); }}><Copy size={12} /></button>
-					</div>
-				)}
+		<div className="space-y-6">
+			{/* Header */}
+			<div>
+				<h2 className="text-xl font-bold">Business Profile Settings</h2>
+				<p className="text-sm text-[var(--muted-foreground)]">Manage your business profile information & settings</p>
 			</div>
 
-			{/* General Information + Physical Address side by side */}
-			<Card>
-				<CardContent className="grid gap-8 p-6 lg:grid-cols-2">
-					{/* Left: General Information */}
-					<div className="space-y-4">
-						<h3 className="text-lg font-semibold">General Information</h3>
+			{/* General Information + Business Physical Address — side by side */}
+			<div className="grid gap-6 xl:grid-cols-[1fr,1fr]">
+				{/* LEFT: General Information */}
+				<Card>
+					<CardContent className="p-6 space-y-5">
+						<div className="flex items-center justify-between">
+							<h3 className="text-lg font-semibold">General Information</h3>
+							{profile?.location_id && (
+								<div className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
+									Location ID <code className="rounded bg-[var(--muted)] px-1.5 py-0.5 font-mono text-[11px]">{profile.location_id}</code>
+									<button onClick={() => { navigator.clipboard.writeText(profile.location_id); toast.success("Copied!"); }}><Copy size={11} /></button>
+								</div>
+							)}
+						</div>
+
+						{/* Logo */}
+						<div className="flex items-start gap-4">
+							<div className="h-20 w-28 shrink-0 rounded-lg border border-[var(--border)] bg-[var(--muted)] flex items-center justify-center overflow-hidden">
+								{profile?.business_logo_url ? (
+									<img src={profile.business_logo_url} alt="" className="h-full w-full object-contain" />
+								) : (
+									<span className="text-xs text-[var(--muted-foreground)]">No logo</span>
+								)}
+							</div>
+							<div className="space-y-1">
+								<p className="text-sm font-medium">Business Logo</p>
+								<p className="text-xs text-[var(--muted-foreground)]">350px * 180px. No bigger than 2.5 MB</p>
+							</div>
+						</div>
+
 						<Field label="Friendly Business Name" value={f("friendly_business_name")} onChange={(v) => set("friendly_business_name", v)} />
 						<Field label="Legal Business Name" value={f("legal_business_name")} onChange={(v) => set("legal_business_name", v)} />
-						<Field label="Business Email" value={f("business_email")} onChange={(v) => set("business_email", v)} type="email" />
-						<Field label="Business Phone" value={f("business_phone")} onChange={(v) => set("business_phone", v)} />
+
+						<div className="grid gap-4 sm:grid-cols-2">
+							<Field label="Business Email" value={f("business_email")} onChange={(v) => set("business_email", v)} type="email" />
+							<Field label="Business Phone" value={f("business_phone")} onChange={(v) => set("business_phone", v)} />
+						</div>
+
 						<Field label="Branded Domain" value={f("branded_domain")} onChange={(v) => set("branded_domain", v)} />
-						<Field label="Business Website" value={f("business_website")} onChange={(v) => set("business_website", v)} />
-						<Field label="Business Niche" value={f("business_niche")} onChange={(v) => set("business_niche", v)} />
+
+						<div className="grid gap-4 sm:grid-cols-2">
+							<Field label="Business Website" value={f("business_website")} onChange={(v) => set("business_website", v)} />
+							<Field label="Business Niche" value={f("business_niche")} onChange={(v) => set("business_niche", v)} />
+						</div>
+
 						<div className="space-y-1.5">
 							<label className="text-sm font-medium">Business Currency</label>
 							<select value={f("business_currency")} onChange={(e) => set("business_currency", e.target.value)} className="flex h-10 w-full rounded-md border border-[var(--input)] bg-[var(--background)] px-3 py-2 text-sm">
@@ -85,31 +110,40 @@ export function BusinessProfileTab() {
 								{CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
 							</select>
 						</div>
-					</div>
+					</CardContent>
+				</Card>
 
-					{/* Right: Physical Address */}
-					<div className="space-y-4">
+				{/* RIGHT: Business Physical Address */}
+				<Card>
+					<CardContent className="p-6 space-y-5">
 						<h3 className="text-lg font-semibold">Business Physical Address</h3>
+
 						<Field label="Street Address" value={f("address_street")} onChange={(v) => set("address_street", v)} />
-						<Field label="City" value={f("address_city")} onChange={(v) => set("address_city", v)} />
-						<Field label="Postal / Zip Code" value={f("address_postal_code")} onChange={(v) => set("address_postal_code", v)} />
-						<Field label="State / Province / Region" value={f("address_region")} onChange={(v) => set("address_region", v)} />
+
+						<div className="grid gap-4 sm:grid-cols-[1fr,auto]">
+							<Field label="City" value={f("address_city")} onChange={(v) => set("address_city", v)} />
+							<Field label="Postal/Zip Code" value={f("address_postal_code")} onChange={(v) => set("address_postal_code", v)} />
+						</div>
+
+						<Field label="State / Prov / Region" value={f("address_region")} onChange={(v) => set("address_region", v)} />
 						<Field label="Country" value={f("address_country")} onChange={(v) => set("address_country", v)} />
 						<Field label="Time Zone" value={f("time_zone")} onChange={(v) => set("time_zone", v)} placeholder="e.g. Europe/Athens" />
-					</div>
-				</CardContent>
-			</Card>
+					</CardContent>
+				</Card>
+			</div>
 
 			{/* Business Information */}
 			<Card>
-				<CardHeader><CardTitle>Business Information</CardTitle></CardHeader>
-				<CardContent className="grid gap-4 sm:grid-cols-2">
-					<Field label="Business Type" value={f("business_type")} onChange={(v) => set("business_type", v)} />
-					<Field label="Business Industry" value={f("business_industry")} onChange={(v) => set("business_industry", v)} />
-					<Field label="Registration ID Type" value={f("business_registration_id_type")} onChange={(v) => set("business_registration_id_type", v)} />
-					<Field label="Registration Type" value={f("business_registration_type")} onChange={(v) => set("business_registration_type", v)} />
-					<div className="sm:col-span-2"><Field label="Registration Number" value={f("business_registration_number")} onChange={(v) => set("business_registration_number", v)} /></div>
-					<div className="sm:col-span-2">
+				<CardContent className="p-6 space-y-5">
+					<h3 className="text-lg font-semibold">Business Information</h3>
+					<div className="grid gap-4 sm:grid-cols-2">
+						<Field label="Business Type" value={f("business_type")} onChange={(v) => set("business_type", v)} />
+						<Field label="Business Industry" value={f("business_industry")} onChange={(v) => set("business_industry", v)} />
+						<Field label="Registration ID Type" value={f("business_registration_id_type")} onChange={(v) => set("business_registration_id_type", v)} />
+						<Field label="Registration Type" value={f("business_registration_type")} onChange={(v) => set("business_registration_type", v)} />
+					</div>
+					<Field label="Registration Number" value={f("business_registration_number")} onChange={(v) => set("business_registration_number", v)} />
+					<div>
 						<label className="text-sm font-medium">Business Regions of Operations</label>
 						<div className="mt-2 flex flex-wrap gap-3">
 							{REGIONS.map((r) => (
@@ -125,12 +159,14 @@ export function BusinessProfileTab() {
 
 			{/* Authorized Representative */}
 			<Card>
-				<CardHeader><CardTitle>Authorized Representative</CardTitle></CardHeader>
-				<CardContent className="grid gap-4 sm:grid-cols-2">
-					<Field label="First Name" value={f("rep_first_name")} onChange={(v) => set("rep_first_name", v)} />
-					<Field label="Last Name" value={f("rep_last_name")} onChange={(v) => set("rep_last_name", v)} />
-					<Field label="Representative Email" value={f("rep_email")} onChange={(v) => set("rep_email", v)} type="email" />
-					<Field label="Job Position" value={f("rep_job_position")} onChange={(v) => set("rep_job_position", v)} />
+				<CardContent className="p-6 space-y-5">
+					<h3 className="text-lg font-semibold">Authorized Representative</h3>
+					<div className="grid gap-4 sm:grid-cols-2">
+						<Field label="First Name" value={f("rep_first_name")} onChange={(v) => set("rep_first_name", v)} />
+						<Field label="Last Name" value={f("rep_last_name")} onChange={(v) => set("rep_last_name", v)} />
+						<Field label="Representative Email" value={f("rep_email")} onChange={(v) => set("rep_email", v)} type="email" />
+						<Field label="Job Position" value={f("rep_job_position")} onChange={(v) => set("rep_job_position", v)} />
+					</div>
 					<Field label="Phone Number (with country code)" value={f("rep_phone")} onChange={(v) => set("rep_phone", v)} />
 				</CardContent>
 			</Card>
