@@ -17,7 +17,7 @@ const CONNECT_URLS: Record<string, string> = {
 	linkedin_ads: "/my/integrations/linkedin-ads/start",
 	slack: "/my/integrations/slack/start",
 	woocommerce: "/my/integrations/woocommerce/stores",
-	shopify: "/my/integrations/shopify/start",
+	shopify: "/shopify/auth",
 	canva: "/my/canva/connect",
 	ghl: "/my/integrations",
 	stripe: "/my/billing",
