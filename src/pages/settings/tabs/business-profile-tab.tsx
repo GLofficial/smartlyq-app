@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Save, Copy } from "lucide-react";
-import { useBusinessProfile, useSaveBusinessProfile } from "@/api/business-profile";
+import { Save, Copy, Upload, Trash2 } from "lucide-react";
+import { useBusinessProfile, useSaveBusinessProfile, useUploadBusinessLogo, useRemoveBusinessLogo } from "@/api/business-profile";
 import { toast } from "sonner";
 
 const CURRENCIES = ["USD","EUR","GBP","AUD","CAD","CHF","SEK","NOK","DKK","PLN","CZK","HUF","RON","BGN","TRY","AED","SAR","QAR","ILS","INR"];
@@ -52,18 +52,17 @@ export function BusinessProfileTab() {
 
 	return (
 		<div className="space-y-6">
-			{/* Header */}
 			<div>
 				<h2 className="text-xl font-bold">Business Profile Settings</h2>
 				<p className="text-sm text-[var(--muted-foreground)]">Manage your business profile information & settings</p>
 			</div>
 
-			{/* General Information + Business Physical Address — side by side */}
-			<div className="grid gap-6 lg:grid-cols-2">
+			{/* 2-column layout: General Info LEFT, Address RIGHT */}
+			<div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
 				{/* LEFT: General Information */}
 				<Card>
 					<CardContent className="p-6 space-y-5">
-						<div className="flex items-center justify-between">
+						<div className="flex items-center justify-between flex-wrap gap-2">
 							<h3 className="text-lg font-semibold">General Information</h3>
 							{profile?.location_id && (
 								<div className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
@@ -73,36 +72,19 @@ export function BusinessProfileTab() {
 							)}
 						</div>
 
-						{/* Logo */}
-						<div className="flex items-start gap-4">
-							<div className="h-20 w-28 shrink-0 rounded-lg border border-[var(--border)] bg-[var(--muted)] flex items-center justify-center overflow-hidden">
-								{profile?.business_logo_url ? (
-									<img src={profile.business_logo_url} alt="" className="h-full w-full object-contain" />
-								) : (
-									<span className="text-xs text-[var(--muted-foreground)]">No logo</span>
-								)}
-							</div>
-							<div className="space-y-1">
-								<p className="text-sm font-medium">Business Logo</p>
-								<p className="text-xs text-[var(--muted-foreground)]">350px * 180px. No bigger than 2.5 MB</p>
-							</div>
-						</div>
+						<LogoUpload logoUrl={profile?.business_logo_url} />
 
 						<Field label="Friendly Business Name" value={f("friendly_business_name")} onChange={(v) => set("friendly_business_name", v)} />
 						<Field label="Legal Business Name" value={f("legal_business_name")} onChange={(v) => set("legal_business_name", v)} />
-
-						<div className="grid gap-4 sm:grid-cols-2">
+						<div className="grid gap-4 grid-cols-2">
 							<Field label="Business Email" value={f("business_email")} onChange={(v) => set("business_email", v)} type="email" />
 							<Field label="Business Phone" value={f("business_phone")} onChange={(v) => set("business_phone", v)} />
 						</div>
-
 						<Field label="Branded Domain" value={f("branded_domain")} onChange={(v) => set("branded_domain", v)} />
-
-						<div className="grid gap-4 sm:grid-cols-2">
+						<div className="grid gap-4 grid-cols-2">
 							<Field label="Business Website" value={f("business_website")} onChange={(v) => set("business_website", v)} />
 							<Field label="Business Niche" value={f("business_niche")} onChange={(v) => set("business_niche", v)} />
 						</div>
-
 						<div className="space-y-1.5">
 							<label className="text-sm font-medium">Business Currency</label>
 							<select value={f("business_currency")} onChange={(e) => set("business_currency", e.target.value)} className="flex h-10 w-full rounded-md border border-[var(--input)] bg-[var(--background)] px-3 py-2 text-sm">
@@ -117,14 +99,11 @@ export function BusinessProfileTab() {
 				<Card>
 					<CardContent className="p-6 space-y-5">
 						<h3 className="text-lg font-semibold">Business Physical Address</h3>
-
 						<Field label="Street Address" value={f("address_street")} onChange={(v) => set("address_street", v)} />
-
-						<div className="grid gap-4 sm:grid-cols-[1fr,auto]">
+						<div className="grid gap-4 grid-cols-[1fr,auto]">
 							<Field label="City" value={f("address_city")} onChange={(v) => set("address_city", v)} />
 							<Field label="Postal/Zip Code" value={f("address_postal_code")} onChange={(v) => set("address_postal_code", v)} />
 						</div>
-
 						<Field label="State / Prov / Region" value={f("address_region")} onChange={(v) => set("address_region", v)} />
 						<Field label="Country" value={f("address_country")} onChange={(v) => set("address_country", v)} />
 						<Field label="Time Zone" value={f("time_zone")} onChange={(v) => set("time_zone", v)} placeholder="e.g. Europe/Athens" />
@@ -136,7 +115,7 @@ export function BusinessProfileTab() {
 			<Card>
 				<CardContent className="p-6 space-y-5">
 					<h3 className="text-lg font-semibold">Business Information</h3>
-					<div className="grid gap-4 sm:grid-cols-2">
+					<div className="grid gap-4 grid-cols-2">
 						<Field label="Business Type" value={f("business_type")} onChange={(v) => set("business_type", v)} />
 						<Field label="Business Industry" value={f("business_industry")} onChange={(v) => set("business_industry", v)} />
 						<Field label="Registration ID Type" value={f("business_registration_id_type")} onChange={(v) => set("business_registration_id_type", v)} />
@@ -161,7 +140,7 @@ export function BusinessProfileTab() {
 			<Card>
 				<CardContent className="p-6 space-y-5">
 					<h3 className="text-lg font-semibold">Authorized Representative</h3>
-					<div className="grid gap-4 sm:grid-cols-2">
+					<div className="grid gap-4 grid-cols-2">
 						<Field label="First Name" value={f("rep_first_name")} onChange={(v) => set("rep_first_name", v)} />
 						<Field label="Last Name" value={f("rep_last_name")} onChange={(v) => set("rep_last_name", v)} />
 						<Field label="Representative Email" value={f("rep_email")} onChange={(v) => set("rep_email", v)} type="email" />
@@ -176,6 +155,50 @@ export function BusinessProfileTab() {
 					<Save size={16} /> {saveMut.isPending ? "Saving..." : "Update Information"}
 				</Button>
 			</div>
+		</div>
+	);
+}
+
+function LogoUpload({ logoUrl }: { logoUrl?: string | null }) {
+	const fileRef = useRef<HTMLInputElement>(null);
+	const uploadMut = useUploadBusinessLogo();
+	const removeMut = useRemoveBusinessLogo();
+
+	const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		e.target.value = "";
+		if (file.size > 2.5 * 1024 * 1024) { toast.error("File too large. Max 2.5 MB."); return; }
+		uploadMut.mutate(file, {
+			onSuccess: () => toast.success("Logo uploaded."),
+			onError: () => toast.error("Upload failed."),
+		});
+	};
+
+	return (
+		<div className="flex items-start gap-4">
+			<div className="h-24 w-36 shrink-0 rounded-lg border border-[var(--border)] bg-[var(--muted)] flex items-center justify-center overflow-hidden">
+				{logoUrl ? (
+					<img src={logoUrl} alt="Business logo" className="h-full w-full object-contain" />
+				) : (
+					<span className="text-xs text-[var(--muted-foreground)]">No logo</span>
+				)}
+			</div>
+			<div className="space-y-2">
+				<p className="text-sm font-medium">Business Logo</p>
+				<p className="text-xs text-[var(--muted-foreground)]">The proposed size is 350px * 180px. No bigger than 2.5 MB</p>
+				<div className="flex gap-2">
+					<Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={uploadMut.isPending}>
+						<Upload size={14} /> {uploadMut.isPending ? "Uploading..." : "Upload"}
+					</Button>
+					{logoUrl && (
+						<Button size="sm" variant="outline" onClick={() => removeMut.mutate(undefined, { onSuccess: () => toast.success("Logo removed.") })} disabled={removeMut.isPending}>
+							<Trash2 size={14} /> Remove
+						</Button>
+					)}
+				</div>
+			</div>
+			<input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
 		</div>
 	);
 }

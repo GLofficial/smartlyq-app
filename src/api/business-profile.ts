@@ -41,6 +41,24 @@ export function useBusinessProfile() {
 	});
 }
 
+export function useUploadBusinessLogo() {
+	return useMutation({
+		mutationFn: (file: File) => {
+			const fd = new FormData();
+			fd.append("logo", file);
+			return apiClient.upload<{ message: string; logo_url: string }>("/api/spa/settings/business-logo", fd);
+		},
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["settings", "business-profile"] }),
+	});
+}
+
+export function useRemoveBusinessLogo() {
+	return useMutation({
+		mutationFn: () => apiClient.post<{ message: string }>("/api/spa/settings/business-logo/remove"),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["settings", "business-profile"] }),
+	});
+}
+
 export function useSaveBusinessProfile() {
 	return useMutation({
 		mutationFn: (data: Record<string, unknown>) =>
