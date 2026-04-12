@@ -1,28 +1,24 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { CheckCircle, RefreshCw, Unplug, RotateCw } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useIntegrations } from "@/api/general";
 import { useStartOAuth, useDisconnectAccount, useSyncAccount } from "@/api/social-accounts";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { INTEGRATION_BRANDS } from "./integration-logos";
 import { apiClient } from "@/lib/api-client";
+import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { toast } from "sonner";
 import { queryClient } from "@/lib/query-client";
 
-// Integrations that use the SPA OAuth flow (JWT state, no sessions)
+// All integrations use SPA OAuth (except WooCommerce = form, Stripe = billing page)
 const OAUTH_INTEGRATIONS = new Set([
 	"google_analytics", "google_search_console", "google_ads",
 	"facebook_ads", "tiktok_ads", "linkedin_ads", "slack",
+	"shopify", "canva", "ghl",
 ]);
-
-// Fallback URLs for integrations that don't have SPA OAuth yet
-const FALLBACK_URLS: Record<string, string> = {
-	woocommerce: "/my/integrations/woocommerce/stores",
-	shopify: "/shopify/auth",
-	canva: "/my/canva/connect",
-	ghl: "/my/integrations",
-	stripe: "/my/billing",
-};
 
 const CATEGORY_LABELS: Record<string, string> = {
 	analytics: "Analytics & Tracking",
@@ -56,10 +52,26 @@ export function IntegrationsPage() {
 		oauthMut.mutate(platform, { onError: (e) => toast.error((e as { error?: string })?.error ?? "OAuth failed") });
 	};
 
+	const wp = useWorkspacePath();
+	const [wooDialogOpen, setWooDialogOpen] = useState(false);
+
 	const handleIntegrationConnect = async (key: string) => {
+		if (key === "woocommerce") {
+			setWooDialogOpen(true);
+			return;
+		}
+		if (key === "stripe") {
+			window.location.href = wp("settings?tab=billing");
+			return;
+		}
 		if (OAUTH_INTEGRATIONS.has(key)) {
 			try {
-				const res = await apiClient.get<{ redirect_url: string }>(`/api/spa/integrations/oauth/start?integration=${key}`);
+				const params = key === "shopify" ? `&shop=${prompt("Enter your Shopify store URL (e.g. mystore.myshopify.com)") ?? ""}` : "";
+				if (key === "shopify" && !params.includes(".myshopify.com")) {
+					toast.error("Please enter a valid Shopify store URL.");
+					return;
+				}
+				const res = await apiClient.get<{ redirect_url: string }>(`/api/spa/integrations/oauth/start?integration=${key}${params}`);
 				if (res.redirect_url) {
 					window.location.href = res.redirect_url;
 				} else {
@@ -68,9 +80,6 @@ export function IntegrationsPage() {
 			} catch (err) {
 				toast.error((err as { error?: string })?.error ?? "Integration not configured.");
 			}
-		} else {
-			const url = FALLBACK_URLS[key];
-			if (url) window.open(url, "_blank");
 		}
 	};
 
@@ -221,6 +230,57 @@ export function IntegrationsPage() {
 					))}
 				</div>
 			</div>
+
+			{/* WooCommerce Connect Dialog */}
+			<WooCommerceDialog open={wooDialogOpen} onClose={() => setWooDialogOpen(false)} />
 		</div>
+	);
+}
+
+function WooCommerceDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+	const [storeUrl, setStoreUrl] = useState("");
+	const [consumerKey, setConsumerKey] = useState("");
+	const [consumerSecret, setConsumerSecret] = useState("");
+	const [connecting, setConnecting] = useState(false);
+
+	const handleConnect = async () => {
+		if (!storeUrl.trim() || !consumerKey.trim() || !consumerSecret.trim()) {
+			toast.error("All fields are required.");
+			return;
+		}
+		setConnecting(true);
+		try {
+			const res = await apiClient.post<{ message: string }>("/api/spa/integrations/woocommerce/connect", {
+				store_url: storeUrl.trim(), consumer_key: consumerKey.trim(), consumer_secret: consumerSecret.trim(),
+			});
+			toast.success(res.message);
+			queryClient.invalidateQueries({ queryKey: ["integrations"] });
+			onClose();
+			setStoreUrl(""); setConsumerKey(""); setConsumerSecret("");
+		} catch (err) {
+			toast.error((err as { error?: string })?.error ?? "Connection failed.");
+		} finally {
+			setConnecting(false);
+		}
+	};
+
+	return (
+		<Dialog open={open} onOpenChange={onClose}>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Connect WooCommerce Store</DialogTitle>
+				</DialogHeader>
+				<div className="space-y-3">
+					<p className="text-sm text-[var(--muted-foreground)]">Enter your WooCommerce REST API credentials. You can generate them in WooCommerce → Settings → Advanced → REST API.</p>
+					<Input placeholder="Store URL (e.g. https://mystore.com)" value={storeUrl} onChange={(e) => setStoreUrl(e.target.value)} />
+					<Input placeholder="Consumer Key (ck_...)" value={consumerKey} onChange={(e) => setConsumerKey(e.target.value)} />
+					<Input placeholder="Consumer Secret (cs_...)" type="password" value={consumerSecret} onChange={(e) => setConsumerSecret(e.target.value)} />
+				</div>
+				<DialogFooter>
+					<Button variant="outline" onClick={onClose}>Cancel</Button>
+					<Button onClick={handleConnect} disabled={connecting}>{connecting ? "Connecting..." : "Connect Store"}</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 	);
 }
