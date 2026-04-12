@@ -54,33 +54,26 @@ export function IntegrationsPage() {
 
 	const wp = useWorkspacePath();
 	const [wooDialogOpen, setWooDialogOpen] = useState(false);
+	const [shopifyDialogOpen, setShopifyDialogOpen] = useState(false);
 
-	const handleIntegrationConnect = async (key: string) => {
-		if (key === "woocommerce") {
-			setWooDialogOpen(true);
-			return;
-		}
-		if (key === "stripe") {
-			window.location.href = wp("settings?tab=billing");
-			return;
-		}
-		if (OAUTH_INTEGRATIONS.has(key)) {
-			try {
-				const params = key === "shopify" ? `&shop=${prompt("Enter your Shopify store URL (e.g. mystore.myshopify.com)") ?? ""}` : "";
-				if (key === "shopify" && !params.includes(".myshopify.com")) {
-					toast.error("Please enter a valid Shopify store URL.");
-					return;
-				}
-				const res = await apiClient.get<{ redirect_url: string }>(`/api/spa/integrations/oauth/start?integration=${key}${params}`);
-				if (res.redirect_url) {
-					window.location.href = res.redirect_url;
-				} else {
-					toast.error("Failed to start OAuth flow.");
-				}
-			} catch (err) {
-				toast.error((err as { error?: string })?.error ?? "Integration not configured.");
+	const startOAuthFlow = async (key: string, extraParams = "") => {
+		try {
+			const res = await apiClient.get<{ redirect_url: string }>(`/api/spa/integrations/oauth/start?integration=${key}${extraParams}`);
+			if (res.redirect_url) {
+				window.location.href = res.redirect_url;
+			} else {
+				toast.error("Failed to start OAuth flow.");
 			}
+		} catch (err) {
+			toast.error((err as { error?: string })?.error ?? "Integration not configured.");
 		}
+	};
+
+	const handleIntegrationConnect = (key: string) => {
+		if (key === "woocommerce") { setWooDialogOpen(true); return; }
+		if (key === "shopify") { setShopifyDialogOpen(true); return; }
+		if (key === "stripe") { window.location.href = wp("settings?tab=billing"); return; }
+		if (OAUTH_INTEGRATIONS.has(key)) { startOAuthFlow(key); }
 	};
 
 	const handleIntegrationDisconnect = async (key: string, name: string) => {
@@ -231,9 +224,38 @@ export function IntegrationsPage() {
 				</div>
 			</div>
 
-			{/* WooCommerce Connect Dialog */}
+			{/* Connect Dialogs */}
 			<WooCommerceDialog open={wooDialogOpen} onClose={() => setWooDialogOpen(false)} />
+			<ShopifyDialog open={shopifyDialogOpen} onClose={() => setShopifyDialogOpen(false)} onConnect={(shop) => startOAuthFlow("shopify", `&shop=${encodeURIComponent(shop)}`)} />
 		</div>
+	);
+}
+
+function ShopifyDialog({ open, onClose, onConnect }: { open: boolean; onClose: () => void; onConnect: (shop: string) => void }) {
+	const [shop, setShop] = useState("");
+
+	const handleConnect = () => {
+		const s = shop.trim().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+		if (!s || !s.includes(".")) { toast.error("Enter a valid Shopify store URL."); return; }
+		onConnect(s);
+		onClose();
+		setShop("");
+	};
+
+	return (
+		<Dialog open={open} onOpenChange={onClose}>
+			<DialogContent>
+				<DialogHeader><DialogTitle>Connect Shopify Store</DialogTitle></DialogHeader>
+				<div className="space-y-3">
+					<p className="text-sm text-[var(--muted-foreground)]">Enter your Shopify store URL</p>
+					<Input placeholder="https://your-store.myshopify.com" value={shop} onChange={(e) => setShop(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleConnect()} />
+				</div>
+				<DialogFooter>
+					<Button variant="outline" onClick={onClose}>Cancel</Button>
+					<Button onClick={handleConnect}>Connect</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 	);
 }
 
