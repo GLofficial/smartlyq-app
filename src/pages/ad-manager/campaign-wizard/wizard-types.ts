@@ -25,6 +25,8 @@ export interface WizardState {
 	end_date: string;
 	ad_scheduling: boolean;
 	bid_strategy: string;
+	bid_cap_amount: number;
+	roas_target: number;
 	// Step 6 — Placements
 	placements: string[];
 	// Step 7 — Creative
@@ -54,7 +56,7 @@ export const DEFAULT_STATE: WizardState = {
 	advantage_audience: false, detailed_targeting_expansion: false,
 	devices: ["desktop", "mobile", "tablet"],
 	name: "", budget_type: "daily", budget: 50, start_date: "", end_date: "",
-	ad_scheduling: false, bid_strategy: "highest_volume",
+	ad_scheduling: false, bid_strategy: "highest_volume", bid_cap_amount: 0, roas_target: 0,
 	placements: [],
 	creative_format: "image", dynamic_creative: false,
 	primary_text: "", headlines: [""], descriptions: [""],

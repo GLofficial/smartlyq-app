@@ -87,6 +87,31 @@ export function StepBudget({ state, update }: { state: WizardState; update: (p: 
 						</div>
 					))}
 				</div>
+				{/* Bid strategy input fields */}
+				{(state.bid_strategy === "cost_cap" || state.bid_strategy === "bid_cap") && (
+					<div className="mt-3 rounded-lg border border-[var(--border)] p-3">
+						<label className="text-sm font-medium text-[var(--foreground)]">
+							{state.bid_strategy === "cost_cap" ? "Target Cost Per Purchase (€)" : "Maximum Bid Per Auction (€)"}
+						</label>
+						<Input type="number" min={0.01} step={0.01} value={state.bid_cap_amount || ""} placeholder="e.g. 15.00"
+							onChange={(e) => update({ bid_cap_amount: Number(e.target.value) })} className="mt-1 w-48" />
+						<p className="text-[10px] text-[var(--muted-foreground)] mt-1">
+							{state.bid_strategy === "cost_cap"
+								? "Meta will try to keep your average cost per purchase at or below this amount."
+								: "The maximum amount you're willing to pay per auction. Lower bids may reduce delivery."}
+						</p>
+					</div>
+				)}
+				{state.bid_strategy === "roas_goal" && (
+					<div className="mt-3 rounded-lg border border-[var(--border)] p-3">
+						<label className="text-sm font-medium text-[var(--foreground)]">Target ROAS</label>
+						<Input type="number" min={0.1} step={0.1} value={state.roas_target || ""} placeholder="e.g. 4.0"
+							onChange={(e) => update({ roas_target: Number(e.target.value) })} className="mt-1 w-48" />
+						<p className="text-[10px] text-[var(--muted-foreground)] mt-1">
+							Your minimum acceptable return on ad spend (e.g. 4.0 means €4 revenue per €1 spent).
+						</p>
+					</div>
+				)}
 			</div>
 
 			{/* Budget Estimator */}
