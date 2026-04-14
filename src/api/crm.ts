@@ -98,6 +98,7 @@ export interface ApiTask {
   subtasks: { title: string; done: boolean }[];
   recurrence: string | null;
   time_tracked_minutes: number;
+  sort_order: number;
   created_at: string;
 }
 
@@ -392,6 +393,13 @@ export function useCrmTaskDelete() {
   return useMutation({
     mutationFn: (id: number) => apiClient.post<ApiSaveResponse>("/api/spa/crm/tasks/delete", { id }),
     onSuccess: () => { inv("tasks"); inv("dashboard"); },
+  });
+}
+
+export function useCrmTaskReorder() {
+  return useMutation({
+    mutationFn: (ids: number[]) => apiClient.post<ApiSaveResponse>("/api/spa/crm/tasks/reorder", { ids }),
+    onSuccess: () => inv("tasks"),
   });
 }
 

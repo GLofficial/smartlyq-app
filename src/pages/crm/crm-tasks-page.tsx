@@ -5,6 +5,7 @@ import {
   useCrmContacts,
   useCrmTaskSave,
   useCrmTaskDelete,
+  useCrmTaskReorder,
   type ApiTask,
 } from "@/api/crm";
 import type {
@@ -70,6 +71,7 @@ export function CrmTasksPage() {
   const { data: membersData } = useWorkspaceMembers();
   const saveTask = useCrmTaskSave();
   const deleteTaskMut = useCrmTaskDelete();
+  const reorderMut = useCrmTaskReorder();
 
   const tasks = tasksData?.tasks ?? [];
   const deals = dealsData?.deals ?? [];
@@ -124,11 +126,7 @@ export function CrmTasksPage() {
         status,
         tasks: filteredTasks
           .filter((t) => t.status === status)
-          .sort(
-            (a, b) =>
-              new Date(a.due_date ?? "").getTime() -
-              new Date(b.due_date ?? "").getTime(),
-          ),
+          .sort((a, b) => a.sort_order - b.sort_order || new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
       })),
     [filteredTasks],
   );
@@ -137,19 +135,65 @@ export function CrmTasksPage() {
   const handleDragStart = useCallback((id: number) => setDraggingId(id), []);
   const handleDragEnd = useCallback(() => setDraggingId(null), []);
 
-  function handleDrop(status: TaskStatus) {
+  function handleDropOnColumn(status: TaskStatus) {
     if (draggingId === null) return;
     const task = tasks.find((t) => t.id === draggingId);
+    if (!task) { setDraggingId(null); return; }
+
+    if (task.status === status) {
+      // Same column drop on empty area — no-op
+      setDraggingId(null);
+      return;
+    }
+
+    // Move to different column (append at end)
+    const col = columns.find((c) => c.status === status);
+    const colIds = col ? col.tasks.map((t) => t.id) : [];
+    colIds.push(draggingId);
+
     setDraggingId(null);
-    // Skip if already in this column
-    if (!task || task.status === status) return;
     saveTask.mutate(
       { id: draggingId, status },
       {
-        onSuccess: () => toast.success("Task moved"),
+        onSuccess: () => {
+          reorderMut.mutate(colIds);
+          toast.success("Task moved");
+        },
         onError: () => toast.error("Failed to move task"),
       },
     );
+  }
+
+  function handleDropOnCard(targetId: number, status: TaskStatus) {
+    if (draggingId === null || draggingId === targetId) return;
+    const task = tasks.find((t) => t.id === draggingId);
+    if (!task) { setDraggingId(null); return; }
+
+    const col = columns.find((c) => c.status === status);
+    if (!col) { setDraggingId(null); return; }
+
+    // Build new order: remove dragged task, insert before target
+    const colIds = col.tasks.map((t) => t.id).filter((id) => id !== draggingId);
+    const targetIdx = colIds.indexOf(targetId);
+    colIds.splice(targetIdx, 0, draggingId);
+
+    setDraggingId(null);
+
+    if (task.status !== status) {
+      // Moving to a different column
+      saveTask.mutate(
+        { id: draggingId, status },
+        {
+          onSuccess: () => reorderMut.mutate(colIds),
+          onError: () => toast.error("Failed to move task"),
+        },
+      );
+    } else {
+      // Same column reorder
+      reorderMut.mutate(colIds, {
+        onError: () => toast.error("Failed to reorder"),
+      });
+    }
   }
 
   // --- Bulk actions ---
@@ -335,7 +379,7 @@ export function CrmTasksPage() {
               key={status}
               className="flex flex-col rounded-lg border border-[var(--border)] bg-[var(--muted)]/30"
               onDragOver={(e) => e.preventDefault()}
-              onDrop={() => handleDrop(status)}
+              onDrop={() => handleDropOnColumn(status)}
             >
               {/* Column header */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
@@ -361,7 +405,10 @@ export function CrmTasksPage() {
                   </p>
                 )}
                 {colTasks.map((task) => (
-                  <div key={task.id} className="relative">
+                  <div key={task.id} className="relative"
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    onDrop={(e) => { e.stopPropagation(); handleDropOnCard(task.id, status); }}
+                  >
                     {bulkMode && (
                       <button
                         className={cn(

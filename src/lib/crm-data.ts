@@ -87,6 +87,7 @@ export interface CrmTask {
   subtasks: Subtask[];
   recurrence: string | null;
   time_tracked_minutes: number;
+  sort_order: number;
   created_at: string;
 }
 

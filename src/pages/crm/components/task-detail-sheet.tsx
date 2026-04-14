@@ -52,6 +52,12 @@ function formatMinutes(mins: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
+function formatSeconds(secs: number): string {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -71,6 +77,8 @@ export function TaskDetailSheet({ task, deals, contacts, onClose }: TaskDetailSh
   // Timer state
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerStart, setTimerStart] = useState<number | null>(null);
+  const [liveElapsed, setLiveElapsed] = useState(0); // seconds
+  const [manualMinutes, setManualMinutes] = useState("");
 
   // New subtask
   const [newSubtask, setNewSubtask] = useState("");
@@ -82,30 +90,58 @@ export function TaskDetailSheet({ task, deals, contacts, onClose }: TaskDetailSh
   useEffect(() => {
     setTimerRunning(false);
     setTimerStart(null);
+    setLiveElapsed(0);
   }, [task?.id]);
+
+  // Live elapsed timer tick
+  useEffect(() => {
+    if (!timerRunning || !timerStart) return;
+    const interval = setInterval(() => {
+      setLiveElapsed(Math.floor((Date.now() - timerStart) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timerRunning, timerStart]);
 
   if (!task) return null;
 
   function handleToggleTimer() {
     if (!task) return;
     if (timerRunning && timerStart) {
-      const elapsed = Math.round((Date.now() - timerStart) / 60000);
+      const elapsed = Math.max(1, Math.ceil((Date.now() - timerStart) / 60000));
       saveTask.mutate(
         {
           id: task.id,
           time_tracked_minutes: task.time_tracked_minutes + elapsed,
         },
         {
-          onSuccess: () => toast.success("Time tracked"),
+          onSuccess: () => toast.success(`${elapsed}m tracked`),
           onError: () => toast.error("Failed to save time"),
         },
       );
       setTimerRunning(false);
       setTimerStart(null);
+      setLiveElapsed(0);
     } else {
       setTimerRunning(true);
       setTimerStart(Date.now());
+      setLiveElapsed(0);
     }
+  }
+
+  function handleAddManualTime() {
+    if (!task) return;
+    const mins = parseInt(manualMinutes, 10);
+    if (!mins || mins <= 0) return;
+    saveTask.mutate(
+      {
+        id: task.id,
+        time_tracked_minutes: task.time_tracked_minutes + mins,
+      },
+      {
+        onSuccess: () => { toast.success(`${mins}m added`); setManualMinutes(""); },
+        onError: () => toast.error("Failed to add time"),
+      },
+    );
   }
 
   function handleStatusChange(status: TaskStatus) {
@@ -278,22 +314,44 @@ export function TaskDetailSheet({ task, deals, contacts, onClose }: TaskDetailSh
         </SheetHeader>
 
         {/* Timer */}
-        <div className="flex items-center gap-3 mt-4 p-3 rounded-md bg-[var(--muted)]/50 border border-[var(--border)]">
-          <Timer className="w-5 h-5 text-[var(--muted-foreground)]" />
-          <div className="flex-1">
-            <span className="text-sm font-medium text-[var(--foreground)]">
-              {formatMinutes(task.time_tracked_minutes)}
-            </span>
-            <span className="text-xs text-[var(--muted-foreground)] ml-1">tracked</span>
+        <div className="mt-4 p-3 rounded-md bg-[var(--muted)]/50 border border-[var(--border)] space-y-3">
+          <div className="flex items-center gap-3">
+            <Timer className="w-5 h-5 text-[var(--muted-foreground)]" />
+            <div className="flex-1">
+              <span className="text-sm font-medium text-[var(--foreground)]">
+                {formatMinutes(task.time_tracked_minutes)}
+              </span>
+              <span className="text-xs text-[var(--muted-foreground)] ml-1">tracked</span>
+              {timerRunning && (
+                <span className="text-xs text-[var(--sq-primary)] ml-2 font-mono">
+                  +{formatSeconds(liveElapsed)}
+                </span>
+              )}
+            </div>
+            <Button
+              variant={timerRunning ? "destructive" : "outline"}
+              size="sm"
+              onClick={handleToggleTimer}
+            >
+              {timerRunning ? <Pause className="w-3.5 h-3.5 mr-1" /> : <Play className="w-3.5 h-3.5 mr-1" />}
+              {timerRunning ? "Stop" : "Start"}
+            </Button>
           </div>
-          <Button
-            variant={timerRunning ? "destructive" : "outline"}
-            size="sm"
-            onClick={handleToggleTimer}
-          >
-            {timerRunning ? <Pause className="w-3.5 h-3.5 mr-1" /> : <Play className="w-3.5 h-3.5 mr-1" />}
-            {timerRunning ? "Stop" : "Start"}
-          </Button>
+          {/* Manual time entry */}
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              min={1}
+              placeholder="Minutes"
+              value={manualMinutes}
+              onChange={(e) => setManualMinutes(e.target.value)}
+              className="h-8 text-sm w-24"
+              onKeyDown={(e) => e.key === "Enter" && handleAddManualTime()}
+            />
+            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleAddManualTime} disabled={!manualMinutes || parseInt(manualMinutes) <= 0}>
+              <Plus className="w-3 h-3 mr-1" /> Add Time
+            </Button>
+          </div>
         </div>
 
         <Separator className="my-4" />
