@@ -12,6 +12,8 @@ import { useWorkspaceStore } from "@/stores/workspace-store";
 import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
 import { useAdContext } from "@/pages/ad-manager/ad-context";
 import { useCampaignAction } from "@/api/ad-manager/mutations";
+import { useSort } from "./use-sort";
+import { SortableHeader } from "./sortable-header";
 
 function useAdCampaigns() {
 	const { queryString } = useAdContext();
@@ -38,9 +40,11 @@ export function AdCampaignsPage() {
 	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
 	const p = (path: string) => wsHash ? `/w/${wsHash}/${path}` : `/${path}`;
 
-	const campaigns = (data?.campaigns ?? [])
+	const filtered = (data?.campaigns ?? [])
 		.filter((c) => tab === "All" || c.status.toLowerCase() === tab.toLowerCase())
 		.filter((c) => !search || c.name.toLowerCase().includes(search.toLowerCase()));
+
+	const { sorted: campaigns, sortKey, sortDir, toggle: toggleSort } = useSort(filtered, "spent");
 
 	const counts = { All: data?.campaigns?.length ?? 0,
 		Active: data?.campaigns?.filter((c) => c.status === "active").length ?? 0,
@@ -92,16 +96,16 @@ export function AdCampaignsPage() {
 						<thead>
 							<tr className="border-b border-[var(--border)] text-left text-xs text-[var(--muted-foreground)] uppercase tracking-wider">
 								<th className="px-4 py-3 w-8" />
-								<th className="px-4 py-3 font-medium">Campaign</th>
-								<th className="px-3 py-3 font-medium">Status</th>
-								<th className="px-3 py-3 font-medium text-right">Budget</th>
-								<th className="px-3 py-3 font-medium text-right">Spent</th>
-								<th className="px-3 py-3 font-medium text-right">Impr.</th>
-								<th className="px-3 py-3 font-medium text-right">Clicks</th>
-								<th className="px-3 py-3 font-medium text-right">CTR</th>
-								<th className="px-3 py-3 font-medium text-right">Conv.</th>
-								<th className="px-3 py-3 font-medium text-right">Purch. Value</th>
-								<th className="px-3 py-3 font-medium text-right">Leads</th>
+								<SortableHeader label="Campaign" sortKey="name" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as keyof Campaign)} />
+								<SortableHeader label="Status" sortKey="status" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as keyof Campaign)} />
+								<SortableHeader label="Budget" sortKey="budget" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as keyof Campaign)} align="right" />
+								<SortableHeader label="Spent" sortKey="spent" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as keyof Campaign)} align="right" />
+								<SortableHeader label="Impr." sortKey="impressions" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as keyof Campaign)} align="right" />
+								<SortableHeader label="Clicks" sortKey="clicks" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as keyof Campaign)} align="right" />
+								<SortableHeader label="CTR" sortKey="ctr" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as keyof Campaign)} align="right" />
+								<SortableHeader label="Conv." sortKey="conversions" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as keyof Campaign)} align="right" />
+								<SortableHeader label="Purch. Value" sortKey="purchase_value" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as keyof Campaign)} align="right" />
+								<SortableHeader label="Leads" sortKey="leads" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as keyof Campaign)} align="right" />
 							</tr>
 						</thead>
 						<tbody>

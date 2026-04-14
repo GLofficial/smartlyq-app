@@ -58,7 +58,14 @@ export function AdAudiencesPage() {
 				</div>
 				<div className="flex gap-2">
 					<Button variant="outline" size="sm" onClick={() => refetch()}><RefreshCw size={14} /><span className="ml-1.5">Refresh</span></Button>
-					<Button variant="outline" size="sm"><Download size={14} /><span className="ml-1.5">Export</span></Button>
+					<Button variant="outline" size="sm" onClick={() => {
+						const rows = audiences.map((a) => `${a.name},${a.type},${a.platform},${a.size},${a.status},${a.created_at}`);
+						const csv = "Name,Type,Platform,Size,Status,Created\n" + rows.join("\n");
+						const blob = new Blob([csv], { type: "text/csv" });
+						const url = URL.createObjectURL(blob);
+						const link = document.createElement("a"); link.href = url; link.download = "audiences.csv"; link.click();
+						URL.revokeObjectURL(url);
+					}}><Download size={14} /><span className="ml-1.5">Export</span></Button>
 					<Button size="sm" className="bg-[var(--sq-primary)]" onClick={() => setShowCreate(true)}><Plus size={14} /><span className="ml-1.5">Create Audience</span></Button>
 				</div>
 			</div>
