@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Target, Search, Plus, Users, Globe, RotateCcw, UserPlus, RefreshCw, Download } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
+import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 
 function useAdAudiences() {
@@ -38,7 +39,8 @@ export function AdAudiencesPage() {
 		.filter((a) => !search || a.name.toLowerCase().includes(search.toLowerCase()));
 
 	return (
-		<div className="space-y-5 max-w-[1400px]">
+		<div className="space-y-5">
+			<AdToolbar />
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-[var(--foreground)]">Audiences</h1>

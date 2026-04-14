@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Layers, Search, Plus, X, Pause, Play, Trash2, Copy } from "lucide-react";
 import { useAdSets } from "@/api/ad-manager/ad-sets";
+import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
 import { useAdSetAction } from "@/api/ad-manager/mutations";
 
 const STATUS_TABS = ["All", "Active", "Paused"] as const;
@@ -27,7 +28,8 @@ export function AdSetsPage() {
 	const detail = selected ? sets.find((s) => s.id === selected) : null;
 
 	return (
-		<div className="space-y-5 max-w-[1400px]">
+		<div className="space-y-5">
+			<AdToolbar />
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-[var(--foreground)]">Ad Sets / Ad Groups</h1>

@@ -5,6 +5,7 @@ import { Bell, Plug, X } from "lucide-react";
 import { useAdSettings } from "@/api/ad-manager/settings";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { useSettingsAction } from "@/api/ad-manager/mutations";
+import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
 
 const TABS = [
 	{ id: "notifications", label: "Notifications", icon: Bell },
@@ -17,7 +18,8 @@ export function AdSettingsPage() {
 	const disconnect = useSettingsAction();
 
 	return (
-		<div className="space-y-6 max-w-[1200px]">
+		<div className="space-y-6">
+			<AdToolbar />
 			<div>
 				<h1 className="text-2xl font-bold text-[var(--foreground)]">Settings</h1>
 				<p className="text-sm text-[var(--muted-foreground)]">Manage your ad manager preferences and integrations</p>

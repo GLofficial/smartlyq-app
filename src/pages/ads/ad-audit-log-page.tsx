@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, ClipboardList, Search, Shield } from "lucide-react";
 import { useAdAuditLog } from "@/api/ad-manager/audit-log";
+import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
 
 export function AdAuditLogPage() {
 	const [page, setPage] = useState(1);
@@ -15,7 +16,8 @@ export function AdAuditLogPage() {
 	);
 
 	return (
-		<div className="space-y-5 max-w-[1400px]">
+		<div className="space-y-5">
+			<AdToolbar />
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-3">
 					<Shield size={24} className="text-[var(--sq-primary)]" />

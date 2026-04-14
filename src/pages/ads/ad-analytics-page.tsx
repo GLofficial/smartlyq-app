@@ -3,12 +3,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart3, DollarSign, Eye, MousePointer, Target, TrendingUp, RefreshCw, ShoppingCart } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
+import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
+import { useAdContext } from "@/pages/ad-manager/ad-context";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 
 function useAdAnalytics() {
+	const { queryString } = useAdContext();
 	return useQuery({
-		queryKey: ["ad-manager", "analytics"],
-		queryFn: () => apiClient.get<AdAnalytics>("/api/spa/ad-manager/analytics"),
+		queryKey: ["ad-manager", "analytics", queryString],
+		queryFn: () => apiClient.get<AdAnalytics>(`/api/spa/ad-manager/analytics?_=1${queryString}`),
 		refetchInterval: 60000,
 	});
 }
@@ -30,7 +33,8 @@ export function AdAnalyticsPage() {
 	const roas = s.spent > 0 ? ((s.conversions * 50) / s.spent).toFixed(2) : "0.00"; // approximate
 
 	return (
-		<div className="space-y-6 max-w-[1400px]">
+		<div className="space-y-6">
+			<AdToolbar />
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-[var(--foreground)]">Analytics</h1>

@@ -5,6 +5,7 @@ import { Megaphone, Search, Plus, X, Pause, Play, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAds } from "@/api/ad-manager/ads";
 import { PlatformIcon } from "@/pages/social/platform-icon";
+import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
 import { useAdAction2 } from "@/api/ad-manager/mutations";
 
 const FORMAT_TABS = ["All", "Image", "Video", "Carousel", "Text"] as const;
@@ -22,7 +23,8 @@ export function AdsPage() {
 	const detail = selected ? ads.find((a) => a.id === selected) : null;
 
 	return (
-		<div className="space-y-5 max-w-[1400px]">
+		<div className="space-y-5">
+			<AdToolbar />
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-[var(--foreground)]">Ads</h1>

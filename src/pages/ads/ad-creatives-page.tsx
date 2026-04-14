@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Image, Search, Upload, FileText } from "lucide-react";
+import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
 import { apiClient } from "@/lib/api-client";
 
 function useAdCreatives() {
@@ -31,7 +32,8 @@ export function AdCreativesPage() {
 		.filter((c) => !search || c.name.toLowerCase().includes(search.toLowerCase()));
 
 	return (
-		<div className="space-y-5 max-w-[1400px]">
+		<div className="space-y-5">
+			<AdToolbar />
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-[var(--foreground)]">Creatives</h1>
