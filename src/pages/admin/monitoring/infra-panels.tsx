@@ -21,10 +21,10 @@ export function DatabasePanel() {
 				<div className="mt-4">
 					<p className="text-xs font-semibold text-[var(--muted-foreground)] mb-2 uppercase tracking-wider">Top Tables</p>
 					<div className="space-y-1">
-						{data.tables.slice(0, 8).map((t) => (
-							<div key={t.name} className="flex items-center justify-between text-xs py-1 border-b border-[var(--border)] last:border-0">
-								<span className="font-mono text-[var(--foreground)]">{t.name}</span>
-								<span className="text-[var(--muted-foreground)]">{t.rows.toLocaleString()} rows / {t.data_mb.toFixed(1)} MB</span>
+						{data.tables.slice(0, 8).map((t, i) => (
+							<div key={t?.name ?? i} className="flex items-center justify-between text-xs py-1 border-b border-[var(--border)] last:border-0">
+								<span className="font-mono text-[var(--foreground)]">{t?.name ?? "--"}</span>
+								<span className="text-[var(--muted-foreground)]">{(t.rows ?? 0).toLocaleString()} rows / {(t.data_mb ?? 0).toFixed(1)} MB</span>
 							</div>
 						))}
 					</div>
