@@ -3,13 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folders, Search, Plus, ChevronDown, ChevronRight, Eye, Layers, BarChart3, Copy } from "lucide-react";
+import { Folders, Search, Plus, ChevronDown, ChevronRight, Eye, Layers, BarChart3, Copy, Pause, Play, Trash2 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { Link } from "react-router-dom";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
 import { useAdContext } from "@/pages/ad-manager/ad-context";
+import { useCampaignAction } from "@/api/ad-manager/mutations";
 
 function useAdCampaigns() {
 	const { queryString } = useAdContext();
@@ -142,9 +143,11 @@ export function AdCampaignsPage() {
 }
 
 function ExpandedRow({ campaign: c, basePath }: { campaign: Campaign; basePath: (p: string) => string }) {
+	const mutation = useCampaignAction();
 	const budgetPct = c.budget > 0 ? Math.min(100, (c.spent / c.budget) * 100) : 0;
 	const cpc = c.clicks > 0 ? c.spent / c.clicks : 0;
 	const convRate = c.clicks > 0 ? (c.conversions / c.clicks) * 100 : 0;
+	const isPaused = c.status === "paused";
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="grid grid-cols-4 gap-6">
@@ -172,7 +175,16 @@ function ExpandedRow({ campaign: c, basePath }: { campaign: Campaign; basePath: 
 				<Button variant="outline" size="sm" asChild><Link to={basePath("ad-manager/ads")}><Eye size={13} className="mr-1" /> View Ads</Link></Button>
 				<Button variant="outline" size="sm" asChild><Link to={basePath("ad-manager/ad-sets")}><Layers size={13} className="mr-1" /> View Ad Groups</Link></Button>
 				<Button variant="outline" size="sm" asChild><Link to={basePath("ad-manager/analytics")}><BarChart3 size={13} className="mr-1" /> Analytics</Link></Button>
-				<Button variant="outline" size="sm"><Copy size={13} className="mr-1" /> Duplicate to Wizard</Button>
+				<Button variant="outline" size="sm" onClick={() => mutation.mutate({ action: "duplicate", id: c.id })} disabled={mutation.isPending}>
+					<Copy size={13} className="mr-1" /> Duplicate
+				</Button>
+				<Button variant="outline" size="sm" onClick={() => mutation.mutate({ action: isPaused ? "resume" : "pause", id: c.id })} disabled={mutation.isPending}>
+					{isPaused ? <><Play size={13} className="mr-1 text-emerald-600" /> Resume</> : <><Pause size={13} className="mr-1 text-amber-600" /> Pause</>}
+				</Button>
+				<Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50"
+					onClick={() => { if (confirm(`Delete "${c.name}"?`)) mutation.mutate({ action: "delete", id: c.id }); }} disabled={mutation.isPending}>
+					<Trash2 size={13} className="mr-1" /> Delete
+				</Button>
 			</div>
 		</div>
 	);

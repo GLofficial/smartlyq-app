@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { AdToolbar } from "./ad-toolbar";
 import { useAdContext } from "./ad-context";
+import { useSync } from "@/api/ad-manager/mutations";
 
 function fmt(n: number): string {
 	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -18,7 +19,8 @@ function fmt(n: number): string {
 
 export function AdManagerPage() {
 	const { queryString } = useAdContext();
-	const { data, isLoading, refetch } = useQuery({
+	const sync = useSync();
+	const { data, isLoading } = useQuery({
 		queryKey: ["ad-manager", "dashboard", queryString],
 		queryFn: () => apiClient.get<{
 			campaigns: Campaign[]; total_spent: number; total_impressions: number; total_clicks: number;
@@ -45,8 +47,8 @@ export function AdManagerPage() {
 					<p className="text-sm text-[var(--muted-foreground)]">Overview of your advertising performance</p>
 				</div>
 				<div className="flex items-center gap-2">
-					<Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
-						<RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
+					<Button variant="outline" size="sm" onClick={() => sync.mutate()} disabled={sync.isPending}>
+						<RefreshCw size={14} className={sync.isPending ? "animate-spin" : ""} />
 						<span className="ml-1.5">Sync Now</span>
 					</Button>
 					<Button size="sm" asChild>

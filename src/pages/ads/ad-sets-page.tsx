@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Layers, Search, Plus, X } from "lucide-react";
+import { Layers, Search, Plus, X, Pause, Play, Trash2, Copy } from "lucide-react";
 import { useAdSets } from "@/api/ad-manager/ad-sets";
+import { useAdSetAction } from "@/api/ad-manager/mutations";
 
 const STATUS_TABS = ["All", "Active", "Paused"] as const;
 
@@ -110,6 +111,7 @@ export function AdSetsPage() {
 							<DetailRow label="Spent">€{Number(detail.spent).toFixed(2)}</DetailRow>
 							<DetailRow label="Impressions">{Number(detail.impressions).toLocaleString()}</DetailRow>
 							<DetailRow label="Clicks">{Number(detail.clicks).toLocaleString()}</DetailRow>
+							<AdSetActions id={detail.id} status={detail.status} name={detail.name} />
 						</CardContent>
 					</Card>
 				)}
@@ -123,6 +125,25 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 		<div className="flex items-center justify-between py-1.5 border-b border-[var(--border)] last:border-0">
 			<span className="text-xs text-[var(--muted-foreground)]">{label}</span>
 			<span className="text-sm font-medium text-[var(--foreground)]">{children}</span>
+		</div>
+	);
+}
+
+function AdSetActions({ id, status, name }: { id: number; status: string; name: string }) {
+	const mutation = useAdSetAction();
+	const isPaused = status === "paused";
+	return (
+		<div className="flex gap-2 pt-3 border-t border-[var(--border)] mt-2">
+			<Button variant="outline" size="sm" onClick={() => mutation.mutate({ action: isPaused ? "resume" : "pause", id })} disabled={mutation.isPending}>
+				{isPaused ? <><Play size={13} className="mr-1 text-emerald-600" /> Resume</> : <><Pause size={13} className="mr-1 text-amber-600" /> Pause</>}
+			</Button>
+			<Button variant="outline" size="sm" onClick={() => mutation.mutate({ action: "duplicate", id })} disabled={mutation.isPending}>
+				<Copy size={13} className="mr-1" /> Duplicate
+			</Button>
+			<Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50"
+				onClick={() => { if (confirm(`Delete "${name}"?`)) mutation.mutate({ action: "delete", id }); }} disabled={mutation.isPending}>
+				<Trash2 size={13} className="mr-1" /> Delete
+			</Button>
 		</div>
 	);
 }

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Bell, Plug, X } from "lucide-react";
 import { useAdSettings } from "@/api/ad-manager/settings";
 import { PlatformIcon } from "@/pages/social/platform-icon";
+import { useSettingsAction } from "@/api/ad-manager/mutations";
 
 const TABS = [
 	{ id: "notifications", label: "Notifications", icon: Bell },
@@ -13,6 +14,7 @@ const TABS = [
 export function AdSettingsPage() {
 	const { data, isLoading } = useAdSettings();
 	const [activeTab, setActiveTab] = useState("integrations");
+	const disconnect = useSettingsAction();
 
 	return (
 		<div className="space-y-6 max-w-[1200px]">
@@ -68,7 +70,9 @@ export function AdSettingsPage() {
 												}`}>
 													{a.status === "connected" ? "Connected" : a.status}
 												</span>
-												<Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
+												<Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50"
+													disabled={disconnect.isPending}
+													onClick={() => { if (confirm(`Disconnect ${platformLabel(a.platform)}?`)) disconnect.mutate({ action: "disconnect-platform", platform: a.platform }); }}>
 													<X size={13} className="mr-1" /> Disconnect
 												</Button>
 											</div>
