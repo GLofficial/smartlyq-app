@@ -4,6 +4,13 @@ import { SummaryTab } from "./reports/summary-tab";
 import { AudienceTab } from "./reports/audience-tab";
 import { PostsTab } from "./reports/posts-tab";
 import type { ReportFilters } from "@/api/social-reports";
+import { useEmailReport } from "@/api/social-reports";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Mail } from "lucide-react";
+import { toast } from "sonner";
 
 const TABS = ["Summary", "Audience", "Posts & Engagement"] as const;
 
@@ -15,12 +22,31 @@ export function AnalyticsPage() {
 	const [filters, setFilters] = useState<ReportFilters>({
 		dateFrom: defaultFrom, dateTo: defaultTo, accountId: null, platform: "",
 	});
+	const [emailOpen, setEmailOpen] = useState(false);
+	const [emailTo, setEmailTo] = useState("");
+	const emailMut = useEmailReport();
 
 	const updateFilters = (partial: Partial<ReportFilters>) => {
 		setFilters((prev) => ({ ...prev, ...partial }));
 	};
 
 	const daysDiff = Math.max(1, Math.ceil((new Date(filters.dateTo).getTime() - new Date(filters.dateFrom).getTime()) / 86400000));
+
+	function handleSendReport() {
+		if (!emailTo.trim()) return;
+		emailMut.mutate(
+			{
+				email: emailTo.trim(),
+				date_from: filters.dateFrom,
+				date_to: filters.dateTo,
+				social_account_id: filters.accountId,
+			},
+			{
+				onSuccess: (d) => { toast.success(d.message); setEmailOpen(false); setEmailTo(""); },
+				onError: (e: Error) => toast.error(e.message || "Failed to send report"),
+			},
+		);
+	}
 
 	return (
 		<div className="flex gap-6 min-h-[calc(100vh-8rem)]">
@@ -34,7 +60,12 @@ export function AnalyticsPage() {
 					<div>
 						<h1 className="text-2xl font-bold text-[var(--foreground)]">Social Media Report</h1>
 					</div>
-					<span className="text-sm text-[var(--muted-foreground)]">Last {daysDiff} days</span>
+					<div className="flex items-center gap-3">
+						<span className="text-sm text-[var(--muted-foreground)]">Last {daysDiff} days</span>
+						<Button variant="outline" size="sm" onClick={() => setEmailOpen(true)} title="Email Report">
+							<Mail size={16} />
+						</Button>
+					</div>
 				</div>
 
 				{/* Tabs */}
@@ -52,6 +83,39 @@ export function AnalyticsPage() {
 				{tab === "Audience" && <AudienceTab filters={filters} />}
 				{tab === "Posts & Engagement" && <PostsTab filters={filters} />}
 			</div>
+
+			{/* Email Report Modal */}
+			<Dialog open={emailOpen} onOpenChange={setEmailOpen}>
+				<DialogContent className="max-w-md">
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2">
+							<Mail size={18} /> Email Report
+						</DialogTitle>
+						<DialogDescription>
+							Send a summary of this report to any email address.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3 py-2">
+						<div className="space-y-1.5">
+							<Label>Recipient email</Label>
+							<Input
+								type="email"
+								placeholder="team@example.com"
+								value={emailTo}
+								onChange={(e) => setEmailTo(e.target.value)}
+								onKeyDown={(e) => e.key === "Enter" && handleSendReport()}
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setEmailOpen(false)}>Cancel</Button>
+						<Button onClick={handleSendReport} disabled={!emailTo.trim() || emailMut.isPending}>
+							<Mail size={14} className="mr-1.5" />
+							{emailMut.isPending ? "Sending..." : "Send Report"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -61,6 +61,13 @@ export function useReportPostsEngagement(f: ReportFilters) {
 			engagements_vs_impressions: { labels: string[]; impressions: number[]; engagements: number[] };
 			breakdown: { account_name: string; platform: string; profile_picture: string; posts: number; engagements: number; impressions: number; clicks: number }[];
 		}>(`/api/spa/social/reports?${qs}`),
+	});
+}
+
+export function useEmailReport() {
+	return useMutation({
+		mutationFn: (body: { email: string; date_from: string; date_to: string; social_account_id?: number | null }) =>
+			apiClient.post<{ message: string }>("/api/spa/social/reports/email", body),
 	});
 }
 

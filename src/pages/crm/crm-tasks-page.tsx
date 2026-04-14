@@ -139,6 +139,10 @@ export function CrmTasksPage() {
 
   function handleDrop(status: TaskStatus) {
     if (draggingId === null) return;
+    const task = tasks.find((t) => t.id === draggingId);
+    setDraggingId(null);
+    // Skip if already in this column
+    if (!task || task.status === status) return;
     saveTask.mutate(
       { id: draggingId, status },
       {
@@ -146,7 +150,6 @@ export function CrmTasksPage() {
         onError: () => toast.error("Failed to move task"),
       },
     );
-    setDraggingId(null);
   }
 
   // --- Bulk actions ---
