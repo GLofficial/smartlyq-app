@@ -17,7 +17,12 @@ export function CaptainPage() {
 				});
 				const data = await res.json();
 				if (data.redirect_url) {
-					setSrc(data.redirect_url);
+					// Pass user_info via URL so iframe skips cross-origin api.me() call
+					let url = data.redirect_url;
+					if (data.user_info) {
+						url += (url.includes("?") ? "&" : "?") + "user_info=" + encodeURIComponent(JSON.stringify(data.user_info));
+					}
+					setSrc(url);
 					return;
 				}
 			} catch {}
