@@ -18,8 +18,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Trash2, ArrowUpDown, Building2, Loader2, Upload, Download, RotateCcw } from "lucide-react";
+import { Search, Plus, Trash2, ArrowUpDown, Building2, Loader2, Upload, Download, RotateCcw, Mail, Phone } from "lucide-react";
 import { toast } from "sonner";
+import { COUNTRY_CODES } from "@/lib/country-codes";
 import { ContactDetailSheet } from "./components/contact-detail-sheet";
 import { ContactImportDialog } from "./components/contact-import-dialog";
 import { DeletedContactsDialog } from "./components/deleted-contacts-dialog";
@@ -31,11 +32,20 @@ import { DeletedContactsDialog } from "./components/deleted-contacts-dialog";
 const STATUS_STYLE: Record<string, string> = {
   active: "bg-green-50 text-green-700 border-green-200",
   prospect: "bg-blue-50 text-blue-600 border-blue-200",
-  inactive: "bg-gray-100 text-gray-500 border-gray-200",
+  in_progress: "bg-amber-50 text-amber-700 border-amber-200",
+  lost: "bg-red-50 text-red-600 border-red-200",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  active: "Active",
+  prospect: "Prospect",
+  in_progress: "In Progress",
+  lost: "Lost",
 };
 
 type SortKey = "name" | "company" | "status" | "created";
 type SortDir = "asc" | "desc";
+
 
 // ---------------------------------------------------------------------------
 // Page component
@@ -66,6 +76,7 @@ export function CrmContactsPage() {
   const [formLastName, setFormLastName] = useState("");
   const [formEmail, setFormEmail] = useState("");
   const [formCompany, setFormCompany] = useState("");
+  const [formPhoneCode, setFormPhoneCode] = useState("+1");
   const [formPhone, setFormPhone] = useState("");
   const [formRole, setFormRole] = useState("");
   const [formStatus, setFormStatus] = useState<string>("prospect");
@@ -135,7 +146,7 @@ export function CrmContactsPage() {
         last_name: formLastName.trim(),
         email: formEmail.trim(),
         company: formCompany.trim(),
-        phone: formPhone.trim(),
+        phone: formPhone.trim() ? `${formPhoneCode} ${formPhone.trim()}` : "",
         role: formRole.trim(),
         status: formStatus,
       },
@@ -155,6 +166,7 @@ export function CrmContactsPage() {
     setFormLastName("");
     setFormEmail("");
     setFormCompany("");
+    setFormPhoneCode("+1");
     setFormPhone("");
     setFormRole("");
     setFormStatus("prospect");
@@ -244,7 +256,8 @@ export function CrmContactsPage() {
             <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="prospect">Prospect</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="in_progress">In Progress</SelectItem>
+            <SelectItem value="lost">Lost</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -263,6 +276,8 @@ export function CrmContactsPage() {
                     Contact <ArrowUpDown className="w-3.5 h-3.5" />
                   </button>
                 </TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
                 <TableHead>
                   <button
                     onClick={() => toggleSort("company")}
@@ -287,7 +302,7 @@ export function CrmContactsPage() {
             <TableBody>
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-[var(--muted-foreground)]">
+                  <TableCell colSpan={8} className="text-center py-8 text-[var(--muted-foreground)]">
                     No contacts found.
                   </TableCell>
                 </TableRow>
@@ -309,11 +324,24 @@ export function CrmContactsPage() {
                             ? `${contact.first_name} ${contact.last_name}`.trim()
                             : contact.name}
                         </div>
-                        <div className="text-xs text-[var(--muted-foreground)] truncate">
-                          {contact.email}
-                        </div>
                       </div>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {contact.email ? (
+                      <div className="flex items-center gap-1.5 text-sm text-[var(--muted-foreground)]">
+                        <Mail className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate max-w-[180px]">{contact.email}</span>
+                      </div>
+                    ) : <span className="text-xs text-[var(--muted-foreground)]">—</span>}
+                  </TableCell>
+                  <TableCell>
+                    {contact.phone ? (
+                      <div className="flex items-center gap-1.5 text-sm text-[var(--muted-foreground)]">
+                        <Phone className="w-3.5 h-3.5 shrink-0" />
+                        <span>{contact.phone}</span>
+                      </div>
+                    ) : <span className="text-xs text-[var(--muted-foreground)]">—</span>}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1.5 text-sm">
@@ -326,7 +354,7 @@ export function CrmContactsPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={STATUS_STYLE[contact.status] ?? ""}>
-                      {contact.status}
+                      {STATUS_LABEL[contact.status] ?? contact.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -422,11 +450,25 @@ export function CrmContactsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Phone</Label>
-                <Input
-                  placeholder="+1 555-0100"
-                  value={formPhone}
-                  onChange={(e) => setFormPhone(e.target.value)}
-                />
+                <div className="flex gap-1.5">
+                  <Select value={formPhoneCode} onValueChange={setFormPhoneCode}>
+                    <SelectTrigger className="w-[100px] shrink-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[280px]">
+                      {COUNTRY_CODES.map((cc) => (
+                        <SelectItem key={cc.code} value={cc.dial}>
+                          {cc.flag} {cc.dial} {cc.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    placeholder="555-0100"
+                    value={formPhone}
+                    onChange={(e) => setFormPhone(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -447,7 +489,8 @@ export function CrmContactsPage() {
                   <SelectContent>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="prospect">Prospect</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="lost">Lost</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
