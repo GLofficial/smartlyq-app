@@ -54,7 +54,18 @@ export function AdManagerPage() {
 					<h1 className="text-2xl font-bold text-[var(--foreground)]">Ad Manager</h1>
 					<p className="text-sm text-[var(--muted-foreground)]">Overview of your advertising performance</p>
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="flex items-center gap-3">
+					{campaigns.length > 0 && (() => {
+						const lastSync = campaigns.reduce((latest, c) => {
+							const s = (c as any).last_sync_at;
+							return s && s > (latest || "") ? s : latest;
+						}, "");
+						return lastSync ? (
+							<span className="text-xs text-[var(--muted-foreground)]">
+								Last sync: {new Date(lastSync).toLocaleDateString()} {new Date(lastSync).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+							</span>
+						) : null;
+					})()}
 					<Button variant="outline" size="sm" onClick={() => sync.mutate()} disabled={sync.isPending}>
 						<RefreshCw size={14} className={sync.isPending ? "animate-spin" : ""} />
 						<span className="ml-1.5">Sync Now</span>
