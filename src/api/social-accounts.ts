@@ -62,8 +62,14 @@ export function useReconnectAccount() {
 
 export function useStartOAuth() {
 	return useMutation({
-		mutationFn: (body: { platform: string; connection_method?: string }) =>
-			apiClient.post<{ redirect_url: string }>("/api/spa/integrations/oauth/start", body),
+		mutationFn: (body: { platform: string; connection_method?: string }) => {
+			// Instagram "direct" method maps to the "instagram_direct" provider
+			let platform = body.platform;
+			if (platform === "instagram" && body.connection_method === "direct") {
+				platform = "instagram_direct";
+			}
+			return apiClient.get<{ redirect_url: string }>(`/api/spa/social/oauth/start?platform=${encodeURIComponent(platform)}`);
+		},
 		onSuccess: (data) => { if (data.redirect_url) window.location.href = data.redirect_url; else toast.error("No OAuth URL"); },
 		onError: (e: Error) => toast.error(e.message),
 	});
