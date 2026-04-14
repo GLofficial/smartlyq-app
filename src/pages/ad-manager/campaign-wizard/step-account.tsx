@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { Plus } from "lucide-react";
-import type { WizardState } from "./wizard-layout";
+import type { WizardState } from "./wizard-types";
 
 interface Account { id: number; platform: string; name: string; account_id: string; status: string; currency: string; }
 
@@ -55,7 +55,7 @@ export function StepAccount({ state, update }: { state: WizardState; update: (p:
 						const selected = state.integration_id === a.id && state.platform === a.platform;
 						return (
 							<div key={`${a.platform}-${a.id}`}
-								onClick={() => update({ integration_id: a.id, platform: a.platform, account_name: a.name })}
+								onClick={() => update({ integration_id: a.id, platform: a.platform as WizardState["platform"], account_name: a.name })}
 								className={`flex items-center gap-4 rounded-lg border p-4 cursor-pointer transition-all ${
 									selected ? "border-[var(--sq-primary)] bg-[var(--sq-primary)]/5 ring-1 ring-[var(--sq-primary)]" : "border-[var(--border)] hover:border-[var(--muted-foreground)]"
 								}`}>

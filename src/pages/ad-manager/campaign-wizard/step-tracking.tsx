@@ -1,68 +1,71 @@
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Rocket, FileText } from "lucide-react";
-import type { WizardState } from "./wizard-layout";
+import { ShoppingCart, ShoppingBag, Users, UserPlus, Eye, Settings } from "lucide-react";
+import type { WizardState } from "./wizard-types";
 
-export function StepTracking({ state, update, onLaunch, submitting }: {
-	state: WizardState; update: (p: Partial<WizardState>) => void;
-	onLaunch: (asDraft: boolean) => void; submitting: boolean;
-}) {
-	const t = state.tracking;
-	const setT = (partial: Partial<typeof t>) => update({ tracking: { ...t, ...partial } });
+const EVENTS = [
+	{ id: "purchase", label: "Purchase", icon: ShoppingCart },
+	{ id: "add_to_cart", label: "Add to Cart", icon: ShoppingBag },
+	{ id: "lead", label: "Lead", icon: Users },
+	{ id: "sign_up", label: "Sign Up", icon: UserPlus },
+	{ id: "page_view", label: "Page View", icon: Eye },
+	{ id: "custom", label: "Custom Event", icon: Settings },
+] as const;
 
+export function StepTracking({ state, update }: { state: WizardState; update: (p: Partial<WizardState>) => void }) {
 	return (
-		<div>
-			<h2 className="text-lg font-semibold mb-1">Tracking & Review</h2>
-			<p className="text-sm text-[var(--muted-foreground)] mb-6">Set up conversion tracking and review your campaign.</p>
+		<div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
+			<h2 className="text-lg font-semibold text-[var(--foreground)]">Conversion Tracking</h2>
+			<p className="text-sm text-[var(--muted-foreground)] mb-5">Set up tracking to measure your campaign performance.</p>
 
-			<div className="grid grid-cols-2 gap-6 mb-8">
-				<div className="space-y-4">
+			{/* Conversion Event */}
+			<div className="mb-5">
+				<label className="text-sm font-medium text-[var(--foreground)]">Conversion Event</label>
+				<div className="grid grid-cols-3 gap-3 mt-2">
+					{EVENTS.map((e) => {
+						const sel = state.conversion_event === e.id;
+						return (
+							<div key={e.id} onClick={() => update({ conversion_event: e.id })}
+								className={`flex items-center gap-2.5 rounded-lg border p-3 cursor-pointer transition-all ${
+									sel ? "border-[var(--sq-primary)] bg-[var(--sq-primary)]/5" : "border-[var(--border)] hover:border-[var(--muted-foreground)]"
+								}`}>
+								<e.icon size={16} className={sel ? "text-[var(--sq-primary)]" : "text-[var(--muted-foreground)]"} />
+								<span className="text-sm font-medium text-[var(--foreground)]">{e.label}</span>
+							</div>
+						);
+					})}
+				</div>
+			</div>
+
+			{/* Pixel Tracking */}
+			<div className="flex items-center justify-between rounded-lg border border-[var(--border)] px-4 py-3 mb-5">
+				<div>
+					<p className="text-sm font-medium text-[var(--foreground)]">Meta Pixel Tracking</p>
+					<p className="text-xs text-[var(--muted-foreground)]">Enable Meta Pixel for conversion tracking</p>
+				</div>
+				<button onClick={() => update({ pixel_tracking: !state.pixel_tracking })}
+					className={`relative h-6 w-11 rounded-full transition-colors ${state.pixel_tracking ? "bg-[var(--sq-primary)]" : "bg-gray-300"}`}>
+					<span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${state.pixel_tracking ? "translate-x-5" : "translate-x-0.5"}`} />
+				</button>
+			</div>
+
+			{/* UTM Parameters */}
+			<div>
+				<label className="text-sm font-medium text-[var(--muted-foreground)]">UTM Parameters <span className="text-xs">(optional)</span></label>
+				<div className="grid grid-cols-3 gap-4 mt-2">
 					<div>
-						<label className="text-sm font-medium text-[var(--foreground)]">Pixel / Tag ID (optional)</label>
-						<Input value={t.pixel_id} onChange={(e) => setT({ pixel_id: e.target.value })} placeholder="e.g. 123456789" className="mt-1" />
-						<p className="text-[11px] text-[var(--muted-foreground)] mt-1">Meta Pixel, Google Tag, or TikTok Pixel ID</p>
+						<label className="text-xs text-[var(--muted-foreground)]">Source</label>
+						<Input value={state.utm_source} onChange={(e) => update({ utm_source: e.target.value })} placeholder="e.g. facebook" className="mt-1" />
 					</div>
 					<div>
-						<label className="text-sm font-medium text-[var(--foreground)]">Conversion Event (optional)</label>
-						<Input value={t.conversion_event} onChange={(e) => setT({ conversion_event: e.target.value })} placeholder="e.g. Purchase, Lead, AddToCart" className="mt-1" />
+						<label className="text-xs text-[var(--muted-foreground)]">Medium</label>
+						<Input value={state.utm_medium} onChange={(e) => update({ utm_medium: e.target.value })} placeholder="e.g. cpc" className="mt-1" />
+					</div>
+					<div>
+						<label className="text-xs text-[var(--muted-foreground)]">Campaign</label>
+						<Input value={state.utm_campaign} onChange={(e) => update({ utm_campaign: e.target.value })} placeholder="e.g. summer_sale" className="mt-1" />
 					</div>
 				</div>
-
-				{/* Summary */}
-				<Card>
-					<CardContent className="p-5 space-y-3">
-						<h3 className="text-sm font-semibold text-[var(--foreground)]">Campaign Summary</h3>
-						<SummaryRow label="Name" value={state.name || "—"} />
-						<SummaryRow label="Platform" value={state.platform || "—"} />
-						<SummaryRow label="Objective" value={state.objective || "—"} />
-						<SummaryRow label="Budget" value={`€${state.budget.toFixed(2)} ${state.budget_type}`} />
-						<SummaryRow label="Locations" value={state.targeting.locations.join(", ") || "All"} />
-						<SummaryRow label="Placements" value={`${state.placements.length} selected`} />
-						<SummaryRow label="Format" value={state.creative.format} />
-						<SummaryRow label="CTA" value={state.creative.cta.replace(/_/g, " ")} />
-					</CardContent>
-				</Card>
 			</div>
-
-			{/* Launch Actions */}
-			<div className="flex items-center justify-center gap-4 py-6 border-t border-[var(--border)]">
-				<Button variant="outline" size="lg" onClick={() => onLaunch(true)} disabled={submitting}>
-					<FileText size={16} className="mr-2" /> Save as Draft
-				</Button>
-				<Button size="lg" onClick={() => onLaunch(false)} disabled={submitting} className="bg-[var(--sq-primary)]">
-					<Rocket size={16} className="mr-2" /> Launch Campaign
-				</Button>
-			</div>
-		</div>
-	);
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-	return (
-		<div className="flex items-center justify-between py-1 border-b border-[var(--border)] last:border-0">
-			<span className="text-xs text-[var(--muted-foreground)]">{label}</span>
-			<span className="text-xs font-medium text-[var(--foreground)] capitalize">{value}</span>
 		</div>
 	);
 }
