@@ -1,43 +1,46 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { STORAGE_KEYS } from "@/lib/constants";
 
 /**
- * Shared hook for embedding external apps in iframes with postMessage auth.
+ * Shared hook for embedding external apps in iframes with JWT auth.
  *
- * Instead of passing JWT via URL (visible in logs, browser history, server access logs),
- * this sends the token via postMessage after the iframe loads.
- *
- * The child app must:
- * 1. Listen for { type: "sq_auth", token } messages from the parent origin
- * 2. Optionally send { type: "sq_auth_request" } to request the token
+ * Primary: passes token via ?token= URL param (instant, reliable).
+ * Backup: also sends via postMessage after iframe loads (handles edge cases).
  *
  * Usage:
- *   const { iframeRef, onLoad } = useIframeAuth("https://captain.smartlyq.com");
- *   <iframe ref={iframeRef} src="https://captain.smartlyq.com" onLoad={onLoad} />
+ *   const { iframeRef, src, onLoad } = useIframeAuth("https://captain.smartlyq.com");
+ *   <iframe ref={iframeRef} src={src} onLoad={onLoad} />
  */
-export function useIframeAuth(targetOrigin: string) {
+export function useIframeAuth(baseUrl: string) {
 	const iframeRef = useRef<HTMLIFrameElement>(null);
+	const [src, setSrc] = useState("");
 
+	// Build iframe URL with token on mount
+	useEffect(() => {
+		const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+		setSrc(token ? `${baseUrl}?token=${encodeURIComponent(token)}` : baseUrl);
+	}, [baseUrl]);
+
+	// Also send token via postMessage after iframe loads (backup)
 	const sendToken = useCallback(() => {
 		const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
 		if (token && iframeRef.current?.contentWindow) {
 			iframeRef.current.contentWindow.postMessage(
 				{ type: "sq_auth", token },
-				targetOrigin,
+				baseUrl,
 			);
 		}
-	}, [targetOrigin]);
+	}, [baseUrl]);
 
 	useEffect(() => {
-		// Respond to token requests from the iframe
 		const handler = (e: MessageEvent) => {
-			if (e.origin === targetOrigin && e.data?.type === "sq_auth_request") {
+			if (e.origin === baseUrl && e.data?.type === "sq_auth_request") {
 				sendToken();
 			}
 		};
 		window.addEventListener("message", handler);
 		return () => window.removeEventListener("message", handler);
-	}, [targetOrigin, sendToken]);
+	}, [baseUrl, sendToken]);
 
-	return { iframeRef, onLoad: sendToken };
+	return { iframeRef, src, onLoad: sendToken };
 }
