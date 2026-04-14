@@ -2,7 +2,7 @@ import {
 	LayoutDashboard, Sparkles, FileText, ImagePlus, VideoIcon, AudioLines,
 	FileSearch, PenLine, PenSquare, CalendarDays, ListTodo, Layers, Clock,
 	Inbox, MessagesSquare, Tag, Users, BarChart3, FileBarChart, FileSpreadsheet,
-	CalendarCheck, Megaphone, Folders, Image, Target, Plug, Bot, Link2,
+	CalendarCheck, Megaphone, Folders, Image, Target, Plug, Bot, Link2, Palette,
 	Building2, Briefcase, Globe, Shield, Receipt, ClipboardList, Settings, Activity,
 	CreditCard, MessageSquare, LayoutGrid, Presentation, Database, FileAudio, Film,
 	Clapperboard, CircleDollarSign, TrendingUp, ShoppingCart, SquareStack, FileImage,
@@ -115,6 +115,7 @@ export function getNavGroups(wsHash: string): NavGroup[] {
 			items: [
 				{ label: "Integrations", path: p("integrations"), icon: Plug },
 				{ label: "URL Shortener", path: p("url-shortener"), icon: Link2 },
+				{ label: "Canva", path: p("canva"), icon: Palette },
 			],
 		},
 		{

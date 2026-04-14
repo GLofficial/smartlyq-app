@@ -1,21 +1,29 @@
-import { useIframeAuth } from "@/hooks/use-iframe-auth";
+import { useEffect, useState } from "react";
+import { STORAGE_KEYS } from "@/lib/constants";
 
-const CAPTAIN_URL = "https://captain.smartlyq.com";
-
+/**
+ * Embeds AI Captain (React app at captain.smartlyq.com) inside the unified shell.
+ * Passes JWT token so the user stays authenticated without redirect.
+ */
 export function CaptainPage() {
-	const { iframeRef, src, onLoad } = useIframeAuth(CAPTAIN_URL);
+	const [src, setSrc] = useState("");
+
+	useEffect(() => {
+		const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+		// Load Captain app with token — it accepts ?token= param
+		const captainUrl = "https://captain.smartlyq.com";
+		setSrc(`${captainUrl}?token=${encodeURIComponent(token ?? "")}`);
+	}, []);
 
 	if (!src) return null;
 
 	return (
-		<div className="-m-6 h-[calc(100%+3rem)]">
+		<div className="h-[calc(100vh-8rem)]">
 			<iframe
-				ref={iframeRef}
 				src={src}
 				title="AI Captain"
-				className="h-full w-full border-0"
+				className="h-full w-full rounded-lg border border-[var(--border)]"
 				allow="clipboard-write"
-				onLoad={onLoad}
 			/>
 		</div>
 	);
