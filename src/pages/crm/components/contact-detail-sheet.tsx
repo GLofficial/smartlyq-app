@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { COUNTRY_CODES } from "@/lib/country-codes";
 import {
   Sheet,
   SheetContent,
@@ -32,7 +34,12 @@ import {
 // Status options
 // ---------------------------------------------------------------------------
 
-const STATUSES: ApiContact["status"][] = ["active", "prospect", "inactive"];
+const STATUSES: { value: ApiContact["status"]; label: string; style: string }[] = [
+  { value: "active", label: "Active", style: "bg-green-50 text-green-700 border-green-200" },
+  { value: "prospect", label: "Prospect", style: "bg-blue-50 text-blue-600 border-blue-200" },
+  { value: "in_progress", label: "In Progress", style: "bg-amber-50 text-amber-700 border-amber-200" },
+  { value: "lost", label: "Lost", style: "bg-red-50 text-red-600 border-red-200" },
+];
 
 // ---------------------------------------------------------------------------
 // Component
@@ -50,6 +57,7 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editPhoneCode, setEditPhoneCode] = useState("+1");
   const [editPhone, setEditPhone] = useState("");
   const [editCompany, setEditCompany] = useState("");
   const [editRole, setEditRole] = useState("");
@@ -60,7 +68,15 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
     setEditFirstName(contact.first_name || contact.name.split(" ")[0] || "");
     setEditLastName(contact.last_name || contact.name.split(" ").slice(1).join(" ") || "");
     setEditEmail(contact.email);
-    setEditPhone(contact.phone);
+    // Parse phone: try to extract country code (e.g. "+30 6900000000")
+    const phoneParts = (contact.phone || "").match(/^(\+\d{1,4})\s+(.*)$/);
+    if (phoneParts?.[1] && phoneParts[2]) {
+      setEditPhoneCode(phoneParts[1]);
+      setEditPhone(phoneParts[2]);
+    } else {
+      setEditPhoneCode("+1");
+      setEditPhone(contact.phone || "");
+    }
     setEditCompany(contact.company);
     setEditRole(contact.role);
     setEditing(true);
@@ -74,7 +90,7 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
         first_name: editFirstName.trim(),
         last_name: editLastName.trim(),
         email: editEmail.trim(),
-        phone: editPhone.trim(),
+        phone: editPhone.trim() ? `${editPhoneCode} ${editPhone.trim()}` : "",
         company: editCompany.trim(),
         role: editRole.trim(),
       },
@@ -148,16 +164,16 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
             </SheetHeader>
 
             {/* Status buttons */}
-            <div className="flex gap-2 mt-4">
+            <div className="flex flex-wrap gap-2 mt-4">
               {STATUSES.map((s) => (
                 <Button
-                  key={s}
-                  variant={contact.status === s ? "default" : "outline"}
+                  key={s.value}
+                  variant={contact.status === s.value ? "default" : "outline"}
                   size="sm"
-                  onClick={() => handleStatusChange(s)}
-                  className="capitalize"
+                  onClick={() => handleStatusChange(s.value)}
+                  className={contact.status === s.value ? "" : s.style}
                 >
-                  {s}
+                  {s.label}
                 </Button>
               ))}
             </div>
@@ -210,7 +226,7 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
             {!editing ? (
               <div className="space-y-4">
                 <InfoRow icon={<Mail className="w-4 h-4" />} label="Email" value={contact.email} />
-                <InfoRow icon={<Phone className="w-4 h-4" />} label="Phone" value={contact.phone || "N/A"} />
+                <InfoRow icon={<Phone className="w-4 h-4" />} label="Phone" value={contact.phone || "N/A"} flag={COUNTRY_CODES.find((cc) => contact.phone?.startsWith(cc.dial))?.flag} />
                 <InfoRow icon={<Building2 className="w-4 h-4" />} label="Company" value={contact.company} />
                 <InfoRow icon={<Briefcase className="w-4 h-4" />} label="Role" value={contact.role || "N/A"} />
 
@@ -240,7 +256,21 @@ export function ContactDetailSheet({ contact, onClose }: ContactDetailSheetProps
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Phone</Label>
-                  <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+                  <div className="flex gap-1.5">
+                    <Select value={editPhoneCode} onValueChange={setEditPhoneCode}>
+                      <SelectTrigger className="w-[100px] shrink-0 h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[280px]">
+                        {COUNTRY_CODES.map((cc) => (
+                          <SelectItem key={cc.code} value={cc.dial}>
+                            {cc.flag} {cc.dial}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="h-9" />
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Company</Label>
@@ -291,17 +321,22 @@ function InfoRow({
   icon,
   label,
   value,
+  flag,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
+  flag?: string;
 }) {
   return (
     <div className="flex items-start gap-3">
       <div className="text-[var(--muted-foreground)] mt-0.5">{icon}</div>
       <div>
         <div className="text-xs text-[var(--muted-foreground)]">{label}</div>
-        <div className="text-sm text-[var(--foreground)]">{value}</div>
+        <div className="text-sm text-[var(--foreground)]">
+          {flag && <span className="mr-1.5">{flag}</span>}
+          {value}
+        </div>
       </div>
     </div>
   );
