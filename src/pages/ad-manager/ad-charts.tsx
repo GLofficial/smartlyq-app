@@ -150,6 +150,83 @@ export function SpendByPlatformChart({ platforms }: { platforms: PlatformSpend[]
 	);
 }
 
+// ── Conversion Funnel ────────────────────────────────────────────────────
+
+interface FunnelData { impressions: number; clicks: number; conversions: number; purchases?: number; }
+
+export function ConversionFunnelChart({ data }: { data: FunnelData | undefined }) {
+	if (!data) return <EmptyChart message="No funnel data" />;
+
+	const stages = [
+		{ name: "Impressions", value: data.impressions, fill: "#3b82f6" },
+		{ name: "Clicks", value: data.clicks, fill: "#22c55e" },
+		{ name: "Conversions", value: data.conversions, fill: "#f59e0b" },
+	];
+	if (data.purchases) stages.push({ name: "Purchases", value: data.purchases, fill: "#8b5cf6" });
+
+	const maxVal = Math.max(...stages.map((s) => s.value), 1);
+
+	return (
+		<ChartCard title="Conversion Funnel" subtitle="User journey from impression to conversion">
+			<div className="space-y-3">
+				{stages.map((s) => {
+					const pct = (s.value / maxVal) * 100;
+					const base = stages[0]?.value ?? 1;
+					const rate = base > 0 ? ((s.value / base) * 100).toFixed(2) : "0";
+					return (
+						<div key={s.name}>
+							<div className="flex items-center justify-between mb-1">
+								<span className="text-xs font-medium text-[var(--foreground)]">{s.name}</span>
+								<span className="text-xs text-[var(--muted-foreground)]">{s.value.toLocaleString()} ({rate}%)</span>
+							</div>
+							<div className="h-8 w-full rounded bg-[var(--muted)]">
+								<div className="h-full rounded transition-all" style={{ width: `${pct}%`, backgroundColor: s.fill }} />
+							</div>
+						</div>
+					);
+				})}
+			</div>
+		</ChartCard>
+	);
+}
+
+// ── CPA Over Time ────────────────────────────────────────────────────────
+
+interface SpendChartForCPA { labels: string[]; datasets: Record<string, number[]>; }
+
+export function CPAOverTimeChart({ data, conversions }: { data: SpendChartForCPA | undefined; conversions?: number }) {
+	if (!data?.labels?.length) return <EmptyChart message="No CPA data" />;
+
+	const chartData = data.labels.map((date, i) => {
+		const totalSpend = Object.values(data.datasets).reduce((s, arr) => s + (arr[i] ?? 0), 0);
+		// Approximate daily conversions based on ratio
+		const totalConv = conversions && data.labels.length > 0 ? conversions / data.labels.length : 1;
+		const cpa = totalConv > 0 ? totalSpend / Math.max(1, totalConv) : 0;
+		return { date: formatDate(date), cpa };
+	});
+
+	return (
+		<ChartCard title="CPA Over Time" subtitle="Cost per acquisition trend">
+			<ResponsiveContainer width="100%" height={240}>
+				<AreaChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+					<defs>
+						<linearGradient id="fill-cpa" x1="0" y1="0" x2="0" y2="1">
+							<stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.15} />
+							<stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+						</linearGradient>
+					</defs>
+					<CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+					<XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
+					<YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false}
+						tickFormatter={(v: number) => `€${v.toFixed(0)}`} />
+					<Tooltip content={<CurrencyTooltip />} />
+					<Area type="monotone" dataKey="cpa" stroke="#8b5cf6" strokeWidth={2} fill="url(#fill-cpa)" dot={false} name="CPA" />
+				</AreaChart>
+			</ResponsiveContainer>
+		</ChartCard>
+	);
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────
 
 function ChartCard({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {

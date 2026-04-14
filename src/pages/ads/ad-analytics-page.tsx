@@ -7,7 +7,8 @@ import { apiClient } from "@/lib/api-client";
 import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
 import { useAdContext } from "@/pages/ad-manager/ad-context";
 import { PlatformIcon } from "@/pages/social/platform-icon";
-import { AdSpendChart, RevenueVsSpendChart, ROASByCampaignChart, SpendByPlatformChart } from "@/pages/ad-manager/ad-charts";
+import { AdSpendChart, RevenueVsSpendChart, ROASByCampaignChart, SpendByPlatformChart, ConversionFunnelChart, CPAOverTimeChart } from "@/pages/ad-manager/ad-charts";
+import { useAdSets } from "@/api/ad-manager/ad-sets";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -34,7 +35,7 @@ function fmt(n: number): string {
 	return n.toLocaleString();
 }
 
-const TABS = ["Overview", "Campaigns", "Placements"] as const;
+const TABS = ["Overview", "Campaigns", "A/B Tests", "Placements"] as const;
 
 export function AdAnalyticsPage() {
 	const { data, isLoading, refetch } = useAdAnalytics();
@@ -71,6 +72,8 @@ export function AdAnalyticsPage() {
 				<OverviewTab summary={s} data={data} />
 			) : tab === "Campaigns" ? (
 				<CampaignsTab />
+			) : tab === "A/B Tests" ? (
+				<ABTestsTab />
 			) : (
 				<PlacementsTab data={data} />
 			)}
@@ -106,6 +109,12 @@ function OverviewTab({ summary: s, data }: { summary: any; data: any }) {
 			</div>
 
 			{/* Charts Row 2 */}
+			<div className="grid gap-6 lg:grid-cols-2">
+				<ConversionFunnelChart data={{ impressions: Number(s.impressions ?? 0), clicks: Number(s.clicks ?? 0), conversions: Number(s.conversions ?? 0) }} />
+				<CPAOverTimeChart data={data?.spend_chart} conversions={Number(s.conversions ?? 0)} />
+			</div>
+
+			{/* Charts Row 3 */}
 			<div className="grid gap-6 lg:grid-cols-2">
 				<AdSpendChart data={data?.spend_chart} />
 				<SpendByPlatformChart platforms={data?.by_platform ?? []} />
@@ -220,6 +229,101 @@ function PlacementsTab({ data }: { data: any }) {
 			</div>
 			<SpendByPlatformChart platforms={platforms} />
 		</>
+	);
+}
+
+function ABTestsTab() {
+	const { data: adSetData } = useAdSets();
+	const adSets = (adSetData?.ad_sets ?? []) as any[];
+
+	// Find campaigns with 2+ ad sets for A/B comparison
+	const campaignAdSets: Record<string, any[]> = {};
+	for (const s of adSets) {
+		const key = s.campaign_name || "Unknown";
+		if (!campaignAdSets[key]) campaignAdSets[key] = [];
+		campaignAdSets[key].push(s);
+	}
+	const tests = Object.entries(campaignAdSets).filter(([, sets]) => sets.length >= 2);
+
+	if (tests.length === 0) {
+		return (
+			<Card><CardContent className="flex flex-col items-center gap-3 py-16">
+				<BarChart3 size={40} className="text-[var(--muted-foreground)]" />
+				<p className="text-sm font-medium text-[var(--foreground)]">No A/B tests found</p>
+				<p className="text-xs text-[var(--muted-foreground)]">Create campaigns with 2+ ad sets to compare performance.</p>
+			</CardContent></Card>
+		);
+	}
+
+	return (
+		<div className="space-y-6">
+			{tests.map(([campaignName, sets]) => {
+				// Score each variant
+				const scored = sets.map((s: any) => {
+					const convRate = Number(s.clicks) > 0 ? (Number(s.conversions ?? 0) / Number(s.clicks)) * 100 : 0;
+					const ctr = Number(s.impressions) > 0 ? (Number(s.clicks) / Number(s.impressions)) * 100 : 0;
+					const cpa = Number(s.conversions ?? 0) > 0 ? Number(s.spent) / Number(s.conversions) : 999;
+					return { ...s, convRate, ctr_calc: ctr, cpa_calc: cpa, score: convRate * 10 + ctr };
+				}).sort((a: any, b: any) => b.score - a.score);
+
+				const winner = scored[0];
+				const totalImpr = scored.reduce((s: number, v: any) => s + Number(v.impressions ?? 0), 0);
+				const confidence = totalImpr > 10000 ? "High" : totalImpr > 1000 ? "Medium" : "Low";
+
+				return (
+					<Card key={campaignName}>
+						<div className="px-6 py-4 border-b border-[var(--border)]">
+							<h3 className="text-sm font-semibold text-[var(--foreground)]">{campaignName}</h3>
+							<p className="text-xs text-[var(--muted-foreground)]">{sets.length} variants</p>
+						</div>
+						<CardContent className="p-5">
+							{/* Summary cards */}
+							<div className="grid grid-cols-3 gap-4 mb-5">
+								<div className="rounded-lg border border-[var(--border)] p-3 text-center">
+									<p className="text-[10px] text-[var(--muted-foreground)] uppercase">Confidence</p>
+									<p className={`text-lg font-bold ${confidence === "High" ? "text-emerald-600" : confidence === "Medium" ? "text-amber-600" : "text-gray-500"}`}>{confidence}</p>
+								</div>
+								<div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-center">
+									<p className="text-[10px] text-emerald-600 uppercase">Winner</p>
+									<p className="text-sm font-bold text-emerald-700 truncate">{winner?.name ?? "—"}</p>
+								</div>
+								<div className="rounded-lg border border-[var(--border)] p-3 text-center">
+									<p className="text-[10px] text-[var(--muted-foreground)] uppercase">Total Impressions</p>
+									<p className="text-lg font-bold text-[var(--foreground)]">{totalImpr.toLocaleString()}</p>
+								</div>
+							</div>
+							{/* Variant table */}
+							<table className="w-full text-xs">
+								<thead>
+									<tr className="border-b border-[var(--border)] text-left text-[var(--muted-foreground)]">
+										<th className="py-2 pr-3 font-medium">Variant</th>
+										<th className="py-2 pr-3 font-medium text-right">Impressions</th>
+										<th className="py-2 pr-3 font-medium text-right">CTR</th>
+										<th className="py-2 pr-3 font-medium text-right">Conv. Rate</th>
+										<th className="py-2 pr-3 font-medium text-right">CPA</th>
+										<th className="py-2 font-medium text-right">Score</th>
+									</tr>
+								</thead>
+								<tbody>
+									{scored.map((v: any) => (
+										<tr key={v.id} className={`border-b border-[var(--border)] last:border-0 ${v.id === winner?.id ? "bg-emerald-50" : ""}`}>
+											<td className="py-2 pr-3 font-medium text-[var(--foreground)]">
+												{v.name} {v.id === winner?.id && <span className="text-emerald-600 text-[10px] ml-1">★ Winner</span>}
+											</td>
+											<td className="py-2 pr-3 text-right">{Number(v.impressions).toLocaleString()}</td>
+											<td className="py-2 pr-3 text-right">{v.ctr_calc.toFixed(2)}%</td>
+											<td className="py-2 pr-3 text-right">{v.convRate.toFixed(2)}%</td>
+											<td className="py-2 pr-3 text-right font-mono">€{v.cpa_calc < 999 ? v.cpa_calc.toFixed(2) : "—"}</td>
+											<td className="py-2 text-right font-bold">{v.score.toFixed(1)}</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</CardContent>
+					</Card>
+				);
+			})}
+		</div>
 	);
 }
 

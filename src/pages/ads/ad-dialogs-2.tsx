@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { AlertTriangle, Rocket } from "lucide-react";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 
@@ -133,6 +135,135 @@ export function DisconnectDialog({ open, onClose, platformName, onConfirm, loadi
 					<Button variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
 					<Button variant="destructive" onClick={onConfirm} disabled={loading}>
 						{loading ? "Disconnecting..." : "Disconnect"}
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}
+
+// ── Create Ad Set ────────────────────────────────────────────────────────
+
+interface CreateAdSetDialogProps extends DialogProps {
+	campaigns: { id: number; name: string }[];
+	onConfirm: (data: { name: string; campaign_id: number; budget_amount: number; bid_strategy: string }) => void;
+	loading?: boolean;
+}
+
+export function CreateAdSetDialog({ open, onClose, campaigns, onConfirm, loading }: CreateAdSetDialogProps) {
+	const [name, setName] = useState("");
+	const [campaignId, setCampaignId] = useState(0);
+	const [budget, setBudget] = useState(10);
+	const [bidStrategy, setBidStrategy] = useState("automatic");
+
+	return (
+		<Dialog open={open} onOpenChange={onClose}>
+			<DialogContent className="max-w-md">
+				<DialogHeader>
+					<DialogTitle>New Ad Set</DialogTitle>
+					<DialogDescription>Create a new ad set within an existing campaign.</DialogDescription>
+				</DialogHeader>
+				<div className="space-y-4 py-3">
+					<div>
+						<label className="text-sm font-medium text-[var(--foreground)]">Campaign *</label>
+						<select value={campaignId} onChange={(e) => setCampaignId(Number(e.target.value))}
+							className="mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm">
+							<option value={0}>Select campaign...</option>
+							{campaigns.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+						</select>
+					</div>
+					<div>
+						<label className="text-sm font-medium text-[var(--foreground)]">Ad Set Name *</label>
+						<Input value={name} onChange={(e) => setName(e.target.value)} maxLength={255} placeholder="e.g. Men 25-34 Interest" className="mt-1" />
+					</div>
+					<div className="grid grid-cols-2 gap-3">
+						<div>
+							<label className="text-sm font-medium text-[var(--foreground)]">Budget (€)</label>
+							<Input type="number" min={1} step={0.01} value={budget} onChange={(e) => setBudget(Number(e.target.value))} className="mt-1" />
+						</div>
+						<div>
+							<label className="text-sm font-medium text-[var(--foreground)]">Bid Strategy</label>
+							<select value={bidStrategy} onChange={(e) => setBidStrategy(e.target.value)}
+								className="mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm">
+								<option value="automatic">Automatic</option>
+								<option value="lowest_cost">Lowest Cost</option>
+								<option value="cost_cap">Cost Cap</option>
+								<option value="bid_cap">Bid Cap</option>
+							</select>
+						</div>
+					</div>
+				</div>
+				<DialogFooter>
+					<Button variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
+					<Button onClick={() => onConfirm({ name: name.trim(), campaign_id: campaignId, budget_amount: budget, bid_strategy: bidStrategy })}
+						disabled={loading || !name.trim() || !campaignId}>
+						{loading ? "Creating..." : "Create Ad Set"}
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}
+
+// ── Create Ad ────────────────────────────────────────────────────────────
+
+interface CreateAdDialogProps extends DialogProps {
+	adSets: { id: number; name: string }[];
+	onConfirm: (data: { name: string; ad_set_id: number; format: string; headline: string; destination_url: string }) => void;
+	loading?: boolean;
+}
+
+export function CreateAdDialog({ open, onClose, adSets, onConfirm, loading }: CreateAdDialogProps) {
+	const [name, setName] = useState("");
+	const [adSetId, setAdSetId] = useState(0);
+	const [format, setFormat] = useState("image");
+	const [headline, setHeadline] = useState("");
+	const [url, setUrl] = useState("");
+
+	return (
+		<Dialog open={open} onOpenChange={onClose}>
+			<DialogContent className="max-w-md">
+				<DialogHeader>
+					<DialogTitle>Create Ad</DialogTitle>
+					<DialogDescription>Create a new ad within an existing ad set.</DialogDescription>
+				</DialogHeader>
+				<div className="space-y-4 py-3">
+					<div>
+						<label className="text-sm font-medium text-[var(--foreground)]">Ad Set *</label>
+						<select value={adSetId} onChange={(e) => setAdSetId(Number(e.target.value))}
+							className="mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm">
+							<option value={0}>Select ad set...</option>
+							{adSets.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+						</select>
+					</div>
+					<div>
+						<label className="text-sm font-medium text-[var(--foreground)]">Ad Name *</label>
+						<Input value={name} onChange={(e) => setName(e.target.value)} maxLength={255} placeholder="e.g. Summer Sale - Image A" className="mt-1" />
+					</div>
+					<div>
+						<label className="text-sm font-medium text-[var(--foreground)]">Format</label>
+						<select value={format} onChange={(e) => setFormat(e.target.value)}
+							className="mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm">
+							<option value="image">Image</option>
+							<option value="video">Video</option>
+							<option value="carousel">Carousel</option>
+							<option value="text">Text</option>
+						</select>
+					</div>
+					<div>
+						<label className="text-sm font-medium text-[var(--foreground)]">Headline</label>
+						<Input value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={40} placeholder="Your headline here" className="mt-1" />
+					</div>
+					<div>
+						<label className="text-sm font-medium text-[var(--foreground)]">Destination URL</label>
+						<Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." className="mt-1" />
+					</div>
+				</div>
+				<DialogFooter>
+					<Button variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
+					<Button onClick={() => onConfirm({ name: name.trim(), ad_set_id: adSetId, format, headline, destination_url: url })}
+						disabled={loading || !name.trim() || !adSetId}>
+						{loading ? "Creating..." : "Create Ad"}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

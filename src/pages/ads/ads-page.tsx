@@ -10,6 +10,11 @@ import { useAdAction2 } from "@/api/ad-manager/mutations";
 import { DeleteDialog, PauseDialog } from "./ad-dialogs";
 import { useSort } from "./use-sort";
 import { SortableHeader } from "./sortable-header";
+import { CreateAdDialog } from "./ad-dialogs-2";
+import { useAdSets } from "@/api/ad-manager/ad-sets";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
+import { toast } from "sonner";
 
 const FORMAT_TABS = ["All", "Image", "Video", "Carousel", "Text"] as const;
 
@@ -18,6 +23,14 @@ export function AdsPage() {
 	const [tab, setTab] = useState<string>("All");
 	const [search, setSearch] = useState("");
 	const [selected, setSelected] = useState<number | null>(null);
+	const [showCreate, setShowCreate] = useState(false);
+	const { data: adSetData } = useAdSets();
+	const qc = useQueryClient();
+	const createMutation = useMutation({
+		mutationFn: (body: Record<string, unknown>) => apiClient.post<{ created?: boolean }>("/api/spa/ad-manager/ads", { action: "create", ...body }),
+		onSuccess: () => { toast.success("Ad created"); qc.invalidateQueries({ queryKey: ["ad-manager", "ads"] }); setShowCreate(false); },
+		onError: (e: Error) => toast.error(e.message),
+	});
 
 	const filtered = (data?.ads ?? [])
 		.filter((a) => tab === "All" || a.format.toLowerCase() === tab.toLowerCase())
@@ -34,7 +47,7 @@ export function AdsPage() {
 					<h1 className="text-2xl font-bold text-[var(--foreground)]">Ads</h1>
 					<p className="text-sm text-[var(--muted-foreground)]">Manage individual ads across all campaigns and ad sets / ad groups.</p>
 				</div>
-				<Button size="sm" className="bg-[var(--sq-primary)]"><Plus size={14} /><span className="ml-1.5">Create Ad</span></Button>
+				<Button size="sm" className="bg-[var(--sq-primary)]" onClick={() => setShowCreate(true)}><Plus size={14} /><span className="ml-1.5">Create Ad</span></Button>
 			</div>
 
 			<div className="flex items-center gap-4">
@@ -131,6 +144,9 @@ export function AdsPage() {
 					</Card>
 				)}
 			</div>
+			<CreateAdDialog open={showCreate} onClose={() => setShowCreate(false)}
+				adSets={(adSetData?.ad_sets ?? []).map((s) => ({ id: s.id, name: s.name }))}
+				onConfirm={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
 		</div>
 	);
 }
