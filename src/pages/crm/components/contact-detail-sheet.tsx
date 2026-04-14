@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { TIMEZONES } from "@/lib/timezones";
 import { Mail, Phone, Building2, Briefcase, Save, Tag, X, Plus, Camera, Globe, User } from "lucide-react";
 
 const STATUSES: { value: string; label: string; style: string }[] = [
@@ -36,13 +37,7 @@ const CONTACT_TYPES = [
 	{ value: "other", label: "Other" },
 ];
 
-const TIMEZONES = [
-	"none", "UTC", "US/Eastern", "US/Central", "US/Mountain", "US/Pacific",
-	"Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Athens",
-	"Europe/Moscow", "Asia/Dubai", "Asia/Kolkata", "Asia/Shanghai",
-	"Asia/Tokyo", "Asia/Singapore", "Australia/Sydney",
-	"Pacific/Auckland", "America/Sao_Paulo", "Africa/Cairo", "Africa/Johannesburg",
-];
+const ALL_TIMEZONES = ["none", ...TIMEZONES];
 
 interface Props {
 	contact: ApiContact | null;
@@ -54,17 +49,20 @@ export function ContactDetailSheet({ contact, onClose }: Props) {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const [editing, setEditing] = useState(false);
+	const [showSecEmail, setShowSecEmail] = useState(false);
 	const [f, setF] = useState({ firstName: "", lastName: "", email: "", secondaryEmail: "", phone: "", phoneCode: "+1", phoneType: "mobile", company: "", role: "", contactType: "", timezone: "", avatar: "" });
 	const [newTag, setNewTag] = useState("");
 
 	function startEditing() {
 		if (!contact) return;
 		const phoneParts = (contact.phone || "").match(/^(\+\d{1,4})\s+(.*)$/);
+		const secEmail = contact.secondary_email && contact.secondary_email !== "0" ? contact.secondary_email : "";
+		setShowSecEmail(secEmail !== "");
 		setF({
 			firstName: contact.first_name || contact.name.split(" ")[0] || "",
 			lastName: contact.last_name || contact.name.split(" ").slice(1).join(" ") || "",
 			email: contact.email,
-			secondaryEmail: contact.secondary_email || "",
+			secondaryEmail: secEmail,
 			phone: phoneParts?.[2] || contact.phone || "",
 			phoneCode: contact.phone_country_code || phoneParts?.[1] || "+1",
 			phoneType: contact.phone_type || "mobile",
@@ -139,7 +137,7 @@ export function ContactDetailSheet({ contact, onClose }: Props) {
 						<SheetHeader>
 							<div className="flex items-center gap-3">
 								<div className="relative w-12 h-12 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-lg font-semibold overflow-hidden">
-									{contact.avatar ? (
+									{contact.avatar && contact.avatar.length > 2 ? (
 										<img src={contact.avatar} alt="" className="w-full h-full object-cover" />
 									) : (
 										contact.initials
@@ -188,7 +186,7 @@ export function ContactDetailSheet({ contact, onClose }: Props) {
 						{!editing ? (
 							<div className="space-y-3">
 								<InfoRow icon={<Mail className="w-4 h-4" />} label="Email" value={contact.email} />
-								{contact.secondary_email && <InfoRow icon={<Mail className="w-4 h-4" />} label="Secondary Email" value={contact.secondary_email} />}
+								{contact.secondary_email && contact.secondary_email !== "0" && <InfoRow icon={<Mail className="w-4 h-4" />} label="Secondary Email" value={contact.secondary_email} />}
 								<InfoRow icon={<Phone className="w-4 h-4" />} label={`Phone (${contact.phone_type || "mobile"})`} value={contact.phone || "N/A"} prefix={phoneFlag} />
 								<InfoRow icon={<Building2 className="w-4 h-4" />} label="Company" value={contact.company} />
 								<InfoRow icon={<Briefcase className="w-4 h-4" />} label="Role" value={contact.role || "N/A"} />
@@ -216,7 +214,19 @@ export function ContactDetailSheet({ contact, onClose }: Props) {
 								</div>
 								{/* Email */}
 								<div className="space-y-1"><Label className="text-xs">Email</Label><Input value={f.email} onChange={(e) => setF((p) => ({ ...p, email: e.target.value }))} /></div>
-								<div className="space-y-1"><Label className="text-xs">Secondary Email</Label><Input value={f.secondaryEmail} onChange={(e) => setF((p) => ({ ...p, secondaryEmail: e.target.value }))} placeholder="Optional" /></div>
+								{showSecEmail ? (
+									<div className="space-y-1"><Label className="text-xs">Secondary Email</Label><Input value={f.secondaryEmail} onChange={(e) => setF((p) => ({ ...p, secondaryEmail: e.target.value }))} placeholder="secondary@example.com" /></div>
+								) : (
+									<button type="button" onClick={() => {
+										if (!f.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) {
+											toast.error("Please enter a valid email before adding another.");
+											return;
+										}
+										setShowSecEmail(true);
+									}} className="flex items-center gap-1 text-xs text-[var(--sq-primary)] hover:underline">
+										<Plus className="w-3 h-3" /> Add email
+									</button>
+								)}
 								{/* Phone */}
 								<div className="space-y-1">
 									<Label className="text-xs">Phone</Label>
@@ -254,7 +264,7 @@ export function ContactDetailSheet({ contact, onClose }: Props) {
 										<Label className="text-xs">Timezone</Label>
 										<Select value={f.timezone} onValueChange={(v) => setF((p) => ({ ...p, timezone: v }))}>
 											<SelectTrigger className="h-9"><SelectValue placeholder="Select" /></SelectTrigger>
-											<SelectContent className="max-h-[280px]">{TIMEZONES.map((tz) => <SelectItem key={tz} value={tz}>{tz === "none" ? "None" : tz}</SelectItem>)}</SelectContent>
+											<SelectContent className="max-h-[280px]">{ALL_TIMEZONES.map((tz) => <SelectItem key={tz} value={tz}>{tz === "none" ? "None" : tz}</SelectItem>)}</SelectContent>
 										</Select>
 									</div>
 								</div>

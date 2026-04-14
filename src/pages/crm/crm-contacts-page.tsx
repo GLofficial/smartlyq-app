@@ -256,7 +256,7 @@ export function CrmContactsPage() {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-xs font-semibold shrink-0 overflow-hidden">
-                        {contact.avatar ? (
+                        {contact.avatar && contact.avatar.length > 2 ? (
                           <img src={contact.avatar} alt="" className="w-full h-full object-cover" />
                         ) : (
                           contact.initials

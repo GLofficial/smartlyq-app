@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { COUNTRY_CODES } from "@/lib/country-codes";
+import { TIMEZONES } from "@/lib/timezones";
 import { Camera, Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -26,14 +27,6 @@ const CONTACT_TYPES = [
 	{ value: "other", label: "Other" },
 ];
 
-const TIMEZONES = [
-	"UTC", "US/Eastern", "US/Central", "US/Mountain", "US/Pacific",
-	"Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Athens",
-	"Europe/Moscow", "Asia/Dubai", "Asia/Kolkata", "Asia/Shanghai",
-	"Asia/Tokyo", "Asia/Singapore", "Australia/Sydney",
-	"Pacific/Auckland", "America/Sao_Paulo", "America/Buenos_Aires",
-	"Africa/Cairo", "Africa/Johannesburg",
-];
 
 interface Props {
 	open: boolean;
@@ -70,9 +63,10 @@ export function ContactCreateDialog({ open, onOpenChange }: Props) {
 	function validate(): boolean {
 		const e: Record<string, string> = {};
 		if (!firstName.trim()) e.first_name = "First name is required.";
-		if (!email.trim()) e.email = "Email is required.";
-		else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Invalid email.";
-		if (secondaryEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(secondaryEmail)) e.secondary_email = "Invalid email.";
+		if (!email.trim()) e.email = "Please enter an email address.";
+		else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Please enter a valid email address.";
+		if (secondaryEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(secondaryEmail)) e.secondary_email = "Please enter a valid email address.";
+		if (phone.trim() && !/^[\d\s\-().+]{4,20}$/.test(phone.trim())) e.phone = "Please enter a valid phone number.";
 		if (!company.trim()) e.company = "Company is required.";
 		setErrors(e);
 		return Object.keys(e).length === 0;
@@ -167,7 +161,13 @@ export function ContactCreateDialog({ open, onOpenChange }: Props) {
 							<Input type="email" placeholder="secondary@example.com" value={secondaryEmail} onChange={(e) => setSecondaryEmail(e.target.value)} />
 						</Field>
 					) : (
-						<button type="button" onClick={() => setShowSecondaryEmail(true)} className="flex items-center gap-1 text-xs text-[var(--sq-primary)] hover:underline">
+						<button type="button" onClick={() => {
+							if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+								setErrors((p) => ({ ...p, email: "Please enter a valid email before adding another." }));
+								return;
+							}
+							setShowSecondaryEmail(true);
+						}} className="flex items-center gap-1 text-xs text-[var(--sq-primary)] hover:underline">
 							<Plus size={12} /> Add email
 						</button>
 					)}
@@ -206,6 +206,7 @@ export function ContactCreateDialog({ open, onOpenChange }: Props) {
 							</Select>
 							<Input placeholder="Enter phone number" value={phone} onChange={(e) => setPhone(e.target.value)} />
 						</div>
+						{errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
 					</div>
 
 					{/* Company + Role */}
