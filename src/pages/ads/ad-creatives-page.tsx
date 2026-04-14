@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Image, Search, Upload, FileText } from "lucide-react";
 import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
 import { apiClient } from "@/lib/api-client";
+import { UploadCreativeDialog } from "./ad-dialogs";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 function useAdCreatives() {
 	return useQuery({
@@ -26,6 +29,13 @@ export function AdCreativesPage() {
 	const { data, isLoading } = useAdCreatives();
 	const [tab, setTab] = useState<string>("All");
 	const [search, setSearch] = useState("");
+	const [showUpload, setShowUpload] = useState(false);
+	const qc = useQueryClient();
+	const uploadMutation = useMutation({
+		mutationFn: (body: Record<string, unknown>) => apiClient.post<{ created?: boolean }>("/api/spa/ad-manager/creatives", { action: "create", ...body }),
+		onSuccess: () => { toast.success("Creative uploaded"); qc.invalidateQueries({ queryKey: ["ad-manager", "creatives"] }); setShowUpload(false); },
+		onError: (e: Error) => toast.error(e.message),
+	});
 
 	const creatives = (data?.creatives ?? [])
 		.filter((c) => tab === "All" || c.format.toLowerCase() === tab.toLowerCase())
@@ -41,7 +51,7 @@ export function AdCreativesPage() {
 				</div>
 				<div className="flex gap-2">
 					<Button variant="outline" size="sm"><FileText size={14} /><span className="ml-1.5">Size Guide</span></Button>
-					<Button size="sm" className="bg-[var(--sq-primary)]"><Upload size={14} /><span className="ml-1.5">Upload Creative</span></Button>
+					<Button size="sm" className="bg-[var(--sq-primary)]" onClick={() => setShowUpload(true)}><Upload size={14} /><span className="ml-1.5">Upload Creative</span></Button>
 				</div>
 			</div>
 
@@ -100,6 +110,9 @@ export function AdCreativesPage() {
 					))}
 				</div>
 			)}
+
+			<UploadCreativeDialog open={showUpload} onClose={() => setShowUpload(false)}
+				onConfirm={(d) => uploadMutation.mutate(d)} loading={uploadMutation.isPending} />
 		</div>
 	);
 }

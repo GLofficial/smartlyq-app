@@ -7,6 +7,9 @@ import { Target, Search, Plus, Users, Globe, RotateCcw, UserPlus, RefreshCw, Dow
 import { apiClient } from "@/lib/api-client";
 import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
 import { PlatformIcon } from "@/pages/social/platform-icon";
+import { CreateAudienceDialog } from "./ad-dialogs";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 function useAdAudiences() {
 	return useQuery({
@@ -33,6 +36,13 @@ export function AdAudiencesPage() {
 	const { data, isLoading, refetch } = useAdAudiences();
 	const [tab, setTab] = useState<string>("All");
 	const [search, setSearch] = useState("");
+	const [showCreate, setShowCreate] = useState(false);
+	const qc = useQueryClient();
+	const createMutation = useMutation({
+		mutationFn: (body: Record<string, unknown>) => apiClient.post<{ created?: boolean }>("/api/spa/ad-manager/audiences", { action: "create", ...body }),
+		onSuccess: () => { toast.success("Audience created"); qc.invalidateQueries({ queryKey: ["ad-manager", "audiences"] }); setShowCreate(false); },
+		onError: (e: Error) => toast.error(e.message),
+	});
 
 	const audiences = (data?.audiences ?? [])
 		.filter((a) => tab === "All" || a.platform.toLowerCase().includes(tab.toLowerCase()))
@@ -49,7 +59,7 @@ export function AdAudiencesPage() {
 				<div className="flex gap-2">
 					<Button variant="outline" size="sm" onClick={() => refetch()}><RefreshCw size={14} /><span className="ml-1.5">Refresh</span></Button>
 					<Button variant="outline" size="sm"><Download size={14} /><span className="ml-1.5">Export</span></Button>
-					<Button size="sm" className="bg-[var(--sq-primary)]"><Plus size={14} /><span className="ml-1.5">Create Audience</span></Button>
+					<Button size="sm" className="bg-[var(--sq-primary)]" onClick={() => setShowCreate(true)}><Plus size={14} /><span className="ml-1.5">Create Audience</span></Button>
 				</div>
 			</div>
 
@@ -135,6 +145,9 @@ export function AdAudiencesPage() {
 					</table>
 				</CardContent></Card>
 			)}
+
+			<CreateAudienceDialog open={showCreate} onClose={() => setShowCreate(false)}
+				onConfirm={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
 		</div>
 	);
 }
