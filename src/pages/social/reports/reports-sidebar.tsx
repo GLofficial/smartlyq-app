@@ -58,7 +58,7 @@ export function ReportsSidebar({ filters, onFiltersChange }: ReportsSidebarProps
 						<ChevronDown size={14} className={`text-[var(--muted-foreground)] transition-transform ${showPlatforms ? "rotate-180" : ""}`} />
 					</button>
 					{showPlatforms && (
-						<div className="mt-2 rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-lg p-3">
+						<div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-lg p-3">
 							<p className="text-[10px] font-medium text-[var(--muted-foreground)] uppercase tracking-wider mb-2">Platform</p>
 							<div className="grid grid-cols-2 gap-1">
 								{PLATFORMS.map((p) => {
@@ -115,9 +115,13 @@ export function ReportsSidebar({ filters, onFiltersChange }: ReportsSidebarProps
 								className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2.5 text-left transition-colors ${
 									filters.accountId === a.id ? "bg-[var(--sq-primary)]/10" : "hover:bg-[var(--muted)]"
 								}`}>
-								<div className="h-7 w-7 rounded-full bg-[var(--muted)] flex items-center justify-center shrink-0">
-									<PlatformIcon platform={a.platform} size={14} />
-								</div>
+								{a.profile_picture ? (
+									<img src={a.profile_picture} alt="" className="h-7 w-7 rounded-full object-cover shrink-0" />
+								) : (
+									<div className="h-7 w-7 rounded-full bg-[var(--muted)] flex items-center justify-center shrink-0">
+										<PlatformIcon platform={a.platform} size={14} />
+									</div>
+								)}
 								<div className="flex-1 min-w-0">
 									<p className="text-xs font-medium text-[var(--foreground)] truncate">{a.account_name || a.account_username}</p>
 									{a.needs_reconnect && (
