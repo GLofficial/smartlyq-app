@@ -56,6 +56,9 @@ export interface Contact {
   phone: string;
   phone_type: string;
   phone_country_code: string;
+  secondary_phone: string;
+  secondary_phone_type: string;
+  secondary_phone_country_code: string;
   role: string;
   status: "active" | "prospect" | "in_progress" | "lost";
   contact_type: string;

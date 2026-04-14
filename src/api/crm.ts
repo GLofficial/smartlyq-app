@@ -70,6 +70,9 @@ export interface ApiContact {
   phone: string;
   phone_type: string;
   phone_country_code: string;
+  secondary_phone: string;
+  secondary_phone_type: string;
+  secondary_phone_country_code: string;
   role: string;
   status: string;
   contact_type: string;
@@ -257,6 +260,18 @@ export function useCrmContactSave() {
     mutationFn: (body: Partial<ApiContact>) =>
       apiClient.post<ApiSaveResponse>("/api/spa/crm/contacts/save", body),
     onSuccess: () => { inv("contacts"); inv("dashboard"); },
+  });
+}
+
+export function useCrmContactAvatarUpload() {
+  return useMutation({
+    mutationFn: (data: { contactId: number; file: File }) => {
+      const fd = new FormData();
+      fd.append("contact_id", String(data.contactId));
+      fd.append("avatar", data.file);
+      return apiClient.upload<{ avatar_url: string }>("/api/spa/crm/contacts/avatar", fd);
+    },
+    onSuccess: () => inv("contacts"),
   });
 }
 

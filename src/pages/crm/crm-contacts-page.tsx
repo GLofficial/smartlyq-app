@@ -15,7 +15,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Trash2, ArrowUpDown, Building2, Loader2, Upload, Download, RotateCcw, Mail, Phone } from "lucide-react";
+import { Search, Plus, Trash2, ArrowUpDown, Building2, Loader2, Upload, Download, RotateCcw, Mail, Phone, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { ContactDetailSheet } from "./components/contact-detail-sheet";
 import { ContactCreateDialog } from "./components/contact-create-dialog";
@@ -55,7 +55,7 @@ export function CrmContactsPage() {
   const contacts = contactsData?.contacts ?? [];
 
   const [search, setSearch] = useState("");
-  const [searchField, setSearchField] = useState<"all" | "name" | "email" | "company">("all");
+  const [searchField, setSearchField] = useState<"all" | "name" | "email" | "company" | "tag">("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -78,11 +78,13 @@ export function CrmContactsPage() {
         if (searchField === "name") return c.name.toLowerCase().includes(q);
         if (searchField === "email") return c.email.toLowerCase().includes(q);
         if (searchField === "company") return c.company.toLowerCase().includes(q);
+        if (searchField === "tag") return c.tags.some((t) => t.toLowerCase().includes(q));
         return (
           c.name.toLowerCase().includes(q) ||
           c.email.toLowerCase().includes(q) ||
           c.company.toLowerCase().includes(q) ||
-          c.role.toLowerCase().includes(q)
+          c.role.toLowerCase().includes(q) ||
+          c.tags.some((t) => t.toLowerCase().includes(q))
         );
       });
     }
@@ -186,6 +188,7 @@ export function CrmContactsPage() {
             <SelectItem value="name">Name</SelectItem>
             <SelectItem value="email">Email</SelectItem>
             <SelectItem value="company">Company</SelectItem>
+            <SelectItem value="tag">Tag</SelectItem>
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -235,6 +238,7 @@ export function CrmContactsPage() {
                     Status <ArrowUpDown className="w-3.5 h-3.5" />
                   </button>
                 </TableHead>
+                <TableHead>Tags</TableHead>
                 <TableHead>Deals</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -242,7 +246,7 @@ export function CrmContactsPage() {
             <TableBody>
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-[var(--muted-foreground)]">
+                  <TableCell colSpan={9} className="text-center py-8 text-[var(--muted-foreground)]">
                     No contacts found.
                   </TableCell>
                 </TableRow>
@@ -300,6 +304,20 @@ export function CrmContactsPage() {
                     <Badge variant="outline" className={STATUS_STYLE[contact.status] ?? ""}>
                       {STATUS_LABEL[contact.status] ?? contact.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {contact.tags.length > 0 ? (
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {contact.tags.slice(0, 2).map((tag) => (
+                          <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">
+                            <Tag className="w-2.5 h-2.5 mr-0.5" />{tag}
+                          </Badge>
+                        ))}
+                        {contact.tags.length > 2 && (
+                          <span className="text-[10px] text-[var(--muted-foreground)] font-medium">+{contact.tags.length - 2}</span>
+                        )}
+                      </div>
+                    ) : <span className="text-xs text-[var(--muted-foreground)]">—</span>}
                   </TableCell>
                   <TableCell>
                     {contact.deal_count > 0 ? (
