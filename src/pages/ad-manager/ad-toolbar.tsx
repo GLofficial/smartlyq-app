@@ -3,12 +3,15 @@ import { Calendar, ChevronDown, Link2, Check } from "lucide-react";
 import { useAdSettings } from "@/api/ad-manager/settings";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { useAdContext } from "./ad-context";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const DATE_RANGES = [
 	{ label: "Last 7 Days", days: 7 },
 	{ label: "Last 14 Days", days: 14 },
 	{ label: "Last 30 Days", days: 30 },
 	{ label: "Last 90 Days", days: 90 },
+	{ label: "Custom Range", days: 0 },
 ] as const;
 
 export function AdToolbar() {
@@ -20,6 +23,8 @@ export function AdToolbar() {
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 	const [showAccounts, setShowAccounts] = useState(false);
 	const [showDates, setShowDates] = useState(false);
+	const [customFrom, setCustomFrom] = useState("");
+	const [customTo, setCustomTo] = useState("");
 	const accRef = useRef<HTMLDivElement>(null);
 	const dateRef = useRef<HTMLDivElement>(null);
 
@@ -116,13 +121,24 @@ export function AdToolbar() {
 						<ChevronDown size={14} className="text-[var(--muted-foreground)]" />
 					</button>
 					{showDates && (
-						<div className="absolute left-0 top-full mt-1 z-50 w-48 rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-lg py-1">
+						<div className="absolute left-0 top-full mt-1 z-50 w-64 rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-lg py-1">
 							{DATE_RANGES.map((r) => (
-								<button key={r.label} onClick={() => selectDateRange(r.days, r.label)}
+								<button key={r.label} onClick={() => { if (r.days > 0) selectDateRange(r.days, r.label); }}
 									className={`w-full text-left px-4 py-2 text-sm hover:bg-[var(--muted)] transition-colors ${
 										ctx.dateLabel === r.label ? "font-semibold text-[var(--foreground)]" : "text-[var(--muted-foreground)]"
 									}`}>{r.label}</button>
 							))}
+							<div className="border-t border-[var(--border)] px-4 py-3 space-y-2">
+								<div className="flex items-center gap-2">
+									<Input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="h-8 text-xs" />
+									<span className="text-xs text-[var(--muted-foreground)]">to</span>
+									<Input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="h-8 text-xs" />
+								</div>
+								<Button size="sm" className="w-full h-7 text-xs" disabled={!customFrom || !customTo}
+									onClick={() => { ctx.setDateRange(customFrom, customTo, `${customFrom} — ${customTo}`); setShowDates(false); }}>
+									Apply
+								</Button>
+							</div>
 						</div>
 					)}
 				</div>
