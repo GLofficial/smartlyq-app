@@ -54,21 +54,21 @@ export function AdminLayout() {
 								key={item.path}
 								to={item.path}
 								className={cn(
-									"flex items-center gap-2.5 rounded-md px-3 py-1.5 text-[13px] transition-colors",
+									"flex items-center gap-2.5 rounded-lg px-2 py-2 text-[14px] transition-colors",
 									active
 										? "bg-[color-mix(in_srgb,var(--sidebar-primary)_10%,transparent)] text-[var(--sidebar-primary)] font-medium"
 										: "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]",
 								)}
 							>
-								<item.icon size={15} />
+								<item.icon size={16} />
 								<span>{item.label}</span>
 							</Link>
 						);
 					})}
 				</nav>
 				<div className="border-t border-[var(--sidebar-border)] p-1.5">
-					<Link to="/" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]">
-						<ArrowLeft size={15} /> Back to App
+					<Link to="/" className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-[14px] text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]">
+						<ArrowLeft size={16} /> Back to App
 					</Link>
 				</div>
 			</aside>
