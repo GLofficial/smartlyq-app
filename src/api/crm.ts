@@ -65,11 +65,17 @@ export interface ApiContact {
   first_name: string;
   last_name: string;
   email: string;
+  secondary_email: string;
   company: string;
   phone: string;
+  phone_type: string;
+  phone_country_code: string;
   role: string;
   status: string;
+  contact_type: string;
+  timezone: string;
   initials: string;
+  avatar: string;
   tags: string[];
   deal_count: number;
   total_value: number;

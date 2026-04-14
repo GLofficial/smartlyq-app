@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import {
   useCrmContacts,
-  useCrmContactSave,
   useCrmContactDelete,
   exportCrmContacts,
   type ApiContact,
@@ -10,9 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -20,8 +17,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Plus, Trash2, ArrowUpDown, Building2, Loader2, Upload, Download, RotateCcw, Mail, Phone } from "lucide-react";
 import { toast } from "sonner";
-import { COUNTRY_CODES } from "@/lib/country-codes";
 import { ContactDetailSheet } from "./components/contact-detail-sheet";
+import { ContactCreateDialog } from "./components/contact-create-dialog";
 import { ContactImportDialog } from "./components/contact-import-dialog";
 import { DeletedContactsDialog } from "./components/deleted-contacts-dialog";
 
@@ -53,7 +50,6 @@ type SortDir = "asc" | "desc";
 
 export function CrmContactsPage() {
   const { data: contactsData, isLoading: contactsLoading } = useCrmContacts();
-  const saveContact = useCrmContactSave();
   const deleteContactMut = useCrmContactDelete();
 
   const contacts = contactsData?.contacts ?? [];
@@ -71,16 +67,6 @@ export function CrmContactsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [deletedOpen, setDeletedOpen] = useState(false);
 
-  // Create form
-  const [formFirstName, setFormFirstName] = useState("");
-  const [formLastName, setFormLastName] = useState("");
-  const [formEmail, setFormEmail] = useState("");
-  const [formCompany, setFormCompany] = useState("");
-  const [formPhoneCode, setFormPhoneCode] = useState("+1");
-  const [formPhone, setFormPhone] = useState("");
-  const [formRole, setFormRole] = useState("");
-  const [formStatus, setFormStatus] = useState<string>("prospect");
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // --- Filtering & sorting ---
   const filtered = useMemo(() => {
@@ -126,52 +112,6 @@ export function CrmContactsPage() {
     }
   }
 
-  // --- Validate & create ---
-  function validateForm(): boolean {
-    const errors: Record<string, string> = {};
-    if (!formFirstName.trim()) errors.first_name = "First name is required.";
-    if (!formLastName.trim()) errors.last_name = "Last name is required.";
-    if (!formEmail.trim()) errors.email = "Email is required.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formEmail)) errors.email = "Invalid email.";
-    if (!formCompany.trim()) errors.company = "Company is required.";
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  }
-
-  function handleCreate() {
-    if (!validateForm()) return;
-    saveContact.mutate(
-      {
-        first_name: formFirstName.trim(),
-        last_name: formLastName.trim(),
-        email: formEmail.trim(),
-        company: formCompany.trim(),
-        phone: formPhone.trim() ? `${formPhoneCode} ${formPhone.trim()}` : "",
-        role: formRole.trim(),
-        status: formStatus,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Contact created");
-          resetForm();
-          setCreateOpen(false);
-        },
-        onError: () => toast.error("Failed to create contact"),
-      },
-    );
-  }
-
-  function resetForm() {
-    setFormFirstName("");
-    setFormLastName("");
-    setFormEmail("");
-    setFormCompany("");
-    setFormPhoneCode("+1");
-    setFormPhone("");
-    setFormRole("");
-    setFormStatus("prospect");
-    setFormErrors({});
-  }
 
   function handleDelete() {
     if (!deleteTarget) return;
@@ -219,7 +159,7 @@ export function CrmContactsPage() {
             <RotateCcw className="w-4 h-4 mr-1.5" />
             Restore
           </Button>
-          <Button onClick={() => { resetForm(); setCreateOpen(true); }}>
+          <Button onClick={() => setCreateOpen(true)}>
             <Plus className="w-4 h-4 mr-1.5" />
             Add Contact
           </Button>
@@ -315,8 +255,12 @@ export function CrmContactsPage() {
                 >
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-xs font-semibold shrink-0">
-                        {contact.initials}
+                      <div className="w-8 h-8 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-xs font-semibold shrink-0 overflow-hidden">
+                        {contact.avatar ? (
+                          <img src={contact.avatar} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          contact.initials
+                        )}
                       </div>
                       <div className="min-w-0">
                         <div className="font-medium text-[var(--foreground)] truncate">
@@ -391,119 +335,7 @@ export function CrmContactsPage() {
       />
 
       {/* --- Create dialog --- */}
-      <Dialog open={createOpen} onOpenChange={(open) => { if (!open) setCreateOpen(false); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Contact</DialogTitle>
-            <DialogDescription>Add a new contact to your CRM.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>First Name *</Label>
-                <Input
-                  placeholder="First name"
-                  value={formFirstName}
-                  onChange={(e) => setFormFirstName(e.target.value)}
-                />
-                {formErrors.first_name && (
-                  <p className="text-xs text-red-500">{formErrors.first_name}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>Last Name *</Label>
-                <Input
-                  placeholder="Last name"
-                  value={formLastName}
-                  onChange={(e) => setFormLastName(e.target.value)}
-                />
-                {formErrors.last_name && (
-                  <p className="text-xs text-red-500">{formErrors.last_name}</p>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Email *</Label>
-                <Input
-                  type="email"
-                  placeholder="email@example.com"
-                  value={formEmail}
-                  onChange={(e) => setFormEmail(e.target.value)}
-                />
-                {formErrors.email && (
-                  <p className="text-xs text-red-500">{formErrors.email}</p>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Company *</Label>
-                <Input
-                  placeholder="Company name"
-                  value={formCompany}
-                  onChange={(e) => setFormCompany(e.target.value)}
-                />
-                {formErrors.company && (
-                  <p className="text-xs text-red-500">{formErrors.company}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>Phone</Label>
-                <div className="flex gap-1.5">
-                  <Select value={formPhoneCode} onValueChange={setFormPhoneCode}>
-                    <SelectTrigger className="w-[100px] shrink-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[280px]">
-                      {COUNTRY_CODES.map((cc) => (
-                        <SelectItem key={cc.code} value={cc.dial}>
-                          {cc.flag} {cc.dial} {cc.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    placeholder="555-0100"
-                    value={formPhone}
-                    onChange={(e) => setFormPhone(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Role</Label>
-                <Input
-                  placeholder="e.g. Marketing Director"
-                  value={formRole}
-                  onChange={(e) => setFormRole(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={formStatus} onValueChange={setFormStatus}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="prospect">Prospect</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="lost">Lost</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreate}>Add Contact</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ContactCreateDialog open={createOpen} onOpenChange={setCreateOpen} />
 
       {/* --- Delete dialog --- */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
