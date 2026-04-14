@@ -238,6 +238,12 @@ export function CrmContactsPage() {
                     Status <ArrowUpDown className="w-3.5 h-3.5" />
                   </button>
                 </TableHead>
+                <TableHead>
+                  <button onClick={() => toggleSort("created")} className="flex items-center gap-1 hover:text-[var(--foreground)] transition-colors">
+                    Created <ArrowUpDown className="w-3.5 h-3.5" />
+                  </button>
+                </TableHead>
+                <TableHead>Last Activity</TableHead>
                 <TableHead>Tags</TableHead>
                 <TableHead>Deals</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -246,7 +252,7 @@ export function CrmContactsPage() {
             <TableBody>
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-[var(--muted-foreground)]">
+                  <TableCell colSpan={11} className="text-center py-8 text-[var(--muted-foreground)]">
                     No contacts found.
                   </TableCell>
                 </TableRow>
@@ -304,6 +310,12 @@ export function CrmContactsPage() {
                     <Badge variant="outline" className={STATUS_STYLE[contact.status] ?? ""}>
                       {STATUS_LABEL[contact.status] ?? contact.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-[var(--muted-foreground)] whitespace-nowrap">
+                    {contact.created_at ? formatDate(contact.created_at) : "—"}
+                  </TableCell>
+                  <TableCell className="text-xs text-[var(--muted-foreground)] whitespace-nowrap">
+                    {contact.last_contacted_at ? timeAgo(contact.last_contacted_at) : "—"}
                   </TableCell>
                   <TableCell>
                     {contact.tags.length > 0 ? (
@@ -379,4 +391,28 @@ export function CrmContactsPage() {
       <DeletedContactsDialog open={deletedOpen} onOpenChange={setDeletedOpen} />
     </div>
   );
+}
+
+function formatDate(d: string): string {
+  try {
+    return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch { return d; }
+}
+
+function timeAgo(d: string): string {
+  try {
+    const diff = Date.now() - new Date(d).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return `${days}d ago`;
+    const weeks = Math.floor(days / 7);
+    if (weeks < 5) return `${weeks}w ago`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return `${months}mo ago`;
+    return `${Math.floor(months / 12)}y ago`;
+  } catch { return d; }
 }
