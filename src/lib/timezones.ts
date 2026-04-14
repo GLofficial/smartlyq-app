@@ -1,3 +1,23 @@
+/** Get GMT offset string for a timezone, e.g. "GMT+02:00" */
+export function getGmtOffset(tz: string): string {
+	try {
+		const now = new Date();
+		const fmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "shortOffset" });
+		const parts = fmt.formatToParts(now);
+		const offsetPart = parts.find((p) => p.type === "timeZoneName");
+		return offsetPart?.value ?? "";
+	} catch {
+		return "";
+	}
+}
+
+/** Format timezone for display: "GMT+02:00 Europe/Athens" */
+export function formatTimezone(tz: string): string {
+	if (tz === "none") return "None";
+	const offset = getGmtOffset(tz);
+	return offset ? `${offset} ${tz}` : tz;
+}
+
 export const TIMEZONES = [
 	// UTC
 	"UTC",

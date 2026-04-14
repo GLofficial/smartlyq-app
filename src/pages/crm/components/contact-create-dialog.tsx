@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { COUNTRY_CODES } from "@/lib/country-codes";
-import { TIMEZONES } from "@/lib/timezones";
+import { TIMEZONES, formatTimezone } from "@/lib/timezones";
 import { Camera, Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -251,7 +251,7 @@ export function ContactCreateDialog({ open, onOpenChange }: Props) {
 							<SelectContent className="max-h-[280px]">
 								<SelectItem value="none">None</SelectItem>
 								{TIMEZONES.map((tz) => (
-									<SelectItem key={tz} value={tz}>{tz}</SelectItem>
+									<SelectItem key={tz} value={tz}>{formatTimezone(tz)}</SelectItem>
 								))}
 							</SelectContent>
 						</Select>

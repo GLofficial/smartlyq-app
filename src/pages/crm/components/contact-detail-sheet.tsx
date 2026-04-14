@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useCrmContactSave, useCrmContactAvatarUpload, type ApiContact } from "@/api/crm";
 import { formatCurrency } from "@/lib/crm-data";
 import { COUNTRY_CODES } from "@/lib/country-codes";
-import { TIMEZONES } from "@/lib/timezones";
+import { TIMEZONES, formatTimezone } from "@/lib/timezones";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -223,7 +223,7 @@ export function ContactDetailSheet({ contact, onClose }: Props) {
 									<Label className="text-xs">Timezone</Label>
 									<Select value={f.timezone} onValueChange={(v) => set("timezone", v)}>
 										<SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-										<SelectContent className="max-h-[280px]">{ALL_TIMEZONES.map((tz) => <SelectItem key={tz} value={tz}>{tz === "none" ? "None" : tz}</SelectItem>)}</SelectContent>
+										<SelectContent className="max-h-[280px]">{ALL_TIMEZONES.map((tz) => <SelectItem key={tz} value={tz}>{formatTimezone(tz)}</SelectItem>)}</SelectContent>
 									</Select>
 								</div>
 							</div>
