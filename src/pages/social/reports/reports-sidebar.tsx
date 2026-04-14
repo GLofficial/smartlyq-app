@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { RefreshCw, AlertTriangle, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useSocialAccounts, type ReportFilters } from "@/api/social-reports";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 
@@ -27,6 +29,8 @@ interface ReportsSidebarProps {
 export function ReportsSidebar({ filters, onFiltersChange }: ReportsSidebarProps) {
 	const { data, isLoading, refetch } = useSocialAccounts();
 	const [showPlatforms, setShowPlatforms] = useState(false);
+	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
+	const accountsPath = wsHash ? `/w/${wsHash}/social-media/accounts` : "/social-media/accounts";
 	const accounts = data?.accounts ?? [];
 	const needsReconnect = data?.needs_reconnect_count ?? 0;
 
@@ -88,14 +92,14 @@ export function ReportsSidebar({ filters, onFiltersChange }: ReportsSidebarProps
 
 			{/* Reconnection Warning */}
 			{needsReconnect > 0 && (
-				<div className="mx-4 my-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3">
-					<AlertTriangle size={14} className="text-amber-600 mt-0.5 shrink-0" />
+				<Link to={accountsPath}
+					className="mx-4 my-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-gradient-to-r from-amber-400 to-orange-400 p-3 hover:from-amber-500 hover:to-orange-500 transition-colors">
+					<AlertTriangle size={14} className="text-white mt-0.5 shrink-0" />
 					<div>
-						<p className="text-xs font-semibold text-amber-800">{needsReconnect} account{needsReconnect > 1 ? "s" : ""} needs reconnecting.</p>
-						<p className="text-[10px] text-amber-700">Token expired or revoked.</p>
-						<a href="/my/social-media/accounts" className="text-[10px] font-medium text-amber-700 underline">Reconnect now</a>
+						<p className="text-xs font-semibold text-white">{needsReconnect} account{needsReconnect > 1 ? "s" : ""} needs reconnecting.</p>
+						<p className="text-[10px] text-white/90">Token expired or revoked. <span className="underline font-medium">Reconnect now</span></p>
 					</div>
-				</div>
+				</Link>
 			)}
 
 			{/* Account List */}
@@ -124,11 +128,13 @@ export function ReportsSidebar({ filters, onFiltersChange }: ReportsSidebarProps
 								)}
 								<div className="flex-1 min-w-0">
 									<p className="text-xs font-medium text-[var(--foreground)] truncate">{a.account_name || a.account_username}</p>
-									{a.needs_reconnect && (
-										<p className="text-[10px] text-red-500 font-medium">— Reconnect needed</p>
-									)}
 								</div>
-								<span className="text-[10px] text-[var(--muted-foreground)] capitalize shrink-0">{a.platform}</span>
+								{a.needs_reconnect ? (
+									<Link to={accountsPath} onClick={(e) => e.stopPropagation()}
+										className="text-[10px] text-red-500 font-medium hover:underline shrink-0">— Reconnect needed</Link>
+								) : (
+									<span className="text-[10px] text-[var(--muted-foreground)] capitalize shrink-0">{a.platform}</span>
+								)}
 							</button>
 						))}
 					</div>
