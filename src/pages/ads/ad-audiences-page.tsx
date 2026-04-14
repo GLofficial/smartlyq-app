@@ -8,8 +8,11 @@ import { apiClient } from "@/lib/api-client";
 import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { CreateAudienceDialog } from "./ad-dialogs";
+import { AudienceDetailsDialog } from "./ad-dialogs-2";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useSort } from "./use-sort";
+import { SortableHeader } from "./sortable-header";
 
 function useAdAudiences() {
 	return useQuery({
@@ -37,6 +40,7 @@ export function AdAudiencesPage() {
 	const [tab, setTab] = useState<string>("All");
 	const [search, setSearch] = useState("");
 	const [showCreate, setShowCreate] = useState(false);
+	const [selectedAudience, setSelectedAudience] = useState<any>(null);
 	const qc = useQueryClient();
 	const createMutation = useMutation({
 		mutationFn: (body: Record<string, unknown>) => apiClient.post<{ created?: boolean }>("/api/spa/ad-manager/audiences", { action: "create", ...body }),
@@ -44,9 +48,10 @@ export function AdAudiencesPage() {
 		onError: (e: Error) => toast.error(e.message),
 	});
 
-	const audiences = (data?.audiences ?? [])
-		.filter((a) => tab === "All" || a.platform.toLowerCase().includes(tab.toLowerCase()))
-		.filter((a) => !search || a.name.toLowerCase().includes(search.toLowerCase()));
+	const filtered = (data?.audiences ?? [])
+		.filter((a: any) => tab === "All" || a.platform.toLowerCase().includes(tab.toLowerCase()))
+		.filter((a: any) => !search || a.name.toLowerCase().includes(search.toLowerCase()));
+	const { sorted: audiences, sortKey, sortDir, toggle: toggleSort } = useSort(filtered, "name" as any);
 
 	return (
 		<div className="space-y-5">
@@ -117,17 +122,18 @@ export function AdAudiencesPage() {
 					<table className="w-full text-sm">
 						<thead>
 							<tr className="border-b border-[var(--border)] text-left text-xs text-[var(--muted-foreground)] uppercase tracking-wider">
-								<th className="px-4 py-3 font-medium">Audience</th>
-								<th className="px-3 py-3 font-medium">Type</th>
-								<th className="px-3 py-3 font-medium">Platform</th>
-								<th className="px-3 py-3 font-medium text-right">Size</th>
-								<th className="px-3 py-3 font-medium">Status</th>
-								<th className="px-3 py-3 font-medium text-right">Created</th>
+								<SortableHeader label="Audience" sortKey="name" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as any)} />
+								<SortableHeader label="Type" sortKey="type" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as any)} />
+								<SortableHeader label="Platform" sortKey="platform" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as any)} />
+								<SortableHeader label="Size" sortKey="size" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as any)} align="right" />
+								<SortableHeader label="Status" sortKey="status" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as any)} />
+								<SortableHeader label="Created" sortKey="created_at" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as any)} align="right" />
 							</tr>
 						</thead>
 						<tbody>
-							{audiences.map((a) => (
-								<tr key={a.id} className="border-b border-[var(--border)] hover:bg-[var(--muted)]/30 transition-colors">
+							{audiences.map((a: any) => (
+								<tr key={a.id} className="border-b border-[var(--border)] hover:bg-[var(--muted)]/30 transition-colors cursor-pointer"
+									onClick={() => setSelectedAudience(a)}>
 									<td className="px-4 py-3 font-medium text-[var(--foreground)]">{a.name}</td>
 									<td className="px-3 py-3">
 										<span className={`rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${
@@ -155,6 +161,9 @@ export function AdAudiencesPage() {
 
 			<CreateAudienceDialog open={showCreate} onClose={() => setShowCreate(false)}
 				onConfirm={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
+			{selectedAudience && (
+				<AudienceDetailsDialog open={!!selectedAudience} onClose={() => setSelectedAudience(null)} audience={selectedAudience} />
+			)}
 		</div>
 	);
 }

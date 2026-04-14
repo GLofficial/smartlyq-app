@@ -6,6 +6,7 @@ import { useWorkspaceStore } from "@/stores/workspace-store";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { type WizardState, DEFAULT_STATE } from "./wizard-types";
+import { LaunchCampaignDialog } from "@/pages/ads/ad-dialogs-2";
 import { StepAccount } from "./step-account";
 import { StepPlatform } from "./step-platform";
 import { StepObjective } from "./step-objective";
@@ -30,6 +31,7 @@ export function CampaignWizard() {
 	const [step, setStep] = useState(0);
 	const [state, setState] = useState<WizardState>({ ...DEFAULT_STATE });
 	const [submitting, setSubmitting] = useState(false);
+	const [showLaunchDialog, setShowLaunchDialog] = useState(false);
 	const navigate = useNavigate();
 	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
 
@@ -107,8 +109,13 @@ export function CampaignWizard() {
 				{step === 5 && <StepPlacement state={state} update={update} />}
 				{step === 6 && <StepCreative state={state} update={update} />}
 				{step === 7 && <StepTracking state={state} update={update} />}
-				{step === 8 && <StepReview state={state} update={update} onLaunch={handleLaunch} submitting={submitting} />}
+				{step === 8 && <StepReview state={state} update={update}
+					onLaunch={(asDraft) => { if (asDraft) handleLaunch(true); else setShowLaunchDialog(true); }} submitting={submitting} />}
 			</div>
+
+			<LaunchCampaignDialog open={showLaunchDialog} onClose={() => setShowLaunchDialog(false)}
+				campaignName={state.name || "Untitled Campaign"} sandboxMode={state.sandbox_mode}
+				onConfirm={() => { setShowLaunchDialog(false); handleLaunch(false); }} loading={submitting} />
 
 			{/* Navigation */}
 			<div className="flex items-center justify-between pt-4">
