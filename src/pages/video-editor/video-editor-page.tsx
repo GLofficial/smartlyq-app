@@ -6,12 +6,12 @@ export function VideoEditorPage() {
 	const { iframeRef, onLoad } = useIframeAuth(VIDEO_EDITOR_URL);
 
 	return (
-		<div className="h-[calc(100vh-8rem)]">
+		<div className="-m-6 h-[calc(100%+3rem)]">
 			<iframe
 				ref={iframeRef}
 				src={VIDEO_EDITOR_URL}
 				title="Video Editor"
-				className="h-full w-full rounded-lg border border-[var(--border)]"
+				className="h-full w-full border-0"
 				allow="clipboard-write; camera; microphone"
 				onLoad={onLoad}
 			/>
