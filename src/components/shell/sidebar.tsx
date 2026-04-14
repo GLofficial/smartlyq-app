@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
-import { PanelLeftClose, PanelLeft, Settings } from "lucide-react";
+import { PanelLeftClose, PanelLeft, Settings, Shield } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useUiStore } from "@/stores/ui-store";
 import { useTenantStore } from "@/stores/tenant-store";
 import { useAuthStore } from "@/stores/auth-store";
-import { getNavGroups, ADMIN_GROUP } from "./sidebar-nav-config";
+import { getNavGroups } from "./sidebar-nav-config";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { SidebarSection } from "./sidebar-section";
 import { WorkspaceSwitcher } from "./workspace-switcher";
@@ -63,12 +63,20 @@ export function Sidebar() {
 				{navGroups.map((group) => (
 					<SidebarSection key={group.label || "top"} group={group} collapsed={collapsed} />
 				))}
-				{isAdmin && <SidebarSection group={ADMIN_GROUP} collapsed={collapsed} />}
 			</nav>
 
-			{/* Settings — bottom */}
+			{/* Admin + Settings — bottom */}
 			{!collapsed && (
 				<div className="border-t border-[var(--sidebar-border)] px-3 py-2">
+					{isAdmin && (
+						<Link
+							to="/admin"
+							className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)] transition-colors"
+						>
+							<Shield size={16} className="shrink-0 text-[var(--muted-foreground)]" />
+							<span className="text-[14px] font-medium">Admin</span>
+						</Link>
+					)}
 					<Link
 						to={wsHash ? `/w/${wsHash}/settings` : "/my"}
 						className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)] transition-colors"
