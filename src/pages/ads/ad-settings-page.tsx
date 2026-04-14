@@ -1,108 +1,125 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Link2, CheckCircle, XCircle } from "lucide-react";
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Bell, Plug, X } from "lucide-react";
 import { useAdSettings } from "@/api/ad-manager/settings";
+import { PlatformIcon } from "@/pages/social/platform-icon";
+
+const TABS = [
+	{ id: "notifications", label: "Notifications", icon: Bell },
+	{ id: "integrations", label: "Integrations", icon: Plug },
+] as const;
 
 export function AdSettingsPage() {
 	const { data, isLoading } = useAdSettings();
+	const [activeTab, setActiveTab] = useState("integrations");
 
 	return (
-		<div className="space-y-6">
-			<h1 className="text-2xl font-bold">Ad Settings</h1>
+		<div className="space-y-6 max-w-[1200px]">
+			<div>
+				<h1 className="text-2xl font-bold text-[var(--foreground)]">Settings</h1>
+				<p className="text-sm text-[var(--muted-foreground)]">Manage your ad manager preferences and integrations</p>
+			</div>
 
-			{isLoading ? (
-				<div className="flex h-40 items-center justify-center">
-					<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
+			<div className="flex gap-6">
+				{/* Tab Nav */}
+				<div className="w-56 space-y-1">
+					{TABS.map((t) => (
+						<button key={t.id} onClick={() => setActiveTab(t.id)}
+							className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+								activeTab === t.id
+									? "bg-[var(--sq-primary)] text-white"
+									: "text-[var(--foreground)] hover:bg-[var(--muted)]"
+							}`}>
+							<t.icon size={16} />
+							{t.label}
+						</button>
+					))}
 				</div>
-			) : (
-				<>
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2 text-lg">
-								<Link2 size={18} />
-								Connected Ad Accounts
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
-							{!(data?.accounts ?? []).length ? (
-								<div className="flex flex-col items-center gap-3 py-8">
-									<Link2 size={48} className="text-[var(--muted-foreground)]" />
-									<p className="text-[var(--muted-foreground)]">No ad accounts connected.</p>
-									<p className="text-sm text-[var(--muted-foreground)]">
-										Connect your Facebook, Google, or other ad accounts to manage campaigns.
-									</p>
-								</div>
-							) : (
-								<div className="space-y-3">
-									{data?.accounts.map((account) => (
-										<div
-											key={account.id}
-											className="flex items-center justify-between rounded-lg border border-[var(--border)] p-4"
-										>
-											<div className="flex items-center gap-3">
-												{account.status === "active" ? (
-													<CheckCircle size={16} className="text-green-500" />
-												) : (
-													<XCircle size={16} className="text-red-500" />
-												)}
-												<div>
-													<p className="font-medium">{account.account_name}</p>
-													<p className="text-xs text-[var(--muted-foreground)]">
-														{account.platform} &middot; {account.account_id}
-													</p>
-												</div>
-											</div>
-											<div className="text-right">
-												<span
-													className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
-														account.status === "active"
-															? "bg-green-100 text-green-700"
-															: "bg-red-100 text-red-700"
-													}`}
-												>
-													{account.status}
-												</span>
-												<p className="mt-1 text-xs text-[var(--muted-foreground)]">
-													Connected {new Date(account.connected_at).toLocaleDateString()}
-												</p>
-											</div>
-										</div>
-									))}
-								</div>
-							)}
-						</CardContent>
-					</Card>
 
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2 text-lg">
-								<Settings size={18} />
-								Default Settings
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<div className="grid gap-4 sm:grid-cols-2">
-								<div className="rounded-lg border border-[var(--border)] p-4">
-									<p className="text-sm font-medium text-[var(--muted-foreground)]">Default Currency</p>
-									<p className="mt-1 text-lg font-semibold">{data?.default_currency ?? "USD"}</p>
-								</div>
-								<div className="rounded-lg border border-[var(--border)] p-4">
-									<p className="text-sm font-medium text-[var(--muted-foreground)]">Default Timezone</p>
-									<p className="mt-1 text-lg font-semibold">{data?.default_timezone ?? "UTC"}</p>
-								</div>
-								<div className="rounded-lg border border-[var(--border)] p-4 sm:col-span-2">
-									<p className="text-sm font-medium text-[var(--muted-foreground)]">Auto-Optimization</p>
-									<p className="mt-1 text-lg font-semibold">
-										{data?.auto_optimize ? "Enabled" : "Disabled"}
-									</p>
-									<p className="text-xs text-[var(--muted-foreground)]">
-										Automatically adjusts budgets based on ad performance.
-									</p>
-								</div>
+				{/* Content */}
+				<div className="flex-1">
+					{activeTab === "integrations" && (
+						<Card>
+							<div className="px-6 py-4 border-b border-[var(--border)]">
+								<h2 className="text-lg font-semibold">Connected Platforms</h2>
 							</div>
-						</CardContent>
-					</Card>
-				</>
-			)}
+							<CardContent className="p-0">
+								{isLoading ? (
+									<div className="flex h-32 items-center justify-center">
+										<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
+									</div>
+								) : (data?.accounts ?? []).length === 0 ? (
+									<div className="flex flex-col items-center gap-3 py-12">
+										<Plug size={32} className="text-[var(--muted-foreground)]" />
+										<p className="text-sm text-[var(--muted-foreground)]">No ad accounts connected yet.</p>
+									</div>
+								) : (
+									<div className="divide-y divide-[var(--border)]">
+										{data?.accounts.map((a) => (
+											<div key={`${a.platform}-${a.id}`} className="flex items-center gap-4 px-6 py-5">
+												<PlatformIcon platform={platformMap(a.platform)} size={32} />
+												<div className="flex-1 min-w-0">
+													<p className="text-sm font-semibold text-[var(--foreground)]">{platformLabel(a.platform)}</p>
+													<p className="text-xs text-[var(--muted-foreground)]">{a.account_name || a.account_id}</p>
+												</div>
+												<span className={`rounded-full px-3 py-1 text-xs font-medium ${
+													a.status === "connected" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-gray-100 text-gray-600"
+												}`}>
+													{a.status === "connected" ? "Connected" : a.status}
+												</span>
+												<Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
+													<X size={13} className="mr-1" /> Disconnect
+												</Button>
+											</div>
+										))}
+									</div>
+								)}
+							</CardContent>
+						</Card>
+					)}
+
+					{activeTab === "notifications" && (
+						<Card>
+							<div className="px-6 py-4 border-b border-[var(--border)]">
+								<h2 className="text-lg font-semibold">Notification Preferences</h2>
+							</div>
+							<CardContent className="py-6 space-y-4">
+								<ToggleRow label="Campaign status changes" description="Get notified when a campaign is approved, rejected, or paused" defaultOn />
+								<ToggleRow label="Budget alerts" description="Alert when campaign spend reaches 80% of budget" defaultOn />
+								<ToggleRow label="Performance drops" description="Notify when CTR or ROAS drops significantly" />
+								<ToggleRow label="Weekly summary" description="Receive a weekly email digest of ad performance" />
+							</CardContent>
+						</Card>
+					)}
+				</div>
+			</div>
 		</div>
 	);
+}
+
+function ToggleRow({ label, description, defaultOn }: { label: string; description: string; defaultOn?: boolean }) {
+	const [on, setOn] = useState(!!defaultOn);
+	return (
+		<div className="flex items-center justify-between py-2">
+			<div>
+				<p className="text-sm font-medium text-[var(--foreground)]">{label}</p>
+				<p className="text-xs text-[var(--muted-foreground)]">{description}</p>
+			</div>
+			<button onClick={() => setOn(!on)}
+				className={`relative h-6 w-11 rounded-full transition-colors ${on ? "bg-[var(--sq-primary)]" : "bg-gray-300"}`}>
+				<span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${on ? "translate-x-5" : "translate-x-0.5"}`} />
+			</button>
+		</div>
+	);
+}
+
+function platformMap(p: string): string {
+	const map: Record<string, string> = { meta: "facebook", google: "google", tiktok: "tiktok", linkedin: "linkedin" };
+	return map[p] ?? p;
+}
+
+function platformLabel(p: string): string {
+	const map: Record<string, string> = { meta: "Meta (Facebook)", google: "Google Ads", tiktok: "TikTok Ads", linkedin: "LinkedIn Ads" };
+	return map[p] ?? p;
 }

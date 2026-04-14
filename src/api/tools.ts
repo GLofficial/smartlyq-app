@@ -55,10 +55,17 @@ export interface Campaign {
 	name: string;
 	platform: string;
 	status: string;
+	objective: string;
 	budget: number;
 	spent: number;
 	impressions: number;
 	clicks: number;
+	conversions: number;
+	ctr: number;
+	cpa: number;
+	roas: number;
+	purchase_value: number;
+	leads: number;
 	start_date: string | null;
 	end_date: string | null;
 }
