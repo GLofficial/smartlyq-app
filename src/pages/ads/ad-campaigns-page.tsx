@@ -9,11 +9,13 @@ import { PlatformIcon } from "@/pages/social/platform-icon";
 import { Link } from "react-router-dom";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
+import { useAdContext } from "@/pages/ad-manager/ad-context";
 
 function useAdCampaigns() {
+	const { queryString } = useAdContext();
 	return useQuery({
-		queryKey: ["ad-manager", "campaigns"],
-		queryFn: () => apiClient.get<{ campaigns: Campaign[] }>("/api/spa/ad-manager/campaigns"),
+		queryKey: ["ad-manager", "campaigns", queryString],
+		queryFn: () => apiClient.get<{ campaigns: Campaign[] }>(`/api/spa/ad-manager/campaigns?_=1${queryString}`),
 	});
 }
 

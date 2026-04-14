@@ -1,11 +1,14 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DollarSign, Eye, MousePointer, ShoppingCart, Target, TrendingUp, RefreshCw, Plus } from "lucide-react";
-import { useAdManager } from "@/api/tools";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
+import type { Campaign } from "@/api/tools";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { Link } from "react-router-dom";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { AdToolbar } from "./ad-toolbar";
+import { useAdContext } from "./ad-context";
 
 function fmt(n: number): string {
 	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -14,7 +17,13 @@ function fmt(n: number): string {
 }
 
 export function AdManagerPage() {
-	const { data, isLoading, refetch } = useAdManager();
+	const { queryString } = useAdContext();
+	const { data, isLoading, refetch } = useQuery({
+		queryKey: ["ad-manager", "dashboard", queryString],
+		queryFn: () => apiClient.get<{
+			campaigns: Campaign[]; total_spent: number; total_impressions: number; total_clicks: number;
+		}>(`/api/spa/ad-manager?_=1${queryString}`),
+	});
 	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
 	const p = (path: string) => wsHash ? `/w/${wsHash}/${path}` : `/${path}`;
 	const campaigns = data?.campaigns ?? [];
@@ -22,10 +31,9 @@ export function AdManagerPage() {
 	const totalImpr = data?.total_impressions ?? 0;
 	const totalClicks = data?.total_clicks ?? 0;
 
-	// Compute derived metrics
-	const totalConversions = campaigns.reduce((s, c) => s + (c.conversions ?? 0), 0);
-	const totalPurchaseValue = campaigns.reduce((s, c) => s + (c.purchase_value ?? 0), 0);
-	const totalLeads = campaigns.reduce((s, c) => s + (c.leads ?? 0), 0);
+	const totalConversions = campaigns.reduce((s: number, c: Campaign) => s + (c.conversions ?? 0), 0);
+	const totalPurchaseValue = campaigns.reduce((s: number, c: Campaign) => s + (c.purchase_value ?? 0), 0);
+	const totalLeads = campaigns.reduce((s: number, c: Campaign) => s + (c.leads ?? 0), 0);
 
 	return (
 		<div className="space-y-6">
@@ -92,7 +100,7 @@ export function AdManagerPage() {
 									</tr>
 								</thead>
 								<tbody>
-									{campaigns.map((c) => (
+									{campaigns.map((c: Campaign) => (
 										<tr key={c.id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--muted)]/30 transition-colors">
 											<td className="px-6 py-3">
 												<div className="flex items-center gap-3">

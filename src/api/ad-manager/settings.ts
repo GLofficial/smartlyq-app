@@ -2,12 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 
 export interface AdAccount {
-	id: number;
-	platform: string;
-	account_name: string;
-	account_id: string;
-	status: string;
-	connected_at: string;
+	id: number; platform: string; account_name: string; account_id: string;
+	status: string; connected_at: string; currency: string; timezone: string;
 }
 
 export interface AdSettings {

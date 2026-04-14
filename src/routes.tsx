@@ -8,6 +8,7 @@ import { LegacyRedirect } from "@/components/shared/legacy-redirect";
 import { IframeBridge } from "@/components/shared/iframe-bridge";
 import { AdminLayout } from "@/layouts/admin-layout";
 import { SettingsLayout } from "@/layouts/settings-layout";
+import { AdManagerProvider } from "@/pages/ad-manager/ad-context";
 
 // ── All pages lazy-loaded ──
 const LoginPage = lazy(() => import("@/pages/auth/login-page").then((m) => ({ default: m.LoginPage })));
@@ -184,17 +185,17 @@ export const router = createBrowserRouter([
 					{ path: "audio-to-text", element: <S><AudioPage /></S> },
 					{ path: "image-to-video", element: <S><VideoGeneratorPage /></S> },
 
-					/* Ad Manager */
-					{ path: "ad-manager", element: <S><AdManagerPage /></S> },
-					{ path: "ad-manager/ad-sets", element: <S><AdSetsPage /></S> },
-					{ path: "ad-manager/ads", element: <S><AdsPage /></S> },
-					{ path: "ad-manager/audit-log", element: <S><AdAuditLogPage /></S> },
-					{ path: "ad-manager/settings", element: <S><AdSettingsPage /></S> },
-					{ path: "ad-manager/campaigns", element: <S><AdCampaignsPage /></S> },
-					{ path: "ad-manager/creatives", element: <S><AdCreativesPage /></S> },
-					{ path: "ad-manager/audiences", element: <S><AdAudiencesPage /></S> },
-					{ path: "ad-manager/analytics", element: <S><AdAnalyticsPage /></S> },
-					{ path: "ad-manager/*", element: <S><AdManagerPage /></S> },
+					/* Ad Manager (wrapped in AdManagerProvider for shared filter state) */
+					{ path: "ad-manager", element: <S><AdManagerProvider><AdManagerPage /></AdManagerProvider></S> },
+					{ path: "ad-manager/ad-sets", element: <S><AdManagerProvider><AdSetsPage /></AdManagerProvider></S> },
+					{ path: "ad-manager/ads", element: <S><AdManagerProvider><AdsPage /></AdManagerProvider></S> },
+					{ path: "ad-manager/audit-log", element: <S><AdManagerProvider><AdAuditLogPage /></AdManagerProvider></S> },
+					{ path: "ad-manager/settings", element: <S><AdManagerProvider><AdSettingsPage /></AdManagerProvider></S> },
+					{ path: "ad-manager/campaigns", element: <S><AdManagerProvider><AdCampaignsPage /></AdManagerProvider></S> },
+					{ path: "ad-manager/creatives", element: <S><AdManagerProvider><AdCreativesPage /></AdManagerProvider></S> },
+					{ path: "ad-manager/audiences", element: <S><AdManagerProvider><AdAudiencesPage /></AdManagerProvider></S> },
+					{ path: "ad-manager/analytics", element: <S><AdManagerProvider><AdAnalyticsPage /></AdManagerProvider></S> },
+					{ path: "ad-manager/*", element: <S><AdManagerProvider><AdManagerPage /></AdManagerProvider></S> },
 
 					/* Media, Video Editor, Presentations */
 					{ path: "media", element: <S><MediaLibraryPage /></S> },
