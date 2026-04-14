@@ -6,6 +6,7 @@ import {
   type ApiDeal,
   type ApiContact,
 } from "@/api/crm";
+import { useWorkspaceMembers } from "@/api/workspace-members";
 import type { TaskStatus, TaskPriority } from "@/lib/crm-data";
 import { TASK_STATUS_CONFIG, PRIORITY_CONFIG } from "@/lib/crm-data";
 import { cn } from "@/lib/cn";
@@ -64,6 +65,8 @@ interface TaskDetailSheetProps {
 
 export function TaskDetailSheet({ task, deals, contacts, onClose }: TaskDetailSheetProps) {
   const saveTask = useCrmTaskSave();
+  const { data: membersData } = useWorkspaceMembers();
+  const members = membersData?.members ?? [];
 
   // Timer state
   const [timerRunning, setTimerRunning] = useState(false);
@@ -162,6 +165,20 @@ export function TaskDetailSheet({ task, deals, contacts, onClose }: TaskDetailSh
       {
         onSuccess: () => toast.success("Linked contact updated"),
         onError: () => toast.error("Failed to update linked contact"),
+      },
+    );
+  }
+
+  function handleAssigneeChange(userId: string) {
+    if (!task) return;
+    saveTask.mutate(
+      {
+        id: task.id,
+        assigned_to: userId === "none" ? null : Number(userId),
+      },
+      {
+        onSuccess: () => toast.success("Assignee updated"),
+        onError: () => toast.error("Failed to update assignee"),
       },
     );
   }
@@ -391,6 +408,36 @@ export function TaskDetailSheet({ task, deals, contacts, onClose }: TaskDetailSh
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        {/* Assigned To */}
+        <div className="space-y-1.5 mt-3">
+          <Label className="text-xs">Assigned To</Label>
+          <Select
+            value={task.assigned_to ? String(task.assigned_to) : "none"}
+            onValueChange={handleAssigneeChange}
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Unassigned</SelectItem>
+              {members.map((m) => (
+                <SelectItem key={m.user_id} value={String(m.user_id)}>
+                  <span className="flex items-center gap-2">
+                    {m.avatar ? (
+                      <img src={m.avatar} alt="" className="w-4 h-4 rounded-full" />
+                    ) : (
+                      <span className="w-4 h-4 rounded-full bg-[var(--muted)] flex items-center justify-center text-[8px] font-medium">
+                        {m.name?.charAt(0) ?? "?"}
+                      </span>
+                    )}
+                    {m.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <Separator className="my-4" />

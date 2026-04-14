@@ -55,6 +55,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useWorkspaceMembers } from "@/api/workspace-members";
 import { TaskCard } from "./components/task-card";
 import { TaskDetailSheet } from "./components/task-detail-sheet";
 
@@ -66,12 +67,14 @@ export function CrmTasksPage() {
   const { data: tasksData, isLoading: tasksLoading } = useCrmTasks();
   const { data: dealsData } = useCrmDeals();
   const { data: contactsData } = useCrmContacts();
+  const { data: membersData } = useWorkspaceMembers();
   const saveTask = useCrmTaskSave();
   const deleteTaskMut = useCrmTaskDelete();
 
   const tasks = tasksData?.tasks ?? [];
   const deals = dealsData?.deals ?? [];
   const contacts = contactsData?.contacts ?? [];
+  const members = membersData?.members ?? [];
 
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
@@ -95,6 +98,7 @@ export function CrmTasksPage() {
   );
   const [formDealId, setFormDealId] = useState("none");
   const [formContactId, setFormContactId] = useState("none");
+  const [formAssignee, setFormAssignee] = useState("none");
 
   // --- Filtered tasks by column ---
   const filteredTasks = useMemo(() => {
@@ -192,6 +196,7 @@ export function CrmTasksPage() {
         due_date: formDueDate,
         linked_deal_id: formDealId !== "none" ? Number(formDealId) : null,
         linked_contact_id: formContactId !== "none" ? Number(formContactId) : null,
+        assigned_to: formAssignee !== "none" ? Number(formAssignee) : null,
       },
       {
         onSuccess: () => {
@@ -211,6 +216,7 @@ export function CrmTasksPage() {
     setFormDueDate(new Date().toISOString().slice(0, 10));
     setFormDealId("none");
     setFormContactId("none");
+    setFormAssignee("none");
   }
 
   // Keep selectedTask in sync
@@ -477,6 +483,31 @@ export function CrmTasksPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Assign To</Label>
+              <Select value={formAssignee} onValueChange={setFormAssignee}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
+                  {members.map((m) => (
+                    <SelectItem key={m.user_id} value={String(m.user_id)}>
+                      <span className="flex items-center gap-2">
+                        {m.avatar ? (
+                          <img src={m.avatar} alt="" className="w-4 h-4 rounded-full" />
+                        ) : (
+                          <span className="w-4 h-4 rounded-full bg-[var(--muted)] flex items-center justify-center text-[8px] font-medium">
+                            {m.name?.charAt(0) ?? "?"}
+                          </span>
+                        )}
+                        {m.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

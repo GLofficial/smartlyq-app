@@ -134,21 +134,34 @@ export function TaskCard({
         </div>
       )}
 
-      {/* Tags */}
-      {task.tags.length > 0 && (
-        <div className="flex items-center gap-1 mt-2 flex-wrap">
-          {task.tags.map((tag) => (
-            <Badge
-              key={tag}
-              variant="secondary"
-              className="text-[10px] px-1.5 py-0"
-            >
-              <Tag className="w-2.5 h-2.5 mr-0.5" />
-              {tag}
-            </Badge>
-          ))}
-        </div>
-      )}
+      {/* Tags + Assignee row */}
+      <div className="flex items-center justify-between mt-2">
+        {task.tags.length > 0 ? (
+          <div className="flex items-center gap-1 flex-wrap">
+            {task.tags.map((tag) => (
+              <Badge
+                key={tag}
+                variant="secondary"
+                className="text-[10px] px-1.5 py-0"
+              >
+                <Tag className="w-2.5 h-2.5 mr-0.5" />
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        ) : <span />}
+        {task.assigned_to && (
+          <div className="flex items-center gap-1.5 shrink-0" title={task.assignee_name}>
+            {task.assignee_avatar ? (
+              <img src={task.assignee_avatar} alt="" className="w-5 h-5 rounded-full object-cover" />
+            ) : (
+              <span className="w-5 h-5 rounded-full bg-[var(--primary)] text-white flex items-center justify-center text-[9px] font-semibold">
+                {task.assignee_name?.charAt(0) ?? "?"}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

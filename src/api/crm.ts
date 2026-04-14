@@ -91,6 +91,9 @@ export interface ApiTask {
   due_date: string | null;
   linked_deal_id: number | null;
   linked_contact_id: number | null;
+  assigned_to: number | null;
+  assignee_name: string;
+  assignee_avatar: string;
   tags: string[];
   subtasks: { title: string; done: boolean }[];
   recurrence: string | null;
