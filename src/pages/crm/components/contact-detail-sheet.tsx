@@ -128,12 +128,12 @@ export function ContactDetailSheet({ contact, onClose }: Props) {
 				{contact && (<>
 					<SheetHeader>
 						<div className="flex items-center gap-3">
-							<button type="button" onClick={() => { if (editing) fileInputRef.current?.click(); }}
-								className="relative w-12 h-12 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-lg font-semibold overflow-hidden group">
+							<button type="button" onClick={() => fileInputRef.current?.click()}
+								className="relative w-12 h-12 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-lg font-semibold overflow-hidden group cursor-pointer">
 								{contact.avatar && contact.avatar.length > 2 ? (
 									<img src={contact.avatar} alt="" className="w-full h-full object-cover" />
 								) : contact.initials}
-								{editing && <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center"><Camera size={14} className="text-white" /></div>}
+								<div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><Camera size={14} className="text-white" /></div>
 							</button>
 							<input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarFile} />
 							<div><SheetTitle>{contact.first_name || contact.last_name ? `${contact.first_name} ${contact.last_name}`.trim() : contact.name}</SheetTitle><SheetDescription>{contact.company}</SheetDescription></div>
@@ -175,8 +175,7 @@ export function ContactDetailSheet({ contact, onClose }: Props) {
 						</div>
 					) : (
 						<div className="space-y-3">
-							{editing && <p className="text-xs text-[var(--muted-foreground)]">Click avatar to change photo</p>}
-							<div className="grid grid-cols-2 gap-3">
+								<div className="grid grid-cols-2 gap-3">
 								<div className="space-y-1"><Label className="text-xs">First Name</Label><Input value={f.firstName} onChange={(e) => set("firstName", e.target.value)} /></div>
 								<div className="space-y-1"><Label className="text-xs">Last Name</Label><Input value={f.lastName} onChange={(e) => set("lastName", e.target.value)} /></div>
 							</div>
