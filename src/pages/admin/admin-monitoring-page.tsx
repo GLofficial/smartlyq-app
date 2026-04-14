@@ -1,7 +1,7 @@
 import { ServerHealth } from "./monitoring/server-health";
 import { ServicesPanel } from "./monitoring/services-panel";
 import { DatabasePanel, EndpointsPanel, SSLPanel, RedisPanel, FpmPanel, R2Panel } from "./monitoring/infra-panels";
-import { SocialApiPanel, CronPanel, AiQueuePanel, ErrorLogsPanel, NginxPanel, AuthAuditPanel } from "./monitoring/ops-panels";
+import { SocialApiPanel, CronPanel, AiQueuePanel, ErrorLogsPanel, NginxPanel, AuthAuditPanel, ApiQueuePanel } from "./monitoring/ops-panels";
 
 export function AdminMonitoringPage() {
 	return (
@@ -46,7 +46,10 @@ export function AdminMonitoringPage() {
 				<SocialApiPanel />
 			</div>
 
-			{/* Row 5: R2 Storage */}
+			{/* Row 5: API Job Queue */}
+			<ApiQueuePanel />
+
+			{/* Row 6: R2 Storage */}
 			<R2Panel />
 
 			{/* Row 6: Cron Jobs */}

@@ -89,9 +89,19 @@ export function RedisPanel() {
 	const mem = (data.memory ?? {}) as Record<string, string>;
 	const stats = (data.stats ?? {}) as Record<string, string>;
 	const clients = (data.clients ?? {}) as Record<string, string>;
+	// If not reachable (Docker networking issue), show minimal card
+	if (!data.reachable) {
+		return (
+			<Section icon={Box} title="Redis">
+				<StatusBadge status={data.error ? "warning" : "down"} />
+				<p className="text-xs text-[var(--muted-foreground)] mt-2">{String(data.error ?? "Cannot connect to Redis from this context")}</p>
+				<p className="text-[11px] text-[var(--muted-foreground)] mt-1">Check services panel for actual Redis status.</p>
+			</Section>
+		);
+	}
 	return (
 		<Section icon={Box} title="Redis">
-			<StatusBadge status={data.reachable ? "online" : "down"} pulse />
+			<StatusBadge status="online" pulse />
 			<div className="mt-3 space-y-0">
 				<MetricRow label="Used Memory" value={mem.used_memory_human ?? "--"} mono />
 				<MetricRow label="Peak Memory" value={mem.used_memory_peak_human ?? "--"} mono />

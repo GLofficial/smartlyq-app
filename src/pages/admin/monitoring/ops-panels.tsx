@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Share2, Clock, Zap, AlertTriangle, Search, ShieldCheck, Globe } from "lucide-react";
 import { useSocialApi, useCron, useAiQueue, useErrorLogs, useAuthAudit, useNginx } from "@/api/admin-monitoring";
+import { apiClient } from "@/lib/api-client";
+import { useQuery } from "@tanstack/react-query";
 import { Section, SectionSkeleton, BigStat } from "./section";
 import { StatusBadge } from "./status-badge";
 import { Input } from "@/components/ui/input";
@@ -190,6 +192,61 @@ export function AuthAuditPanel() {
 					</tbody>
 				</table>
 			</div>
+		</Section>
+	);
+}
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export function ApiQueuePanel() {
+	const { data, isLoading } = useQuery({
+		queryKey: ["admin", "monitoring", "api_queue"],
+		queryFn: () => apiClient.get<any>("/api/spa/admin/monitoring?feed=api_queue"),
+		refetchInterval: 30000,
+	});
+	if (isLoading || !data) return <SectionSkeleton />;
+	if (!data.available) return null;
+	const c = (data.counts ?? {}) as Record<string, number>;
+	const wh = (data.webhook_stats ?? {}) as Record<string, number>;
+	const recent = (data.recent_completed ?? []) as any[];
+	const failures = (data.recent_failures ?? []) as any[];
+	return (
+		<Section icon={Zap} title="API Job Queue" live>
+			<div className="grid grid-cols-3 sm:grid-cols-5 gap-4 mb-4">
+				<BigStat value={String(c.queued ?? 0)} label="Queued" color="text-blue-600" />
+				<BigStat value={String(c.processing ?? 0)} label="Processing" color="text-emerald-600" />
+				<BigStat value={String(c.completed_24h ?? 0)} label="Done (24h)" />
+				<BigStat value={String(c.failed_24h ?? 0)} label="Failed (24h)"
+					color={(c.failed_24h ?? 0) > 0 ? "text-red-600" : undefined} />
+				<BigStat value={String(wh.pending ?? 0)} label="Webhooks" />
+			</div>
+			{(recent.length > 0 || failures.length > 0) && (
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3">
+					{recent.length > 0 && (<div>
+						<p className="text-xs font-semibold text-[var(--muted-foreground)] mb-2 uppercase tracking-wider">Recent Completed</p>
+						<table className="w-full text-xs"><tbody>
+							{recent.slice(0, 10).map((j: any, i: number) => (
+								<tr key={i} className="border-b border-[var(--border)] last:border-0">
+									<td className="py-1 pr-2 font-mono text-blue-600 text-[11px]">{String(j.job_uid ?? "--").slice(0, 15)}</td>
+									<td className="py-1 pr-2">{String(j.type ?? "--")}</td>
+									<td className="py-1 pr-2 font-mono">{String(j.duration_sec ?? 0)}s</td>
+									<td className="py-1 text-[var(--muted-foreground)] text-[11px]">{String(j.completed_at ?? "--")}</td>
+								</tr>))}
+						</tbody></table>
+					</div>)}
+					{failures.length > 0 && (<div>
+						<p className="text-xs font-semibold text-red-600 mb-2 uppercase tracking-wider">Recent Failures</p>
+						<table className="w-full text-xs"><tbody>
+							{failures.slice(0, 10).map((j: any, i: number) => (
+								<tr key={i} className="border-b border-[var(--border)] last:border-0">
+									<td className="py-1 pr-2 font-mono text-red-600 text-[11px]">{String(j.job_uid ?? "--").slice(0, 15)}</td>
+									<td className="py-1 pr-2">{String(j.type ?? "--")}</td>
+									<td className="py-1 pr-2 font-mono text-red-600">{String(j.error_message ?? "--")}</td>
+									<td className="py-1 text-[var(--muted-foreground)] text-[11px]">{String(j.completed_at ?? "--")}</td>
+								</tr>))}
+						</tbody></table>
+					</div>)}
+				</div>
+			)}
 		</Section>
 	);
 }
