@@ -39,18 +39,18 @@ export function VideoEditorPage() {
 
 	if (!src) {
 		return (
-			<div className="flex h-[calc(100vh-8rem)] items-center justify-center">
+			<div className="flex h-full items-center justify-center">
 				<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 			</div>
 		);
 	}
 
 	return (
-		<div className="h-[calc(100vh-8rem)]">
+		<div className="-m-6 h-[calc(100%+3rem)]">
 			<iframe
 				src={src}
 				title="Video Editor"
-				className="h-full w-full rounded-lg border border-[var(--border)]"
+				className="h-full w-full border-0"
 				allow="clipboard-write; camera; microphone"
 			/>
 		</div>
