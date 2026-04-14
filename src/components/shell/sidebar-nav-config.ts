@@ -38,9 +38,9 @@ export function getNavGroups(wsHash: string): NavGroup[] {
 					label: "Sales", path: p("crm"), icon: Briefcase,
 					children: [
 						{ label: "Dashboard", path: p("crm"), icon: LayoutDashboard },
+						{ label: "Contacts", path: p("crm/contacts"), icon: Users },
 						{ label: "Pipeline", path: p("crm/pipeline"), icon: LayoutGrid },
 						{ label: "Projects", path: p("crm/projects"), icon: FolderOpen },
-						{ label: "Contacts", path: p("crm/contacts"), icon: Users },
 						{ label: "Tasks", path: p("crm/tasks"), icon: ClipboardList },
 					],
 				},
