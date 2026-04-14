@@ -10,6 +10,7 @@ import { useWorkspaceStore } from "@/stores/workspace-store";
 import { AdToolbar } from "./ad-toolbar";
 import { useAdContext } from "./ad-context";
 import { useSync } from "@/api/ad-manager/mutations";
+import { AdSpendChart } from "./ad-charts";
 
 function fmt(n: number): string {
 	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -25,6 +26,13 @@ export function AdManagerPage() {
 		queryFn: () => apiClient.get<{
 			campaigns: Campaign[]; total_spent: number; total_impressions: number; total_clicks: number;
 		}>(`/api/spa/ad-manager?_=1${queryString}`),
+	});
+	// Fetch chart data from analytics endpoint
+	const { data: analyticsData } = useQuery({
+		queryKey: ["ad-manager", "analytics-chart", queryString],
+		queryFn: () => apiClient.get<{
+			spend_chart: { labels: string[]; datasets: Record<string, number[]> };
+		}>(`/api/spa/ad-manager/analytics?_=1${queryString}`),
 	});
 	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
 	const p = (path: string) => wsHash ? `/w/${wsHash}/${path}` : `/${path}`;
@@ -68,6 +76,9 @@ export function AdManagerPage() {
 				<StatCard icon={MousePointer} label="Clicks" value={fmt(totalClicks)} color="text-green-500" bg="bg-green-50" loading={isLoading} />
 				<StatCard icon={TrendingUp} label="Conversions" value={fmt(totalConversions)} color="text-indigo-500" bg="bg-indigo-50" loading={isLoading} />
 			</div>
+
+			{/* Ad Spend Chart */}
+			<AdSpendChart data={analyticsData?.spend_chart} />
 
 			{/* Active Campaigns */}
 			<Card>
