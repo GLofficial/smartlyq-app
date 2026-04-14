@@ -1,87 +1,150 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Megaphone } from "lucide-react";
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Megaphone, Search, Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useAds } from "@/api/ad-manager/ads";
+import { PlatformIcon } from "@/pages/social/platform-icon";
+
+const FORMAT_TABS = ["All", "Image", "Video", "Carousel", "Text"] as const;
 
 export function AdsPage() {
 	const { data, isLoading } = useAds();
+	const [tab, setTab] = useState<string>("All");
+	const [search, setSearch] = useState("");
+	const [selected, setSelected] = useState<number | null>(null);
+
+	const ads = (data?.ads ?? [])
+		.filter((a) => tab === "All" || a.format.toLowerCase() === tab.toLowerCase())
+		.filter((a) => !search || a.name.toLowerCase().includes(search.toLowerCase()));
+
+	const detail = selected ? ads.find((a) => a.id === selected) : null;
 
 	return (
-		<div className="space-y-6">
-			<h1 className="text-2xl font-bold">Ads</h1>
+		<div className="space-y-5 max-w-[1400px]">
+			<div className="flex items-center justify-between">
+				<div>
+					<h1 className="text-2xl font-bold text-[var(--foreground)]">Ads</h1>
+					<p className="text-sm text-[var(--muted-foreground)]">Manage individual ads across all campaigns and ad sets / ad groups.</p>
+				</div>
+				<Button size="sm" className="bg-[var(--sq-primary)]"><Plus size={14} /><span className="ml-1.5">Create Ad</span></Button>
+			</div>
 
-			<Card>
-				<CardHeader>
-					<CardTitle className="text-lg">
-						{data ? `${(data?.ads ?? []).length} ad${(data?.ads ?? []).length !== 1 ? "s" : ""}` : "Loading..."}
-					</CardTitle>
-				</CardHeader>
-				<CardContent>
-					{isLoading ? (
-						<div className="flex h-32 items-center justify-center">
-							<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
-						</div>
-					) : !(data?.ads ?? []).length ? (
-						<div className="flex flex-col items-center gap-3 py-12">
-							<Megaphone size={48} className="text-[var(--muted-foreground)]" />
-							<p className="text-[var(--muted-foreground)]">No ads yet.</p>
-							<p className="text-sm text-[var(--muted-foreground)]">
-								Create ads within your ad sets to start running campaigns.
-							</p>
-						</div>
-					) : (
-						<div className="overflow-x-auto">
+			<div className="flex items-center gap-4">
+				<div className="relative w-64">
+					<Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" />
+					<Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search ads or campaigns..." className="pl-9 h-9 text-sm" />
+				</div>
+				<div className="flex gap-1">
+					{FORMAT_TABS.map((t) => {
+						const count = t === "All" ? (data?.ads?.length ?? 0) : (data?.ads?.filter((a) => a.format.toLowerCase() === t.toLowerCase()).length ?? 0);
+						return (
+							<button key={t} onClick={() => setTab(t)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+								tab === t ? "bg-[var(--sq-primary)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
+							}`}>{t} ({count})</button>
+						);
+					})}
+				</div>
+				<span className="ml-auto text-xs text-[var(--muted-foreground)]">All Formats</span>
+			</div>
+
+			<div className="flex gap-4">
+				<Card className={`flex-1 ${detail ? "max-w-[60%]" : ""}`}>
+					<CardContent className="p-0">
+						{isLoading ? (
+							<div className="flex h-40 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" /></div>
+						) : ads.length === 0 ? (
+							<div className="flex flex-col items-center gap-3 py-16">
+								<Megaphone size={40} className="text-[var(--muted-foreground)]" />
+								<p className="text-sm text-[var(--muted-foreground)]">No ads found.</p>
+							</div>
+						) : (
 							<table className="w-full text-sm">
 								<thead>
-									<tr className="border-b border-[var(--border)]">
-										<th className="py-2 text-left font-medium">Name</th>
-										<th className="py-2 text-left font-medium">Ad Set</th>
-										<th className="py-2 text-left font-medium">Status</th>
-										<th className="py-2 text-left font-medium">Format</th>
-										<th className="py-2 text-right font-medium">Spend</th>
-										<th className="py-2 text-right font-medium">Impressions</th>
-										<th className="py-2 text-right font-medium">Clicks</th>
-										<th className="py-2 text-right font-medium">CTR</th>
+									<tr className="border-b border-[var(--border)] text-left text-xs text-[var(--muted-foreground)] uppercase tracking-wider">
+										<th className="px-4 py-3 font-medium">Ad</th>
+										<th className="px-3 py-3 font-medium">Ad Set</th>
+										<th className="px-3 py-3 font-medium">Status</th>
+										<th className="px-3 py-3 font-medium">Format</th>
+										<th className="px-3 py-3 font-medium text-right">Spend</th>
+										<th className="px-3 py-3 font-medium text-right">Impr.</th>
+										<th className="px-3 py-3 font-medium text-right">Clicks</th>
+										<th className="px-3 py-3 font-medium text-right">CTR</th>
 									</tr>
 								</thead>
 								<tbody>
-									{data?.ads.map((ad) => (
-										<tr key={ad.id} className="border-b border-[var(--border)] hover:bg-[var(--accent)]">
-											<td className="py-2 font-medium">{ad.name}</td>
-											<td className="py-2 text-[var(--muted-foreground)]">{ad.ad_set_name}</td>
-											<td className="py-2">
-												<AdStatusBadge status={ad.status} />
+									{ads.map((ad) => (
+										<tr key={ad.id} className={`border-b border-[var(--border)] cursor-pointer transition-colors ${
+											selected === ad.id ? "bg-[var(--sq-primary)]/5" : "hover:bg-[var(--muted)]/30"
+										}`} onClick={() => setSelected(selected === ad.id ? null : ad.id)}>
+											<td className="px-4 py-3">
+												<div className="flex items-center gap-2">
+													<PlatformIcon platform={(ad as any).platform || "facebook"} size={16} />
+													<span className="font-medium text-[var(--foreground)]">{ad.name}</span>
+												</div>
 											</td>
-											<td className="py-2">
-												<span className="rounded bg-[var(--muted)] px-1.5 py-0.5 text-xs capitalize">
-													{ad.format}
-												</span>
-											</td>
-											<td className="py-2 text-right">${ad.spent.toFixed(2)}</td>
-											<td className="py-2 text-right">{ad.impressions.toLocaleString()}</td>
-											<td className="py-2 text-right">{ad.clicks.toLocaleString()}</td>
-											<td className="py-2 text-right font-medium">{ad.ctr.toFixed(2)}%</td>
+											<td className="px-3 py-3 text-[var(--muted-foreground)]">{ad.ad_set_name}</td>
+											<td className="px-3 py-3"><StatusBadge status={ad.status} /></td>
+											<td className="px-3 py-3"><span className="rounded bg-[var(--muted)] px-2 py-0.5 text-xs capitalize">{ad.format}</span></td>
+											<td className="px-3 py-3 text-right font-mono">€{Number(ad.spent).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+											<td className="px-3 py-3 text-right">{Number(ad.impressions).toLocaleString()}</td>
+											<td className="px-3 py-3 text-right">{Number(ad.clicks).toLocaleString()}</td>
+											<td className="px-3 py-3 text-right font-medium">{Number(ad.ctr).toFixed(2)}%</td>
 										</tr>
 									))}
 								</tbody>
 							</table>
+						)}
+					</CardContent>
+				</Card>
+
+				{detail && (
+					<Card className="w-[40%] sticky top-6 self-start">
+						<div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
+							<h3 className="text-sm font-semibold">Ad Preview</h3>
+							<button onClick={() => setSelected(null)} className="p-1 rounded hover:bg-[var(--muted)]"><X size={14} /></button>
 						</div>
-					)}
-				</CardContent>
-			</Card>
+						<CardContent className="py-4 space-y-3">
+							<p className="text-sm font-medium text-[var(--foreground)]">{detail.name}</p>
+							<div className="flex gap-2">
+								<StatusBadge status={detail.status} />
+								<span className="rounded bg-[var(--muted)] px-2 py-0.5 text-xs capitalize">{detail.format}</span>
+							</div>
+							<div className="space-y-2 mt-3">
+								<DetailRow label="Ad Set">{detail.ad_set_name}</DetailRow>
+								<DetailRow label="Headline">{(detail as any).headline || "—"}</DetailRow>
+								<DetailRow label="Spend">€{Number(detail.spent).toFixed(2)}</DetailRow>
+								<DetailRow label="Impressions">{Number(detail.impressions).toLocaleString()}</DetailRow>
+								<DetailRow label="Clicks">{Number(detail.clicks).toLocaleString()}</DetailRow>
+								<DetailRow label="CTR">{Number(detail.ctr).toFixed(2)}%</DetailRow>
+								<DetailRow label="Conversions">{(detail as any).conversions ?? 0}</DetailRow>
+							</div>
+						</CardContent>
+					</Card>
+				)}
+			</div>
 		</div>
 	);
 }
 
-function AdStatusBadge({ status }: { status: string }) {
-	const colors: Record<string, string> = {
-		active: "bg-green-100 text-green-700",
-		paused: "bg-yellow-100 text-yellow-700",
-		rejected: "bg-red-100 text-red-700",
-		pending_review: "bg-orange-100 text-orange-700",
-		completed: "bg-gray-100 text-gray-600",
+function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+	return (
+		<div className="flex items-center justify-between py-1.5 border-b border-[var(--border)] last:border-0">
+			<span className="text-xs text-[var(--muted-foreground)]">{label}</span>
+			<span className="text-sm font-medium text-[var(--foreground)]">{children}</span>
+		</div>
+	);
+}
+
+function StatusBadge({ status }: { status: string }) {
+	const s: Record<string, string> = {
+		active: "bg-emerald-100 text-emerald-700", paused: "bg-amber-100 text-amber-700",
+		rejected: "bg-red-100 text-red-700", draft: "bg-blue-100 text-blue-700",
+		archived: "bg-gray-100 text-gray-600", error: "bg-red-100 text-red-700",
 	};
 	return (
-		<span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${colors[status] ?? "bg-gray-100 text-gray-600"}`}>
+		<span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${s[status] ?? s.draft}`}>
+			<span className={`h-1.5 w-1.5 rounded-full ${status === "active" ? "bg-emerald-500" : status === "paused" ? "bg-amber-500" : "bg-gray-400"}`} />
 			{status.replace("_", " ")}
 		</span>
 	);
