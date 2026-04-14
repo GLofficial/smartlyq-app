@@ -80,6 +80,7 @@ const AdminTracesPage = lazy(() => import("@/pages/admin/admin-traces-page").the
 const AdminKbPage = lazy(() => import("@/pages/admin/admin-kb-page").then((m) => ({ default: m.AdminKbPage })));
 const AdminSkillsPage = lazy(() => import("@/pages/admin/admin-skills-page").then((m) => ({ default: m.AdminSkillsPage })));
 const AdminMonitoringPage = lazy(() => import("@/pages/admin/admin-monitoring-page").then((m) => ({ default: m.AdminMonitoringPage })));
+const CampaignWizard = lazy(() => import("@/pages/ad-manager/campaign-wizard/wizard-layout").then((m) => ({ default: m.CampaignWizard })));
 const AdminBillingDebugPage = lazy(() => import("@/pages/admin/admin-billing-debug-page").then((m) => ({ default: m.AdminBillingDebugPage })));
 const ChatPage = lazy(() => import("@/pages/chat/chat-page").then((m) => ({ default: m.ChatPage })));
 const ContentRewriterPage = lazy(() => import("@/pages/ai/content-rewriter-page").then((m) => ({ default: m.ContentRewriterPage })));
@@ -192,6 +193,7 @@ export const router = createBrowserRouter([
 					{ path: "ad-manager/audit-log", element: <S><AdManagerProvider><AdAuditLogPage /></AdManagerProvider></S> },
 					{ path: "ad-manager/settings", element: <S><AdManagerProvider><AdSettingsPage /></AdManagerProvider></S> },
 					{ path: "ad-manager/campaigns", element: <S><AdManagerProvider><AdCampaignsPage /></AdManagerProvider></S> },
+					{ path: "ad-manager/campaigns/new", element: <S><CampaignWizard /></S> },
 					{ path: "ad-manager/creatives", element: <S><AdManagerProvider><AdCreativesPage /></AdManagerProvider></S> },
 					{ path: "ad-manager/audiences", element: <S><AdManagerProvider><AdAudiencesPage /></AdManagerProvider></S> },
 					{ path: "ad-manager/analytics", element: <S><AdManagerProvider><AdAnalyticsPage /></AdManagerProvider></S> },

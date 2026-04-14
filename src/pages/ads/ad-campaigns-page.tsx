@@ -55,7 +55,7 @@ export function AdCampaignsPage() {
 					<p className="text-sm text-[var(--muted-foreground)]">Manage and monitor your advertising campaigns</p>
 				</div>
 				<Button size="sm" className="bg-[var(--sq-primary)]" asChild>
-					<Link to={p("ad-manager/campaigns")}><Plus size={14} /><span className="ml-1.5">New Campaign</span></Link>
+					<Link to={p("ad-manager/campaigns/new")}><Plus size={14} /><span className="ml-1.5">New Campaign</span></Link>
 				</Button>
 			</div>
 

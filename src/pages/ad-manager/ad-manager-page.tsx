@@ -52,7 +52,7 @@ export function AdManagerPage() {
 						<span className="ml-1.5">Sync Now</span>
 					</Button>
 					<Button size="sm" asChild>
-						<Link to={p("ad-manager/campaigns")}>
+						<Link to={p("ad-manager/campaigns/new")}>
 							<Plus size={14} /><span className="ml-1.5">New Campaign</span>
 						</Link>
 					</Button>
