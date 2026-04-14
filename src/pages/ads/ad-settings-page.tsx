@@ -86,17 +86,7 @@ export function AdSettingsPage() {
 					)}
 
 					{activeTab === "notifications" && (
-						<Card>
-							<div className="px-6 py-4 border-b border-[var(--border)]">
-								<h2 className="text-lg font-semibold">Notification Preferences</h2>
-							</div>
-							<CardContent className="py-6 space-y-4">
-								<ToggleRow label="Campaign status changes" description="Get notified when a campaign is approved, rejected, or paused" defaultOn />
-								<ToggleRow label="Budget alerts" description="Alert when campaign spend reaches 80% of budget" defaultOn />
-								<ToggleRow label="Performance drops" description="Notify when CTR or ROAS drops significantly" />
-								<ToggleRow label="Weekly summary" description="Receive a weekly email digest of ad performance" />
-							</CardContent>
-						</Card>
+						<NotificationsTab preferences={data?.preferences ?? {}} />
 					)}
 				</div>
 			</div>
@@ -104,19 +94,53 @@ export function AdSettingsPage() {
 	);
 }
 
-function ToggleRow({ label, description, defaultOn }: { label: string; description: string; defaultOn?: boolean }) {
-	const [on, setOn] = useState(!!defaultOn);
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { apiClient } from "@/lib/api-client";
+
+const NOTIFICATION_KEYS = [
+	{ key: "notify_campaign_paused", label: "Campaign status changes", desc: "Get notified when a campaign is approved, rejected, or paused", defaultOn: true },
+	{ key: "notify_budget_depleted", label: "Budget alerts", desc: "Alert when campaign spend reaches 80% of budget", defaultOn: true },
+	{ key: "notify_performance_alerts", label: "Performance drops", desc: "Notify when CTR or ROAS drops significantly", defaultOn: false },
+	{ key: "notify_weekly_report", label: "Weekly summary", desc: "Receive a weekly email digest of ad performance", defaultOn: false },
+];
+
+function NotificationsTab({ preferences }: { preferences: Record<string, string> }) {
+	const qc = useQueryClient();
+	const mutation = useMutation({
+		mutationFn: (prefs: Record<string, string>) =>
+			apiClient.post<{ updated?: boolean }>("/api/spa/ad-manager/settings", { action: "update-preferences", preferences: prefs }),
+		onSuccess: () => { toast.success("Preferences saved"); qc.invalidateQueries({ queryKey: ["ad-manager", "settings"] }); },
+		onError: (e: Error) => toast.error(e.message),
+	});
+
+	const toggle = (key: string, current: boolean) => {
+		mutation.mutate({ [key]: current ? "0" : "1" });
+	};
+
 	return (
-		<div className="flex items-center justify-between py-2">
-			<div>
-				<p className="text-sm font-medium text-[var(--foreground)]">{label}</p>
-				<p className="text-xs text-[var(--muted-foreground)]">{description}</p>
+		<Card>
+			<div className="px-6 py-4 border-b border-[var(--border)]">
+				<h2 className="text-lg font-semibold">Notification Preferences</h2>
 			</div>
-			<button onClick={() => setOn(!on)}
-				className={`relative h-6 w-11 rounded-full transition-colors ${on ? "bg-[var(--sq-primary)]" : "bg-gray-300"}`}>
-				<span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${on ? "translate-x-5" : "translate-x-0.5"}`} />
-			</button>
-		</div>
+			<CardContent className="py-6 space-y-4">
+				{NOTIFICATION_KEYS.map((n) => {
+					const isOn = preferences[n.key] !== undefined ? preferences[n.key] === "1" : n.defaultOn;
+					return (
+						<div key={n.key} className="flex items-center justify-between py-2">
+							<div>
+								<p className="text-sm font-medium text-[var(--foreground)]">{n.label}</p>
+								<p className="text-xs text-[var(--muted-foreground)]">{n.desc}</p>
+							</div>
+							<button onClick={() => toggle(n.key, isOn)} disabled={mutation.isPending}
+								className={`relative h-6 w-11 rounded-full transition-colors ${isOn ? "bg-[var(--sq-primary)]" : "bg-gray-300"}`}>
+								<span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${isOn ? "translate-x-5" : "translate-x-0.5"}`} />
+							</button>
+						</div>
+					);
+				})}
+			</CardContent>
+		</Card>
 	);
 }
 

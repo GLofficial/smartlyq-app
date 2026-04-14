@@ -11,6 +11,7 @@ export interface AdSettings {
 	default_currency: string;
 	default_timezone: string;
 	auto_optimize: boolean;
+	preferences: Record<string, string>;
 }
 
 export function useAdSettings() {
