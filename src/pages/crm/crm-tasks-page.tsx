@@ -164,7 +164,7 @@ export function CrmTasksPage() {
     );
   }
 
-  function handleDropOnCard(targetId: number, status: TaskStatus) {
+  function handleDropOnCard(targetId: number, status: TaskStatus, e: React.DragEvent) {
     if (draggingId === null || draggingId === targetId) return;
     const task = tasks.find((t) => t.id === draggingId);
     if (!task) { setDraggingId(null); return; }
@@ -172,10 +172,14 @@ export function CrmTasksPage() {
     const col = columns.find((c) => c.status === status);
     if (!col) { setDraggingId(null); return; }
 
-    // Build new order: remove dragged task, insert before target
+    // Detect top/bottom half of target card
+    const rect = e.currentTarget.getBoundingClientRect();
+    const dropAfter = e.clientY > rect.top + rect.height / 2;
+
+    // Build new order: remove dragged task, insert before or after target
     const colIds = col.tasks.map((t) => t.id).filter((id) => id !== draggingId);
     const targetIdx = colIds.indexOf(targetId);
-    colIds.splice(targetIdx, 0, draggingId);
+    colIds.splice(dropAfter ? targetIdx + 1 : targetIdx, 0, draggingId);
 
     setDraggingId(null);
 
@@ -407,7 +411,7 @@ export function CrmTasksPage() {
                 {colTasks.map((task) => (
                   <div key={task.id} className="relative"
                     onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                    onDrop={(e) => { e.stopPropagation(); handleDropOnCard(task.id, status); }}
+                    onDrop={(e) => { e.stopPropagation(); handleDropOnCard(task.id, status, e); }}
                   >
                     {bulkMode && (
                       <button
