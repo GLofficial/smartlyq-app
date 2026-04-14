@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folders, Search, Plus, ChevronDown, ChevronRight, Eye, Layers, BarChart3, Copy, Pause, Play, Trash2 } from "lucide-react";
+import { Folders, Search, Plus, ChevronDown, ChevronRight, Eye, Layers, BarChart3, Copy, Pause, Play, Trash2, Pencil, DollarSign } from "lucide-react";
+import { DeleteDialog, PauseDialog, EditBudgetDialog, EditNameDialog, CampaignAnalyticsDialog } from "./ad-dialogs";
 import { apiClient } from "@/lib/api-client";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { Link } from "react-router-dom";
@@ -144,10 +145,12 @@ export function AdCampaignsPage() {
 
 function ExpandedRow({ campaign: c, basePath }: { campaign: Campaign; basePath: (p: string) => string }) {
 	const mutation = useCampaignAction();
+	const [dialog, setDialog] = useState<"delete" | "pause" | "budget" | "name" | "analytics" | null>(null);
 	const budgetPct = c.budget > 0 ? Math.min(100, (c.spent / c.budget) * 100) : 0;
 	const cpc = c.clicks > 0 ? c.spent / c.clicks : 0;
 	const convRate = c.clicks > 0 ? (c.conversions / c.clicks) * 100 : 0;
 	const isPaused = c.status === "paused";
+
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="grid grid-cols-4 gap-6">
@@ -171,21 +174,33 @@ function ExpandedRow({ campaign: c, basePath }: { campaign: Campaign; basePath: 
 					<p className="text-sm font-medium text-[var(--foreground)]">{convRate.toFixed(2)}%</p>
 				</div>
 			</div>
-			<div className="flex gap-2">
+			<div className="flex flex-wrap gap-2">
 				<Button variant="outline" size="sm" asChild><Link to={basePath("ad-manager/ads")}><Eye size={13} className="mr-1" /> View Ads</Link></Button>
 				<Button variant="outline" size="sm" asChild><Link to={basePath("ad-manager/ad-sets")}><Layers size={13} className="mr-1" /> View Ad Groups</Link></Button>
-				<Button variant="outline" size="sm" asChild><Link to={basePath("ad-manager/analytics")}><BarChart3 size={13} className="mr-1" /> Analytics</Link></Button>
+				<Button variant="outline" size="sm" onClick={() => setDialog("analytics")}><BarChart3 size={13} className="mr-1" /> Analytics</Button>
+				<Button variant="outline" size="sm" onClick={() => setDialog("budget")}><DollarSign size={13} className="mr-1" /> Edit Budget</Button>
+				<Button variant="outline" size="sm" onClick={() => setDialog("name")}><Pencil size={13} className="mr-1" /> Rename</Button>
 				<Button variant="outline" size="sm" onClick={() => mutation.mutate({ action: "duplicate", id: c.id })} disabled={mutation.isPending}>
 					<Copy size={13} className="mr-1" /> Duplicate
 				</Button>
-				<Button variant="outline" size="sm" onClick={() => mutation.mutate({ action: isPaused ? "resume" : "pause", id: c.id })} disabled={mutation.isPending}>
+				<Button variant="outline" size="sm" onClick={() => setDialog("pause")}>
 					{isPaused ? <><Play size={13} className="mr-1 text-emerald-600" /> Resume</> : <><Pause size={13} className="mr-1 text-amber-600" /> Pause</>}
 				</Button>
-				<Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50"
-					onClick={() => { if (confirm(`Delete "${c.name}"?`)) mutation.mutate({ action: "delete", id: c.id }); }} disabled={mutation.isPending}>
+				<Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => setDialog("delete")}>
 					<Trash2 size={13} className="mr-1" /> Delete
 				</Button>
 			</div>
+
+			{/* Dialogs */}
+			<DeleteDialog open={dialog === "delete"} onClose={() => setDialog(null)} entityType="campaign" entityName={c.name} spent={c.spent}
+				onConfirm={() => { mutation.mutate({ action: "delete", id: c.id }); setDialog(null); }} loading={mutation.isPending} />
+			<PauseDialog open={dialog === "pause"} onClose={() => setDialog(null)} entityType="campaign" entityName={c.name} isPaused={isPaused}
+				onConfirm={() => { mutation.mutate({ action: isPaused ? "resume" : "pause", id: c.id }); setDialog(null); }} loading={mutation.isPending} />
+			<EditBudgetDialog open={dialog === "budget"} onClose={() => setDialog(null)} entityName={c.name} currentBudget={c.budget} budgetType={c.budget_type || "daily"}
+				onConfirm={(amount) => { mutation.mutate({ action: "update_budget", id: c.id, budget_amount: amount }); setDialog(null); }} loading={mutation.isPending} />
+			<EditNameDialog open={dialog === "name"} onClose={() => setDialog(null)} entityType="Campaign" currentName={c.name}
+				onConfirm={(name) => { mutation.mutate({ action: "update_name", id: c.id, name }); setDialog(null); }} loading={mutation.isPending} />
+			<CampaignAnalyticsDialog open={dialog === "analytics"} onClose={() => setDialog(null)} campaign={c} />
 		</div>
 	);
 }

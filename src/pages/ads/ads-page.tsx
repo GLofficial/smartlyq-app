@@ -7,6 +7,7 @@ import { useAds } from "@/api/ad-manager/ads";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
 import { useAdAction2 } from "@/api/ad-manager/mutations";
+import { DeleteDialog, PauseDialog } from "./ad-dialogs";
 
 const FORMAT_TABS = ["All", "Image", "Video", "Carousel", "Text"] as const;
 
@@ -142,16 +143,20 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 
 function AdActions({ id, status, name }: { id: number; status: string; name: string }) {
 	const mutation = useAdAction2();
+	const [dialog, setDialog] = useState<"delete" | "pause" | null>(null);
 	const isPaused = status === "paused";
 	return (
 		<div className="flex gap-2 pt-3 border-t border-[var(--border)] mt-2">
-			<Button variant="outline" size="sm" onClick={() => mutation.mutate({ action: isPaused ? "resume" : "pause", id })} disabled={mutation.isPending}>
+			<Button variant="outline" size="sm" onClick={() => setDialog("pause")}>
 				{isPaused ? <><Play size={13} className="mr-1 text-emerald-600" /> Resume</> : <><Pause size={13} className="mr-1 text-amber-600" /> Pause</>}
 			</Button>
-			<Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50"
-				onClick={() => { if (confirm(`Delete "${name}"?`)) mutation.mutate({ action: "delete", id }); }} disabled={mutation.isPending}>
+			<Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => setDialog("delete")}>
 				<Trash2 size={13} className="mr-1" /> Delete
 			</Button>
+			<DeleteDialog open={dialog === "delete"} onClose={() => setDialog(null)} entityType="ad" entityName={name}
+				onConfirm={() => { mutation.mutate({ action: "delete", id }); setDialog(null); }} loading={mutation.isPending} />
+			<PauseDialog open={dialog === "pause"} onClose={() => setDialog(null)} entityType="ad" entityName={name} isPaused={isPaused}
+				onConfirm={() => { mutation.mutate({ action: isPaused ? "resume" : "pause", id }); setDialog(null); }} loading={mutation.isPending} />
 		</div>
 	);
 }
