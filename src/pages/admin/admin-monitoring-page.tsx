@@ -1,36 +1,62 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Database, Users, Activity, AlertTriangle, Clock, Server } from "lucide-react";
-import { useAdminMonitoring } from "@/api/admin-monitoring";
+import { ServerHealth } from "./monitoring/server-health";
+import { ServicesPanel } from "./monitoring/services-panel";
+import { DatabasePanel, EndpointsPanel, SSLPanel, RedisPanel, FpmPanel, R2Panel } from "./monitoring/infra-panels";
+import { SocialApiPanel, CronPanel, AiQueuePanel, ErrorLogsPanel, NginxPanel, AuthAuditPanel } from "./monitoring/ops-panels";
 
 export function AdminMonitoringPage() {
-	const { data, isLoading } = useAdminMonitoring();
-	const v = (n?: number) => isLoading ? "..." : (n ?? 0).toLocaleString();
-
 	return (
-		<div className="space-y-6">
-			<h1 className="text-2xl font-bold">System Monitoring</h1>
-			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				<Stat icon={Database} label="Database Size" value={isLoading ? "..." : `${data?.db_size_mb ?? 0} MB`} color="text-blue-600" />
-				<Stat icon={Users} label="Total Users" value={v(data?.total_users)} color="text-green-600" />
-				<Stat icon={Activity} label="Active (24h)" value={v(data?.active_users_24h)} color="text-purple-600" />
-				<Stat icon={Clock} label="Pending Jobs" value={v(data?.pending_jobs)} color="text-yellow-600" />
-				<Stat icon={AlertTriangle} label="Failed (24h)" value={v(data?.failed_jobs_24h)} color="text-red-600" />
-				<Stat icon={Server} label="PHP Version" value={isLoading ? "..." : data?.php_version ?? ""} color="text-gray-600" />
+		<div className="space-y-6 max-w-[1600px]">
+			{/* Header */}
+			<div className="flex items-center justify-between">
+				<div>
+					<h1 className="text-2xl font-bold text-[var(--foreground)]">Command Center</h1>
+					<p className="text-sm text-[var(--muted-foreground)] mt-0.5">Real-time system monitoring and diagnostics</p>
+				</div>
+				<div className="flex items-center gap-2">
+					<span className="flex items-center gap-1.5 text-xs text-emerald-600">
+						<span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+						Auto-refresh active
+					</span>
+				</div>
 			</div>
-			{data?.server_time && (
-				<p className="text-sm text-[var(--muted-foreground)]">Server time: {data.server_time}</p>
-			)}
-		</div>
-	);
-}
 
-function Stat({ icon: Icon, label, value, color }: { icon: React.ElementType; label: string; value: string; color: string }) {
-	return (
-		<Card>
-			<CardContent className="flex items-center gap-4 p-6">
-				<Icon size={24} className={color} />
-				<div><p className="text-2xl font-bold">{value}</p><p className="text-sm text-[var(--muted-foreground)]">{label}</p></div>
-			</CardContent>
-		</Card>
+			{/* Row 1: Server + Services */}
+			<div className="grid gap-6 lg:grid-cols-2">
+				<ServerHealth />
+				<ServicesPanel />
+			</div>
+
+			{/* Row 2: Endpoints + SSL + Nginx */}
+			<div className="grid gap-6 lg:grid-cols-3">
+				<EndpointsPanel />
+				<SSLPanel />
+				<NginxPanel />
+			</div>
+
+			{/* Row 3: Database + Redis + PHP-FPM */}
+			<div className="grid gap-6 lg:grid-cols-3">
+				<DatabasePanel />
+				<RedisPanel />
+				<FpmPanel />
+			</div>
+
+			{/* Row 4: AI Queue + Social APIs */}
+			<div className="grid gap-6 lg:grid-cols-2">
+				<AiQueuePanel />
+				<SocialApiPanel />
+			</div>
+
+			{/* Row 5: R2 Storage */}
+			<R2Panel />
+
+			{/* Row 6: Cron Jobs */}
+			<CronPanel />
+
+			{/* Row 7: Error Logs + Auth Audit */}
+			<div className="grid gap-6 lg:grid-cols-2">
+				<ErrorLogsPanel />
+				<AuthAuditPanel />
+			</div>
+		</div>
 	);
 }

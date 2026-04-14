@@ -1,0 +1,189 @@
+import { useState } from "react";
+import { Share2, Clock, Zap, AlertTriangle, Search, ShieldCheck, Globe as GlobeIcon } from "lucide-react";
+import { useSocialApi, useCron, useAiQueue, useErrorLogs, useAuthAudit, useNginx } from "@/api/admin-monitoring";
+import { Section, SectionSkeleton, BigStat } from "./section";
+import { StatusBadge } from "./status-badge";
+import { Input } from "@/components/ui/input";
+
+export function SocialApiPanel() {
+	const { data, isLoading } = useSocialApi();
+	if (isLoading || !data) return <SectionSkeleton />;
+	const apis = Array.isArray(data) ? data : [];
+	return (
+		<Section icon={Share2} title="Social Media APIs">
+			<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+				{apis.map((a) => (
+					<div key={a.platform} className="flex items-center gap-2 rounded-lg border border-[var(--border)] p-3">
+						<div className="flex-1 min-w-0">
+							<p className="text-sm font-medium text-[var(--foreground)] truncate">{a.label}</p>
+							<p className="text-[11px] text-[var(--muted-foreground)] truncate">{a.description ?? a.source}</p>
+						</div>
+						<StatusBadge status={a.status} />
+					</div>
+				))}
+			</div>
+		</Section>
+	);
+}
+
+export function CronPanel() {
+	const { data, isLoading } = useCron();
+	if (isLoading || !data) return <SectionSkeleton />;
+	const jobs = Array.isArray(data) ? data : [];
+	return (
+		<Section icon={Clock} title="Cron Jobs Health">
+			<div className="overflow-x-auto">
+				<table className="w-full text-xs">
+					<thead>
+						<tr className="border-b border-[var(--border)] text-left text-[var(--muted-foreground)]">
+							<th className="py-2 pr-4 font-medium">Job</th>
+							<th className="py-2 pr-4 font-medium">Schedule</th>
+							<th className="py-2 pr-4 font-medium">Status</th>
+							<th className="py-2 pr-4 font-medium">Last Run</th>
+							<th className="py-2 pr-4 font-medium">Duration</th>
+						</tr>
+					</thead>
+					<tbody>
+						{jobs.map((j) => (
+							<tr key={j.name} className="border-b border-[var(--border)] last:border-0">
+								<td className="py-2 pr-4 font-medium text-[var(--foreground)]">{j.label || j.name}</td>
+								<td className="py-2 pr-4 font-mono text-[var(--muted-foreground)]">{j.schedule}</td>
+								<td className="py-2 pr-4"><StatusBadge status={j.status} /></td>
+								<td className="py-2 pr-4 text-[var(--muted-foreground)]">{j.last_run || "--"}</td>
+								<td className="py-2 pr-4 font-mono text-[var(--muted-foreground)]">{j.duration || "--"}</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+		</Section>
+	);
+}
+
+export function AiQueuePanel() {
+	const { data, isLoading } = useAiQueue();
+	if (isLoading || !data) return <SectionSkeleton />;
+	if (!data.available) return null;
+	const c = data.counts ?? {};
+	return (
+		<Section icon={Zap} title="AI Captain Queue" live>
+			<div className="grid grid-cols-3 sm:grid-cols-5 gap-4 mb-4">
+				<BigStat value={c.queued ?? 0} label="Queued" color="text-blue-600" />
+				<BigStat value={c.running ?? 0} label="Running" color="text-emerald-600" />
+				<BigStat value={c.completed_24h ?? 0} label="Done (24h)" />
+				<BigStat value={c.failed_24h ?? 0} label="Failed (24h)" color={Number(c.failed_24h ?? 0) > 0 ? "text-red-600" : undefined} />
+				<BigStat value={c.retrying ?? 0} label="Retrying" color="text-amber-600" />
+			</div>
+			{(data.recent_failures?.length ?? 0) > 0 && (
+				<div className="mt-3">
+					<p className="text-xs font-semibold text-[var(--muted-foreground)] mb-2 uppercase tracking-wider">Recent Failures</p>
+					<div className="space-y-1">
+						{data.recent_failures.slice(0, 5).map((f, i) => (
+							<div key={i} className="flex items-center justify-between text-xs py-1 border-b border-[var(--border)] last:border-0">
+								<span className="font-mono text-red-600 truncate max-w-[60%]">{f.error}</span>
+								<span className="text-[var(--muted-foreground)]">{f.at}</span>
+							</div>
+						))}
+					</div>
+				</div>
+			)}
+		</Section>
+	);
+}
+
+export function ErrorLogsPanel() {
+	const [page, setPage] = useState(1);
+	const [search, setSearch] = useState("");
+	const { data, isLoading } = useErrorLogs(page, search);
+	return (
+		<Section icon={AlertTriangle} title="Error Logs">
+			<div className="flex items-center gap-2 mb-4">
+				<div className="relative flex-1">
+					<Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" />
+					<Input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+						placeholder="Search errors..." className="pl-9 h-8 text-xs" />
+				</div>
+				<span className="text-xs text-[var(--muted-foreground)]">{data?.total ?? 0} entries</span>
+			</div>
+			<div className="overflow-x-auto max-h-80 overflow-y-auto">
+				{isLoading ? <SectionSkeleton /> : (
+					<table className="w-full text-xs">
+						<thead className="sticky top-0 bg-[var(--card)]">
+							<tr className="border-b border-[var(--border)] text-left text-[var(--muted-foreground)]">
+								<th className="py-2 pr-3 font-medium w-36">Time</th>
+								<th className="py-2 pr-3 font-medium w-16">Level</th>
+								<th className="py-2 font-medium">Message</th>
+							</tr>
+						</thead>
+						<tbody>
+							{(data?.rows ?? []).map((r, i) => (
+								<tr key={i} className="border-b border-[var(--border)] last:border-0 align-top">
+									<td className="py-1.5 pr-3 font-mono text-[var(--muted-foreground)] whitespace-nowrap">{r.time}</td>
+									<td className="py-1.5 pr-3"><StatusBadge status={r.level} /></td>
+									<td className="py-1.5 text-[var(--foreground)] break-all max-w-md">{r.message}</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				)}
+			</div>
+			{(data?.pages ?? 0) > 1 && (
+				<div className="flex items-center justify-center gap-2 mt-3">
+					<button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1}
+						className="px-2 py-1 text-xs rounded border border-[var(--border)] disabled:opacity-40">Prev</button>
+					<span className="text-xs text-[var(--muted-foreground)]">{page} / {data?.pages}</span>
+					<button onClick={() => setPage(page + 1)} disabled={page >= (data?.pages ?? 1)}
+						className="px-2 py-1 text-xs rounded border border-[var(--border)] disabled:opacity-40">Next</button>
+				</div>
+			)}
+		</Section>
+	);
+}
+
+export function NginxPanel() {
+	const { data, isLoading } = useNginx();
+	if (isLoading || !data) return <SectionSkeleton />;
+	const s = data.status ?? {};
+	return (
+		<Section icon={GlobeIcon} title="Nginx Traffic (1h)">
+			<div className="grid grid-cols-4 gap-3 mb-3">
+				<BigStat value={data.total?.toLocaleString() ?? 0} label="Total" />
+				<BigStat value={s["2xx"] ?? 0} label="2xx" color="text-emerald-600" />
+				<BigStat value={s["4xx"] ?? 0} label="4xx" color="text-amber-600" />
+				<BigStat value={s["5xx"] ?? 0} label="5xx" color={Number(s["5xx"] ?? 0) > 0 ? "text-red-600" : undefined} />
+			</div>
+		</Section>
+	);
+}
+
+export function AuthAuditPanel() {
+	const { data, isLoading } = useAuthAudit();
+	if (isLoading || !data) return <SectionSkeleton />;
+	const rows = Array.isArray(data) ? data : [];
+	return (
+		<Section icon={ShieldCheck} title="Auth Audit Trail">
+			<div className="overflow-x-auto max-h-64 overflow-y-auto">
+				<table className="w-full text-xs">
+					<thead className="sticky top-0 bg-[var(--card)]">
+						<tr className="border-b border-[var(--border)] text-left text-[var(--muted-foreground)]">
+							<th className="py-2 pr-3 font-medium">Time</th>
+							<th className="py-2 pr-3 font-medium">Event</th>
+							<th className="py-2 pr-3 font-medium">User</th>
+							<th className="py-2 font-medium">IP</th>
+						</tr>
+					</thead>
+					<tbody>
+						{rows.slice(0, 20).map((r, i) => (
+							<tr key={i} className="border-b border-[var(--border)] last:border-0">
+								<td className="py-1.5 pr-3 font-mono text-[var(--muted-foreground)] whitespace-nowrap">{r.time}</td>
+								<td className="py-1.5 pr-3 text-[var(--foreground)]">{r.event}</td>
+								<td className="py-1.5 pr-3 text-[var(--foreground)]">{r.user}</td>
+								<td className="py-1.5 font-mono text-[var(--muted-foreground)]">{r.ip}</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+		</Section>
+	);
+}
