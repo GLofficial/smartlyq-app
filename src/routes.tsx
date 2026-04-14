@@ -20,6 +20,7 @@ const CalendarPage = lazy(() => import("@/pages/social/calendar-page").then((m) 
 const CommentsPage = lazy(() => import("@/pages/social/comments-page").then((m) => ({ default: m.CommentsPage })));
 const InboxPage = lazy(() => import("@/pages/social/inbox-page").then((m) => ({ default: m.InboxPage })));
 const AnalyticsPage = lazy(() => import("@/pages/social/analytics-page").then((m) => ({ default: m.AnalyticsPage })));
+const SocialAccountsPage = lazy(() => import("@/pages/social/social-accounts-page").then((m) => ({ default: m.SocialAccountsPage })));
 const ChatbotListPage = lazy(() => import("@/pages/chatbot/chatbot-list-page").then((m) => ({ default: m.ChatbotListPage })));
 const ChatbotAnalyticsPage = lazy(() => import("@/pages/chatbot/chatbot-analytics-page").then((m) => ({ default: m.ChatbotAnalyticsPage })));
 const ChatbotTemplatesPage = lazy(() => import("@/pages/chatbot/chatbot-templates-page").then((m) => ({ default: m.ChatbotTemplatesPage })));
@@ -154,7 +155,7 @@ export const router = createBrowserRouter([
 					{ path: "social-media/comments", element: <S><CommentsPage /></S> },
 					{ path: "social-media/inbox", element: <S><InboxPage /></S> },
 					{ path: "social-media/analytics", element: <S><AnalyticsPage /></S> },
-					{ path: "social-media/accounts", element: <S><IntegrationsPage /></S> },
+					{ path: "social-media/accounts", element: <S><SocialAccountsPage /></S> },
 					{ path: "social-media/labels", element: <S><LabelsPage /></S> },
 					{ path: "social-media/queues", element: <S><QueuesPage /></S> },
 					{ path: "social-media/report", element: <S><ReportsPage /></S> },
