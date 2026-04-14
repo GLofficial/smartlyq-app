@@ -27,7 +27,7 @@ const PHONE_TYPES = [
 ];
 
 const CONTACT_TYPES = [
-	{ value: "", label: "None" },
+	{ value: "none", label: "None" },
 	{ value: "lead", label: "Lead" },
 	{ value: "customer", label: "Customer" },
 	{ value: "partner", label: "Partner" },
@@ -37,7 +37,7 @@ const CONTACT_TYPES = [
 ];
 
 const TIMEZONES = [
-	"", "UTC", "US/Eastern", "US/Central", "US/Mountain", "US/Pacific",
+	"none", "UTC", "US/Eastern", "US/Central", "US/Mountain", "US/Pacific",
 	"Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Athens",
 	"Europe/Moscow", "Asia/Dubai", "Asia/Kolkata", "Asia/Shanghai",
 	"Asia/Tokyo", "Asia/Singapore", "Australia/Sydney",
@@ -70,8 +70,8 @@ export function ContactDetailSheet({ contact, onClose }: Props) {
 			phoneType: contact.phone_type || "mobile",
 			company: contact.company,
 			role: contact.role,
-			contactType: contact.contact_type || "",
-			timezone: contact.timezone || "",
+			contactType: contact.contact_type || "none",
+			timezone: contact.timezone || "none",
 			avatar: contact.avatar || "",
 		});
 		setEditing(true);
@@ -85,7 +85,9 @@ export function ContactDetailSheet({ contact, onClose }: Props) {
 			email: f.email.trim(), secondary_email: f.secondaryEmail.trim(),
 			phone: f.phone.trim(), phone_country_code: f.phoneCode, phone_type: f.phoneType,
 			company: f.company.trim(), role: f.role.trim(),
-			contact_type: f.contactType, timezone: f.timezone, avatar: f.avatar,
+			contact_type: f.contactType === "none" ? "" : f.contactType,
+			timezone: f.timezone === "none" ? "" : f.timezone,
+			avatar: f.avatar,
 		}, {
 			onSuccess: () => { toast.success("Contact saved"); setEditing(false); },
 			onError: () => toast.error("Failed to save contact"),
@@ -252,7 +254,7 @@ export function ContactDetailSheet({ contact, onClose }: Props) {
 										<Label className="text-xs">Timezone</Label>
 										<Select value={f.timezone} onValueChange={(v) => setF((p) => ({ ...p, timezone: v }))}>
 											<SelectTrigger className="h-9"><SelectValue placeholder="Select" /></SelectTrigger>
-											<SelectContent className="max-h-[280px]">{TIMEZONES.map((tz) => <SelectItem key={tz} value={tz}>{tz || "None"}</SelectItem>)}</SelectContent>
+											<SelectContent className="max-h-[280px]">{TIMEZONES.map((tz) => <SelectItem key={tz} value={tz}>{tz === "none" ? "None" : tz}</SelectItem>)}</SelectContent>
 										</Select>
 									</div>
 								</div>

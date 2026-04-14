@@ -17,7 +17,7 @@ const PHONE_TYPES = [
 ];
 
 const CONTACT_TYPES = [
-	{ value: "", label: "Select type" },
+	{ value: "none", label: "Select type" },
 	{ value: "lead", label: "Lead" },
 	{ value: "customer", label: "Customer" },
 	{ value: "partner", label: "Partner" },
@@ -55,8 +55,8 @@ export function ContactCreateDialog({ open, onOpenChange }: Props) {
 	const [phone, setPhone] = useState("");
 	const [role, setRole] = useState("");
 	const [status, setStatus] = useState("prospect");
-	const [contactType, setContactType] = useState("");
-	const [timezone, setTimezone] = useState("");
+	const [contactType, setContactType] = useState("none");
+	const [timezone, setTimezone] = useState("none");
 	const [avatarPreview, setAvatarPreview] = useState("");
 	const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -64,7 +64,7 @@ export function ContactCreateDialog({ open, onOpenChange }: Props) {
 		setFirstName(""); setLastName(""); setEmail(""); setSecondaryEmail("");
 		setShowSecondaryEmail(false); setCompany(""); setPhoneType("mobile");
 		setPhoneCode("+1"); setPhone(""); setRole(""); setStatus("prospect");
-		setContactType(""); setTimezone(""); setAvatarPreview(""); setErrors({});
+		setContactType("none"); setTimezone("none"); setAvatarPreview(""); setErrors({});
 	}
 
 	function validate(): boolean {
@@ -92,8 +92,8 @@ export function ContactCreateDialog({ open, onOpenChange }: Props) {
 				phone_country_code: phoneCode,
 				role: role.trim(),
 				status,
-				contact_type: contactType,
-				timezone,
+				contact_type: contactType === "none" ? "" : contactType,
+				timezone: timezone === "none" ? "" : timezone,
 				avatar: avatarPreview,
 			},
 			{
@@ -248,7 +248,7 @@ export function ContactCreateDialog({ open, onOpenChange }: Props) {
 						<Select value={timezone} onValueChange={setTimezone}>
 							<SelectTrigger><SelectValue placeholder="Select timezone" /></SelectTrigger>
 							<SelectContent className="max-h-[280px]">
-								<SelectItem value="">None</SelectItem>
+								<SelectItem value="none">None</SelectItem>
 								{TIMEZONES.map((tz) => (
 									<SelectItem key={tz} value={tz}>{tz}</SelectItem>
 								))}
