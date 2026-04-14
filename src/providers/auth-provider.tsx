@@ -57,7 +57,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 					clearAuth();
 				}
 			} catch {
-				if (!cancelled) clearAuth();
+				// Network errors (including aborted requests from rapid refresh)
+				// should NOT clear auth — only explicit 401 responses should.
 			}
 		}
 
