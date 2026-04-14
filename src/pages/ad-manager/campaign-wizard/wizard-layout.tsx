@@ -77,6 +77,14 @@ export function CampaignWizard() {
 		} finally { setSubmitting(false); }
 	};
 
+	const handleNext = () => {
+		if (!canNext) {
+			toast.error("Please complete the required fields before proceeding.");
+			return;
+		}
+		setStep(step + 1);
+	};
+
 	return (
 		<div className="max-w-4xl mx-auto space-y-6">
 			{/* Header */}
@@ -88,19 +96,19 @@ export function CampaignWizard() {
 				</div>
 			</div>
 
-			{/* Step Indicator */}
-			<div className="flex items-center gap-1">
+			{/* Step Indicator — compact inline like Bootstrap */}
+			<div className="flex items-center gap-0">
 				{STEPS.map((s, i) => (
-					<div key={s.num} className="flex items-center gap-1">
+					<div key={s.num} className="flex items-center">
 						<button onClick={() => i <= step && setStep(i)}
-							className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+							className="flex items-center gap-1.5 px-1 py-1 text-xs font-medium transition-colors">
+							<span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold ${
 								i === step ? "bg-[var(--sq-primary)] text-white" :
-								i < step ? "bg-emerald-100 text-emerald-700" : "bg-[var(--muted)] text-[var(--muted-foreground)]"
-							}`}>
-							{i < step ? <Check size={12} /> : <span>{s.num}</span>}
-							<span className="hidden sm:inline">{s.label}</span>
+								i < step ? "bg-emerald-500 text-white" : "bg-[var(--muted)] text-[var(--muted-foreground)]"
+							}`}>{i < step ? <Check size={11} /> : s.num}</span>
+							<span className={`hidden sm:inline ${i === step ? "text-[var(--foreground)] font-semibold" : "text-[var(--muted-foreground)]"}`}>{s.label}</span>
 						</button>
-						{i < STEPS.length - 1 && <div className={`h-px w-4 ${i < step ? "bg-emerald-400" : "bg-[var(--border)]"}`} />}
+						{i < STEPS.length - 1 && <div className={`h-px w-6 ${i < step ? "bg-emerald-400" : "bg-[var(--border)]"}`} />}
 					</div>
 				))}
 			</div>
@@ -123,7 +131,7 @@ export function CampaignWizard() {
 					<ArrowLeft size={14} className="mr-1" /> Back
 				</Button>
 				{step < STEPS.length - 1 ? (
-					<Button onClick={() => setStep(step + 1)} disabled={!canNext}>
+					<Button onClick={handleNext}>
 						Next <ArrowRight size={14} className="ml-1" />
 					</Button>
 				) : (
