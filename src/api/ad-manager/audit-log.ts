@@ -8,12 +8,26 @@ export interface AuditEntry {
 	details: string; environment: string;
 }
 
-export function useAdAuditLog(page = 1) {
+export interface AuditFilters {
+	page: number;
+	action: string;
+	entity_type: string;
+	environment: string;
+	search: string;
+}
+
+export function useAdAuditLog(filters: AuditFilters) {
 	const { queryString } = useAdContext();
+	let qs = `?page=${filters.page}${queryString}`;
+	if (filters.action) qs += `&action=${encodeURIComponent(filters.action)}`;
+	if (filters.entity_type) qs += `&entity_type=${encodeURIComponent(filters.entity_type)}`;
+	if (filters.environment) qs += `&environment=${encodeURIComponent(filters.environment)}`;
+	if (filters.search) qs += `&search=${encodeURIComponent(filters.search)}`;
+
 	return useQuery({
-		queryKey: ["ad-manager", "audit-log", page, queryString],
+		queryKey: ["ad-manager", "audit-log", filters],
 		queryFn: () => apiClient.get<{ entries: AuditEntry[]; total: number; page: number; pages: number }>(
-			`/api/spa/ad-manager/audit-log?page=${page}${queryString}`
+			`/api/spa/ad-manager/audit-log${qs}`
 		),
 	});
 }
