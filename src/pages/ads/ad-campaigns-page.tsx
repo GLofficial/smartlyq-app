@@ -8,6 +8,7 @@ import { apiClient } from "@/lib/api-client";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { Link } from "react-router-dom";
 import { useWorkspaceStore } from "@/stores/workspace-store";
+import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
 
 function useAdCampaigns() {
 	return useQuery({
@@ -43,7 +44,8 @@ export function AdCampaignsPage() {
 		Draft: data?.campaigns?.filter((c) => c.status === "draft").length ?? 0 };
 
 	return (
-		<div className="space-y-5 max-w-[1400px]">
+		<div className="space-y-5">
+			<AdToolbar />
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-[var(--foreground)]">Campaigns</h1>

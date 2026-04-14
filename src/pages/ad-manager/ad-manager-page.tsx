@@ -5,6 +5,7 @@ import { useAdManager } from "@/api/tools";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { Link } from "react-router-dom";
 import { useWorkspaceStore } from "@/stores/workspace-store";
+import { AdToolbar } from "./ad-toolbar";
 
 function fmt(n: number): string {
 	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -27,7 +28,8 @@ export function AdManagerPage() {
 	const totalLeads = campaigns.reduce((s, c) => s + (c.leads ?? 0), 0);
 
 	return (
-		<div className="space-y-6 max-w-[1400px]">
+		<div className="space-y-6">
+			<AdToolbar />
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
@@ -123,14 +125,14 @@ function StatCard({ icon: Icon, label, value, color, bg, loading }: {
 }) {
 	return (
 		<Card>
-			<CardContent className="flex items-center gap-4 p-5">
-				<div className={`flex h-10 w-10 items-center justify-center rounded-lg ${bg}`}>
-					<Icon size={20} className={color} />
+			<CardContent className="p-5">
+				<div className="flex items-center justify-between mb-3">
+					<div className={`flex h-9 w-9 items-center justify-center rounded-lg ${bg}`}>
+						<Icon size={18} className={color} />
+					</div>
 				</div>
-				<div>
-					<p className="text-2xl font-bold text-[var(--foreground)]">{loading ? "..." : value}</p>
-					<p className="text-xs text-[var(--muted-foreground)]">{label}</p>
-				</div>
+				<p className="text-xs text-[var(--muted-foreground)] mb-1">{label}</p>
+				<p className="text-2xl font-bold text-[var(--foreground)] font-mono">{loading ? "..." : value}</p>
 			</CardContent>
 		</Card>
 	);
