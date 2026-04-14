@@ -1,4 +1,4 @@
-import { ServerHealth } from "./monitoring/server-health";
+import { ServerHealth, ClickHouseServerHealth } from "./monitoring/server-health";
 import { ServicesPanel } from "./monitoring/services-panel";
 import { DatabasePanel, EndpointsPanel, SSLPanel, RedisPanel, FpmPanel, R2Panel } from "./monitoring/infra-panels";
 import { SocialApiPanel, CronPanel, AiQueuePanel, ErrorLogsPanel, NginxPanel, AuthAuditPanel, ApiQueuePanel } from "./monitoring/ops-panels";
@@ -20,11 +20,14 @@ export function AdminMonitoringPage() {
 				</div>
 			</div>
 
-			{/* Row 1: Server + Services */}
+			{/* Row 1: Main Server + ClickHouse Server */}
 			<div className="grid gap-6 lg:grid-cols-2">
 				<ServerHealth />
-				<ServicesPanel />
+				<ClickHouseServerHealth />
 			</div>
+
+			{/* Row 2: Services */}
+			<ServicesPanel />
 
 			{/* Row 2: Endpoints + SSL + Nginx */}
 			<div className="grid gap-6 lg:grid-cols-3">
