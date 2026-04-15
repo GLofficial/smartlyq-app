@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, ChevronLeft, ChevronRight, Coins, ToggleLeft, Shield, CreditCard, Trash2, Download, UserPlus, Users } from "lucide-react";
 import { useAdminUsers, adminUsersExportUrl, useAdminUserCreate } from "@/api/admin";
+import { STORAGE_KEYS } from "@/lib/constants";
 import { useAdminPlansFull } from "@/api/admin-plans";
 import { CreditAdjustDialog, StatusToggle, RoleChange, PlanAssign, DeleteConfirm } from "./admin-user-actions";
 import { toast } from "sonner";
@@ -43,7 +44,7 @@ export function AdminUsersPage() {
 	};
 
 	const handleExport = () => {
-		const token = localStorage.getItem("ACCESS_TOKEN") ?? "";
+		const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ?? "";
 		const a = document.createElement("a");
 		a.href = adminUsersExportUrl();
 		// Trigger via fetch to include auth header
