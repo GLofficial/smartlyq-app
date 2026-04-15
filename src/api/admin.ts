@@ -21,7 +21,7 @@ export function useAdminDashboard() {
 }
 
 export interface AdminUsersResponse {
-	users: { id: number; name: string; email: string; role: number; status: number; plan_id: number; plan_name: string; credits: number; created_at: string }[];
+	users: { id: number; name: string; email: string; role: number; status: number; plan_id: number; plan_name: string; credits: number | null; created_at: string }[];
 	total: number; page: number; pages: number;
 	free_users: number; paid_users: number; active_users: number; new_users: number;
 }

@@ -17,15 +17,17 @@ interface UserRow {
 	email: string;
 	role: number;
 	status: number;
-	credits: number;
+	credits: number | null;
 }
 
 export function CreditAdjustDialog({ user, onClose }: { user: UserRow; onClose: () => void }) {
-	const [credits, setCredits] = useState(String(user.credits));
+	const [credits, setCredits] = useState(user.credits !== null ? String(user.credits) : "");
 	const mut = useAdminAdjustCredits();
 
 	const handleSave = () => {
-		mut.mutate({ user_id: user.id, credits: parseFloat(credits) || 0 }, {
+		const val = parseFloat(credits);
+		if (isNaN(val) || val < 0) { toast.error("Enter a valid credit amount."); return; }
+		mut.mutate({ user_id: user.id, credits: val }, {
 			onSuccess: (d) => { toast.success(d.message); onClose(); },
 			onError: (e) => toast.error((e as { error?: string })?.error ?? "Failed"),
 		});
@@ -33,7 +35,8 @@ export function CreditAdjustDialog({ user, onClose }: { user: UserRow; onClose: 
 
 	return (
 		<ActionCard title={`Adjust Credits — ${user.name}`} onClose={onClose}>
-			<Input type="number" value={credits} onChange={(e) => setCredits(e.target.value)} />
+			<Input type="number" value={credits} placeholder={user.credits === null ? "Unlimited" : "0"}
+				onChange={(e) => setCredits(e.target.value)} />
 			<Button size="sm" onClick={handleSave} disabled={mut.isPending}>{mut.isPending ? "Saving..." : "Set Credits"}</Button>
 		</ActionCard>
 	);

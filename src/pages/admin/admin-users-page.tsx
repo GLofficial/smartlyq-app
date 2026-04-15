@@ -10,7 +10,7 @@ import { CreditAdjustDialog, StatusToggle, RoleChange, PlanAssign, DeleteConfirm
 import { toast } from "sonner";
 
 type ActionType = "credits" | "status" | "role" | "plan" | "delete" | null;
-interface UserRow { id: number; name: string; email: string; role: number; status: number; credits: number; created_at: string; }
+interface UserRow { id: number; name: string; email: string; role: number; status: number; credits: number | null; created_at: string; }
 
 export function AdminUsersPage() {
 	const [search, setSearch] = useState("");
@@ -142,7 +142,7 @@ export function AdminUsersPage() {
 											<td className="px-4 py-2 text-[var(--muted-foreground)]">{u.email}</td>
 											<td className="px-4 py-2 text-xs text-[var(--muted-foreground)]">{new Date(u.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</td>
 											<td className="px-4 py-2 text-xs">{u.plan_name || "—"}</td>
-											<td className="px-4 py-2 text-xs">{u.credits}</td>
+											<td className="px-4 py-2 text-xs">{u.credits === null ? "Unlimited" : u.credits}</td>
 											<td className="px-4 py-2">
 												<span className={`rounded-full px-2 py-0.5 text-xs font-medium ${u.status === 1 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
 													{u.status === 1 ? "Active" : "Inactive"}
