@@ -10,6 +10,7 @@ import { FbAdsDataTable } from "./fb-ads-data-table";
 import { FbAdsDeviceBreakdown } from "./fb-ads-device-breakdown";
 import { FbAdsAiInsights, FbAdsTopInsights } from "./fb-ads-ai-insights";
 import { FbAdsPreviewModal } from "./fb-ads-preview-modal";
+import { FbAdsCreativeInsights } from "./fb-ads-creative-insights";
 import { DemographicsChart, PlacementChart, HourOfDayChart, ConversionFunnelChart } from "./fb-ads-tab-charts";
 import type { FbAdsTab, FbAdsAccount, FbAdsRow, FbAdsQueryParams } from "./fb-ads-types";
 
@@ -121,7 +122,18 @@ export function FbAdsInsightsPage() {
 							table={<FbAdsDataTable rows={allRows} tab={tab} currency={currency} nextCursor={data.next_cursor ?? ""} onLoadMore={() => setCursor(data.next_cursor ?? "")} isLoadingMore={!!cursor && isLoading} />}
 							insights={insights} isLoading={isLoading} />
 					)}
-					{!["overview", "demographics", "placements", "hours"].includes(tab) && (
+					{tab === "creatives" && (
+						<div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+							<div className="space-y-5">
+								<FbAdsCreativeInsights rows={allRows} currency={currency} />
+								<FbAdsDataTable rows={allRows} tab={tab} currency={currency}
+									nextCursor={data.next_cursor ?? ""} onLoadMore={() => setCursor(data.next_cursor ?? "")}
+									isLoadingMore={!!cursor && isLoading} onRowClick={handleRowClick} />
+							</div>
+							<FbAdsAiInsights insights={insights} isLoading={isLoading} />
+						</div>
+					)}
+					{!["overview", "demographics", "placements", "hours", "creatives"].includes(tab) && (
 						<div className="grid gap-5 lg:grid-cols-[1fr_320px]">
 							<div className="space-y-5">
 								<FbAdsPerformanceChart timeseries={data.timeseries} timeseriesPrev={data.timeseries_prev} currency={currency} />
