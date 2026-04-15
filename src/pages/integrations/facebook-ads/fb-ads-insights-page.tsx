@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart3, ExternalLink } from "lucide-react";
+import { BarChart3, ExternalLink, Settings } from "lucide-react";
+import { PlatformIcon } from "@/pages/social/platform-icon";
 import { useFbAdsInsights, useFbAdsAction, fbAdsExportUrl } from "@/api/facebook-ads-insights";
 import { FbAdsHeader } from "./fb-ads-header";
 import { FbAdsKpiCards } from "./fb-ads-kpi-cards";
@@ -71,6 +72,7 @@ export function FbAdsInsightsPage() {
 
 	if (data && !isLoading && data.error === "Facebook Ads is not connected") return <NotConnected />;
 	if (data && !isLoading && data.error?.includes("token missing")) return <TokenExpired />;
+	const needsAccountSelection = data && !isLoading && data.error?.includes("Select an ad account") && (data.accounts?.length ?? 0) > 0;
 
 	const insights = data?.verdicts?.insights ?? [];
 	const displayError = data?.error || fetchError;
@@ -86,7 +88,31 @@ export function FbAdsInsightsPage() {
 				compare={compare} onCompareChange={setCompare} attribution={attribution}
 			/>
 
-			{isLoading && !data ? (
+			{needsAccountSelection ? (
+				<Card>
+					<CardContent className="flex flex-col items-center gap-4 py-12">
+						<Settings size={48} className="text-[var(--muted-foreground)]" />
+						<h2 className="text-lg font-semibold">Select an Ad Account</h2>
+						<p className="text-sm text-[var(--muted-foreground)] text-center max-w-md">
+							Choose a Facebook Ad account to view reporting and insights.
+						</p>
+						<div className="flex flex-col gap-2 w-full max-w-sm">
+							{(data?.accounts ?? []).map((acc) => (
+								<button key={acc.id || acc.account_id} onClick={() => handleAccountChange(acc)}
+									className="flex items-center gap-3 rounded-lg border border-[var(--border)] px-4 py-3 text-left hover:bg-[var(--muted)] transition-colors">
+									<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
+										<PlatformIcon platform="facebook" size={16} />
+									</div>
+									<div>
+										<p className="text-sm font-medium">{acc.name}</p>
+										<p className="text-xs text-[var(--muted-foreground)]">{acc.account_id} · {acc.currency}</p>
+									</div>
+								</button>
+							))}
+						</div>
+					</CardContent>
+				</Card>
+			) : isLoading && !data ? (
 				<div className="flex h-48 items-center justify-center">
 					<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 				</div>
