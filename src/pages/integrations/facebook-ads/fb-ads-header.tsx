@@ -93,9 +93,7 @@ export function FbAdsHeader(props: FbAdsHeaderProps) {
 					<Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading} className="gap-1.5">
 						<RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
 					</Button>
-					{accounts.length > 1 && (
-						<AccountPicker accounts={accounts} selectedId={selectedAccountId} onChange={onAccountChange} />
-					)}
+					<AccountPicker accounts={accounts} selectedId={selectedAccountId} onChange={onAccountChange} selectedName={selectedAccount?.name} />
 					<ExportMenu onExport={onExport} />
 				</div>
 			</div>
@@ -168,7 +166,7 @@ function DateRangePicker({ value, onChange }: { value: DateRange; onChange: (r: 
 
 /* ── Account Picker ────────────────────────────────────────────────── */
 
-function AccountPicker({ accounts, selectedId, onChange }: { accounts: FbAdsAccount[]; selectedId: string; onChange: (a: FbAdsAccount) => void }) {
+function AccountPicker({ accounts, selectedId, onChange, selectedName }: { accounts: FbAdsAccount[]; selectedId: string; onChange: (a: FbAdsAccount) => void; selectedName?: string }) {
 	const [open, setOpen] = useState(false);
 	const ref = useRef<HTMLDivElement>(null);
 
@@ -178,15 +176,21 @@ function AccountPicker({ accounts, selectedId, onChange }: { accounts: FbAdsAcco
 		return () => document.removeEventListener("mousedown", handler);
 	}, []);
 
+	const displayName = selectedName || accounts.find((a) => a.id === selectedId || a.account_id === selectedId)?.name || "Select account";
+
 	return (
 		<div className="relative" ref={ref}>
-			<Button variant="outline" size="sm" onClick={() => setOpen(!open)} className="gap-1.5 text-xs">
+			<Button variant="outline" size="sm" onClick={() => setOpen(!open)} className="gap-1.5 text-xs max-w-[220px]">
 				<Settings size={14} />
+				<span className="truncate">{displayName}</span>
 				<ChevronDown size={12} />
 			</Button>
 			{open && (
-				<div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-lg border border-[var(--border)] bg-[var(--card)] p-2 shadow-lg">
+				<div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-lg border border-[var(--border)] bg-[var(--card)] p-2 shadow-lg">
 					<p className="px-2 py-1 text-xs font-medium text-[var(--muted-foreground)]">Ad Accounts</p>
+					{accounts.length === 0 && (
+						<p className="px-3 py-4 text-xs text-[var(--muted-foreground)] text-center">No accounts available</p>
+					)}
 					{accounts.map((a) => (
 						<button key={a.id || a.account_id} onClick={() => { onChange(a); setOpen(false); }}
 							className={`w-full rounded px-3 py-2 text-left text-sm transition-colors ${
@@ -195,7 +199,7 @@ function AccountPicker({ accounts, selectedId, onChange }: { accounts: FbAdsAcco
 									: "hover:bg-[var(--muted)]"
 							}`}>
 							<p className="font-medium text-xs">{a.name}</p>
-							<p className="text-[10px] text-[var(--muted-foreground)]">{a.account_id} · {a.currency}</p>
+							<p className="text-[10px] text-[var(--muted-foreground)]">{a.account_id} · {a.currency} · {a.timezone}</p>
 						</button>
 					))}
 				</div>
