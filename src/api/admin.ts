@@ -20,16 +20,30 @@ export function useAdminDashboard() {
 	return useQuery({ queryKey: ["admin", "dashboard"], queryFn: () => apiClient.get<AdminDashboard>("/api/spa/admin/dashboard") });
 }
 
-export function useAdminUsers(page = 1, search = "") {
+export interface AdminUsersResponse {
+	users: { id: number; name: string; email: string; role: number; status: number; plan_id: number; plan_name: string; credits: number; created_at: string }[];
+	total: number; page: number; pages: number;
+	free_users: number; paid_users: number; active_users: number; new_users: number;
+}
+
+export function useAdminUsers(page = 1, search = "", planId = "", status = "") {
 	const p = new URLSearchParams({ page: String(page) });
 	if (search) p.set("search", search);
+	if (planId) p.set("plan_id", planId);
+	if (status !== "") p.set("status", status);
 	return useQuery({
-		queryKey: ["admin", "users", page, search],
-		queryFn: () => apiClient.get<{
-			users: { id: number; name: string; email: string; role: number; status: number; plan_id: number; credits: number; created_at: string }[];
-			total: number; page: number; pages: number;
-		}>(`/api/spa/admin/users?${p.toString()}`),
+		queryKey: ["admin", "users", page, search, planId, status],
+		queryFn: () => apiClient.get<AdminUsersResponse>(`/api/spa/admin/users?${p.toString()}`),
 	});
+}
+
+export function adminUsersExportUrl() {
+	return "/api/spa/admin/users/export";
+}
+
+export function useAdminUserCreate() {
+	return (body: { name: string; email: string; plan_id: number }) =>
+		apiClient.post<{ message: string; user_id: number; password: string }>("/api/spa/admin/users/create", body);
 }
 
 export function useAdminPlans() {
