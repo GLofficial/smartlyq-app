@@ -9,14 +9,20 @@ export function useUploadAvatar() {
 			fd.append("avatar", file);
 			return apiClient.upload<{ avatar_url: string }>("/api/spa/account/avatar", fd);
 		},
-		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bootstrap"] }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["bootstrap"] });
+			queryClient.invalidateQueries({ queryKey: ["account"] });
+		},
 	});
 }
 
 export function useDeleteAvatar() {
 	return useMutation({
 		mutationFn: () => apiClient.post<{ message: string }>("/api/spa/account/avatar/delete"),
-		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bootstrap"] }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["bootstrap"] });
+			queryClient.invalidateQueries({ queryKey: ["account"] });
+		},
 	});
 }
 

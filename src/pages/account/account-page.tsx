@@ -122,21 +122,25 @@ function AvatarUpload({ currentUrl }: { currentUrl?: string | null }) {
 	const fileRef = useRef<HTMLInputElement>(null);
 	const uploadMut = useUploadAvatar();
 	const deleteMut = useDeleteAvatar();
+	const [localUrl, setLocalUrl] = useState<string | null>(null);
+
+	const displayUrl = localUrl ?? currentUrl;
 
 	const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
 		e.target.value = "";
+		setLocalUrl(URL.createObjectURL(file));
 		uploadMut.mutate(file, {
-			onSuccess: () => toast.success("Avatar updated."),
-			onError: () => toast.error("Upload failed."),
+			onSuccess: (res) => { if (res.avatar_url) setLocalUrl(res.avatar_url); toast.success("Avatar updated."); },
+			onError: () => { setLocalUrl(null); toast.error("Upload failed."); },
 		});
 	};
 
 	return (
 		<div className="flex items-center gap-4">
-			{currentUrl ? (
-				<img src={currentUrl} alt="" className="h-16 w-16 rounded-full object-cover" />
+			{displayUrl ? (
+				<img src={displayUrl} alt="" className="h-16 w-16 rounded-full object-cover" />
 			) : (
 				<div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)]"><Camera size={24} /></div>
 			)}
@@ -144,8 +148,8 @@ function AvatarUpload({ currentUrl }: { currentUrl?: string | null }) {
 				<Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={uploadMut.isPending}>
 					<Camera size={14} /> {uploadMut.isPending ? "Uploading..." : "Change Photo"}
 				</Button>
-				{currentUrl && (
-					<Button size="sm" variant="ghost" className="text-red-500" onClick={() => deleteMut.mutate(undefined, { onSuccess: () => toast.success("Removed.") })} disabled={deleteMut.isPending}>
+				{displayUrl && (
+					<Button size="sm" variant="ghost" className="text-red-500" onClick={() => deleteMut.mutate(undefined, { onSuccess: () => { setLocalUrl(null); toast.success("Removed."); } })} disabled={deleteMut.isPending}>
 						<Trash2 size={14} /> Remove
 					</Button>
 				)}
