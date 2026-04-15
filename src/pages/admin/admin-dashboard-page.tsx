@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, CreditCard, Globe, Bot, Share2 } from "lucide-react";
 import { useAdminDashboard } from "@/api/admin";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Link } from "react-router-dom";
 
 export function AdminDashboardPage() {
 	const { data, isLoading } = useAdminDashboard();
@@ -67,7 +68,10 @@ export function AdminDashboardPage() {
 			<div className="grid gap-6 lg:grid-cols-2">
 				{/* Recent users */}
 				<Card>
-					<CardHeader><CardTitle className="text-lg">Recent Users</CardTitle></CardHeader>
+					<CardHeader className="flex flex-row items-center justify-between">
+						<CardTitle className="text-lg">Recent Users</CardTitle>
+						<Link to="/admin/users" className="text-xs text-[var(--sq-primary)] hover:underline">View All</Link>
+					</CardHeader>
 					<CardContent className="p-0">
 						{isLoading ? <Spinner /> : (
 							<table className="w-full text-sm">
@@ -104,7 +108,10 @@ export function AdminDashboardPage() {
 
 				{/* Recent subscriptions */}
 				<Card>
-					<CardHeader><CardTitle className="text-lg">Recent Subscriptions</CardTitle></CardHeader>
+					<CardHeader className="flex flex-row items-center justify-between">
+						<CardTitle className="text-lg">Recent Subscriptions</CardTitle>
+						<Link to="/admin/subscriptions" className="text-xs text-[var(--sq-primary)] hover:underline">View All</Link>
+					</CardHeader>
 					<CardContent className="p-0">
 						{isLoading ? <Spinner /> : (
 							<table className="w-full text-sm">
