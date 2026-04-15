@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Save, Copy, Upload, Trash2 } from "lucide-react";
 import { useBusinessProfile, useSaveBusinessProfile, useUploadBusinessLogo, useRemoveBusinessLogo } from "@/api/business-profile";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 import { toast } from "sonner";
 
 const CURRENCIES = ["USD","EUR","GBP","AUD","CAD","CHF","SEK","NOK","DKK","PLN","CZK","HUF","RON","BGN","TRY","AED","SAR","QAR","ILS","INR"];
@@ -12,6 +13,7 @@ const REGIONS = ["Africa", "Asia", "Europe", "Latin America", "USA and Canada"];
 export function BusinessProfileTab() {
 	const { data, isLoading } = useBusinessProfile();
 	const saveMut = useSaveBusinessProfile();
+	const locationId = useWorkspaceStore((s) => s.activeWorkspaceHash);
 	const [form, setForm] = useState<Record<string, string | string[]>>({});
 	const [initialized, setInitialized] = useState(false);
 
@@ -64,10 +66,10 @@ export function BusinessProfileTab() {
 					<CardContent className="p-6 space-y-5">
 						<div className="flex items-center justify-between flex-wrap gap-2">
 							<h3 className="text-lg font-semibold">General Information</h3>
-							{profile?.location_id && (
+							{locationId && (
 								<div className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
-									Location ID <code className="rounded bg-[var(--muted)] px-1.5 py-0.5 font-mono text-[11px]">{profile.location_id}</code>
-									<button onClick={() => { navigator.clipboard.writeText(profile.location_id); toast.success("Copied!"); }}><Copy size={11} /></button>
+									Location ID <code className="rounded bg-[var(--muted)] px-1.5 py-0.5 font-mono text-[11px]">{locationId}</code>
+									<button onClick={() => { navigator.clipboard.writeText(locationId); toast.success("Copied!"); }}><Copy size={11} /></button>
 								</div>
 							)}
 						</div>
