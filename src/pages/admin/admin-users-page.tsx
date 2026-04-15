@@ -178,7 +178,7 @@ export function AdminUsersPage() {
 	);
 }
 
-function AddUserDialog({ plans, onClose }: { plans: { id: number; name: string }[]; onClose: () => void }) {
+function AddUserDialog({ plans, onClose }: { plans: { id: number; name: string; duration: string }[]; onClose: () => void }) {
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
 	const [planId, setPlanId] = useState(0);
@@ -215,7 +215,10 @@ function AddUserDialog({ plans, onClose }: { plans: { id: number; name: string }
 						<select value={planId} onChange={(e) => setPlanId(Number(e.target.value))}
 							className="mt-1 w-full h-9 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm">
 							<option value={0}>No Plan</option>
-							{plans.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+							{plans.filter(p => p.duration === "month").length > 0 && <optgroup label="Monthly">{plans.filter(p => p.duration === "month").map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>}
+							{plans.filter(p => p.duration === "year").length > 0 && <optgroup label="Annual">{plans.filter(p => p.duration === "year").map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>}
+							{plans.filter(p => p.duration === "lifetime").length > 0 && <optgroup label="Lifetime">{plans.filter(p => p.duration === "lifetime").map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>}
+							{plans.filter(p => p.duration === "prepaid").length > 0 && <optgroup label="Prepaid">{plans.filter(p => p.duration === "prepaid").map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>}
 						</select>
 					</div>
 				</div>
