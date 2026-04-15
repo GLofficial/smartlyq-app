@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bell, Plug, X } from "lucide-react";
+import { Bell, Plug, X, ExternalLink } from "lucide-react";
 import { useAdSettings } from "@/api/ad-manager/settings";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { useSettingsAction } from "@/api/ad-manager/mutations";
 import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
+import { DisconnectDialog } from "./ad-dialogs-2";
 
 const TABS = [
 	{ id: "notifications", label: "Notifications", icon: Bell },
@@ -16,6 +17,7 @@ export function AdSettingsPage() {
 	const { data, isLoading } = useAdSettings();
 	const [activeTab, setActiveTab] = useState("integrations");
 	const disconnect = useSettingsAction();
+	const [disconnectPlatform, setDisconnectPlatform] = useState<string | null>(null);
 
 	return (
 		<div className="space-y-6">
@@ -72,15 +74,43 @@ export function AdSettingsPage() {
 												}`}>
 													{a.status === "connected" ? "Connected" : a.status}
 												</span>
-												<Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50"
-													disabled={disconnect.isPending}
-													onClick={() => { if (confirm(`Disconnect ${platformLabel(a.platform)}?`)) disconnect.mutate({ action: "disconnect-platform", platform: a.platform }); }}>
-													<X size={13} className="mr-1" /> Disconnect
+												{a.status === "connected" ? (
+													<Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50"
+														onClick={() => setDisconnectPlatform(a.platform)}>
+														<X size={13} className="mr-1" /> Disconnect
+													</Button>
+												) : (
+													<Button variant="outline" size="sm" asChild>
+														<a href={`/my/integrations/${platformPath(a.platform)}/start`} target="_blank" rel="noopener noreferrer">
+															<ExternalLink size={13} className="mr-1" /> Connect
+														</a>
+													</Button>
+												)}
+											</div>
+										))}
+										{/* Show connect buttons for platforms not yet connected */}
+										{["meta", "google", "tiktok", "linkedin"].filter(
+											(p) => !(data?.accounts ?? []).some((a) => a.platform === p)
+										).map((p) => (
+											<div key={p} className="flex items-center gap-4 px-6 py-5">
+												<PlatformIcon platform={platformMap(p)} size={32} />
+												<div className="flex-1 min-w-0">
+													<p className="text-sm font-semibold text-[var(--foreground)]">{platformLabel(p)}</p>
+													<p className="text-xs text-[var(--muted-foreground)]">{platformDesc(p)}</p>
+												</div>
+												<Button size="sm" asChild>
+													<a href={`/my/integrations/${platformPath(p)}/start`} target="_blank" rel="noopener noreferrer">
+														Connect
+													</a>
 												</Button>
 											</div>
 										))}
 									</div>
 								)}
+								<DisconnectDialog open={!!disconnectPlatform} onClose={() => setDisconnectPlatform(null)}
+									platformName={platformLabel(disconnectPlatform ?? "")}
+									onConfirm={() => { disconnect.mutate({ action: "disconnect-platform", platform: disconnectPlatform! }); setDisconnectPlatform(null); }}
+									loading={disconnect.isPending} />
 							</CardContent>
 						</Card>
 					)}
@@ -152,4 +182,14 @@ function platformMap(p: string): string {
 function platformLabel(p: string): string {
 	const map: Record<string, string> = { meta: "Meta (Facebook)", google: "Google Ads", tiktok: "TikTok Ads", linkedin: "LinkedIn Ads" };
 	return map[p] ?? p;
+}
+
+function platformPath(p: string): string {
+	const map: Record<string, string> = { meta: "facebook-ads", google: "google-ads", tiktok: "tiktok-ads", linkedin: "linkedin-ads" };
+	return map[p] ?? p;
+}
+
+function platformDesc(p: string): string {
+	const map: Record<string, string> = { meta: "Facebook & Instagram ads", google: "Search, display, and video ads", tiktok: "In-feed and branded content ads", linkedin: "B2B advertising campaigns" };
+	return map[p] ?? "";
 }

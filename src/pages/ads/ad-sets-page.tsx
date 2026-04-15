@@ -7,6 +7,10 @@ import { useAdSets } from "@/api/ad-manager/ad-sets";
 import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
 import { useAdSetAction } from "@/api/ad-manager/mutations";
 import { DeleteDialog, PauseDialog } from "./ad-dialogs";
+import { CreateAdSetDialog } from "./ad-dialogs-2";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
+import { toast } from "sonner";
 
 const STATUS_TABS = ["All", "Active", "Paused"] as const;
 
@@ -15,6 +19,14 @@ export function AdSetsPage() {
 	const [tab, setTab] = useState<string>("All");
 	const [search, setSearch] = useState("");
 	const [selected, setSelected] = useState<number | null>(null);
+	const [showCreate, setShowCreate] = useState(false);
+	const { data: campData } = useQuery({ queryKey: ["ad-manager", "campaigns-for-create"], queryFn: () => apiClient.get<{ campaigns: { id: number; name: string }[] }>("/api/spa/ad-manager/campaigns") });
+	const qc = useQueryClient();
+	const createMutation = useMutation({
+		mutationFn: (body: Record<string, unknown>) => apiClient.post<{ created?: boolean }>("/api/spa/ad-manager/ad-sets", { action: "create", ...body }),
+		onSuccess: () => { toast.success("Ad Set created"); qc.invalidateQueries({ queryKey: ["ad-manager", "ad-sets"] }); setShowCreate(false); },
+		onError: (e: Error) => toast.error(e.message),
+	});
 
 	const sets = (data?.ad_sets ?? [])
 		.filter((s) => tab === "All" || s.status.toLowerCase() === tab.toLowerCase())
@@ -36,7 +48,7 @@ export function AdSetsPage() {
 					<h1 className="text-2xl font-bold text-[var(--foreground)]">Ad Sets / Ad Groups</h1>
 					<p className="text-sm text-[var(--muted-foreground)]">Manage targeting, budgets, and bid strategies. Meta uses Ad Sets, Google uses Ad Groups.</p>
 				</div>
-				<Button size="sm" className="bg-[var(--sq-primary)]"><Plus size={14} /><span className="ml-1.5">New Ad Set</span></Button>
+				<Button size="sm" className="bg-[var(--sq-primary)]" onClick={() => setShowCreate(true)}><Plus size={14} /><span className="ml-1.5">New Ad Set</span></Button>
 			</div>
 
 			<div className="flex items-center gap-4">
@@ -119,7 +131,9 @@ export function AdSetsPage() {
 					</Card>
 				)}
 			</div>
-		</div>
+		<CreateAdSetDialog open={showCreate} onClose={() => setShowCreate(false)}
+		campaigns={campData?.campaigns ?? []} onConfirm={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
+	</div>
 	);
 }
 

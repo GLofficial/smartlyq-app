@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import {
   useCrmContacts,
-  useCrmContactSave,
   useCrmContactDelete,
   exportCrmContacts,
   type ApiContact,
@@ -10,17 +9,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Trash2, ArrowUpDown, Building2, Loader2, Upload, Download, RotateCcw } from "lucide-react";
+import { Search, Plus, Trash2, ArrowUpDown, Building2, Loader2, Upload, Download, RotateCcw, Mail, Phone, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { ContactDetailSheet } from "./components/contact-detail-sheet";
+import { ContactCreateDialog } from "./components/contact-create-dialog";
 import { ContactImportDialog } from "./components/contact-import-dialog";
 import { DeletedContactsDialog } from "./components/deleted-contacts-dialog";
 
@@ -31,11 +29,20 @@ import { DeletedContactsDialog } from "./components/deleted-contacts-dialog";
 const STATUS_STYLE: Record<string, string> = {
   active: "bg-green-50 text-green-700 border-green-200",
   prospect: "bg-blue-50 text-blue-600 border-blue-200",
-  inactive: "bg-gray-100 text-gray-500 border-gray-200",
+  in_progress: "bg-amber-50 text-amber-700 border-amber-200",
+  lost: "bg-red-50 text-red-600 border-red-200",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  active: "Active",
+  prospect: "Prospect",
+  in_progress: "In Progress",
+  lost: "Lost",
 };
 
 type SortKey = "name" | "company" | "status" | "created";
 type SortDir = "asc" | "desc";
+
 
 // ---------------------------------------------------------------------------
 // Page component
@@ -43,13 +50,12 @@ type SortDir = "asc" | "desc";
 
 export function CrmContactsPage() {
   const { data: contactsData, isLoading: contactsLoading } = useCrmContacts();
-  const saveContact = useCrmContactSave();
   const deleteContactMut = useCrmContactDelete();
 
   const contacts = contactsData?.contacts ?? [];
 
   const [search, setSearch] = useState("");
-  const [searchField, setSearchField] = useState<"all" | "name" | "email" | "company">("all");
+  const [searchField, setSearchField] = useState<"all" | "name" | "email" | "company" | "tag">("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -61,15 +67,6 @@ export function CrmContactsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [deletedOpen, setDeletedOpen] = useState(false);
 
-  // Create form
-  const [formFirstName, setFormFirstName] = useState("");
-  const [formLastName, setFormLastName] = useState("");
-  const [formEmail, setFormEmail] = useState("");
-  const [formCompany, setFormCompany] = useState("");
-  const [formPhone, setFormPhone] = useState("");
-  const [formRole, setFormRole] = useState("");
-  const [formStatus, setFormStatus] = useState<string>("prospect");
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // --- Filtering & sorting ---
   const filtered = useMemo(() => {
@@ -81,11 +78,13 @@ export function CrmContactsPage() {
         if (searchField === "name") return c.name.toLowerCase().includes(q);
         if (searchField === "email") return c.email.toLowerCase().includes(q);
         if (searchField === "company") return c.company.toLowerCase().includes(q);
+        if (searchField === "tag") return c.tags.some((t) => t.toLowerCase().includes(q));
         return (
           c.name.toLowerCase().includes(q) ||
           c.email.toLowerCase().includes(q) ||
           c.company.toLowerCase().includes(q) ||
-          c.role.toLowerCase().includes(q)
+          c.role.toLowerCase().includes(q) ||
+          c.tags.some((t) => t.toLowerCase().includes(q))
         );
       });
     }
@@ -115,51 +114,6 @@ export function CrmContactsPage() {
     }
   }
 
-  // --- Validate & create ---
-  function validateForm(): boolean {
-    const errors: Record<string, string> = {};
-    if (!formFirstName.trim()) errors.first_name = "First name is required.";
-    if (!formLastName.trim()) errors.last_name = "Last name is required.";
-    if (!formEmail.trim()) errors.email = "Email is required.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formEmail)) errors.email = "Invalid email.";
-    if (!formCompany.trim()) errors.company = "Company is required.";
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  }
-
-  function handleCreate() {
-    if (!validateForm()) return;
-    saveContact.mutate(
-      {
-        first_name: formFirstName.trim(),
-        last_name: formLastName.trim(),
-        email: formEmail.trim(),
-        company: formCompany.trim(),
-        phone: formPhone.trim(),
-        role: formRole.trim(),
-        status: formStatus,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Contact created");
-          resetForm();
-          setCreateOpen(false);
-        },
-        onError: () => toast.error("Failed to create contact"),
-      },
-    );
-  }
-
-  function resetForm() {
-    setFormFirstName("");
-    setFormLastName("");
-    setFormEmail("");
-    setFormCompany("");
-    setFormPhone("");
-    setFormRole("");
-    setFormStatus("prospect");
-    setFormErrors({});
-  }
 
   function handleDelete() {
     if (!deleteTarget) return;
@@ -207,7 +161,7 @@ export function CrmContactsPage() {
             <RotateCcw className="w-4 h-4 mr-1.5" />
             Restore
           </Button>
-          <Button onClick={() => { resetForm(); setCreateOpen(true); }}>
+          <Button onClick={() => setCreateOpen(true)}>
             <Plus className="w-4 h-4 mr-1.5" />
             Add Contact
           </Button>
@@ -234,6 +188,7 @@ export function CrmContactsPage() {
             <SelectItem value="name">Name</SelectItem>
             <SelectItem value="email">Email</SelectItem>
             <SelectItem value="company">Company</SelectItem>
+            <SelectItem value="tag">Tag</SelectItem>
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -244,7 +199,8 @@ export function CrmContactsPage() {
             <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="prospect">Prospect</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="in_progress">In Progress</SelectItem>
+            <SelectItem value="lost">Lost</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -263,6 +219,8 @@ export function CrmContactsPage() {
                     Contact <ArrowUpDown className="w-3.5 h-3.5" />
                   </button>
                 </TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
                 <TableHead>
                   <button
                     onClick={() => toggleSort("company")}
@@ -280,6 +238,13 @@ export function CrmContactsPage() {
                     Status <ArrowUpDown className="w-3.5 h-3.5" />
                   </button>
                 </TableHead>
+                <TableHead>
+                  <button onClick={() => toggleSort("created")} className="flex items-center gap-1 hover:text-[var(--foreground)] transition-colors">
+                    Created <ArrowUpDown className="w-3.5 h-3.5" />
+                  </button>
+                </TableHead>
+                <TableHead>Last Activity</TableHead>
+                <TableHead>Tags</TableHead>
                 <TableHead>Deals</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -287,7 +252,7 @@ export function CrmContactsPage() {
             <TableBody>
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-[var(--muted-foreground)]">
+                  <TableCell colSpan={11} className="text-center py-8 text-[var(--muted-foreground)]">
                     No contacts found.
                   </TableCell>
                 </TableRow>
@@ -300,8 +265,12 @@ export function CrmContactsPage() {
                 >
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-xs font-semibold shrink-0">
-                        {contact.initials}
+                      <div className="w-8 h-8 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-xs font-semibold shrink-0 overflow-hidden">
+                        {contact.avatar && contact.avatar.length > 2 ? (
+                          <img src={contact.avatar} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          contact.initials
+                        )}
                       </div>
                       <div className="min-w-0">
                         <div className="font-medium text-[var(--foreground)] truncate">
@@ -309,11 +278,24 @@ export function CrmContactsPage() {
                             ? `${contact.first_name} ${contact.last_name}`.trim()
                             : contact.name}
                         </div>
-                        <div className="text-xs text-[var(--muted-foreground)] truncate">
-                          {contact.email}
-                        </div>
                       </div>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {contact.email ? (
+                      <div className="flex items-center gap-1.5 text-sm text-[var(--muted-foreground)]">
+                        <Mail className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate max-w-[180px]">{contact.email}</span>
+                      </div>
+                    ) : <span className="text-xs text-[var(--muted-foreground)]">—</span>}
+                  </TableCell>
+                  <TableCell>
+                    {contact.phone ? (
+                      <div className="flex items-center gap-1.5 text-sm text-[var(--muted-foreground)]">
+                        <Phone className="w-3.5 h-3.5 shrink-0" />
+                        <span>{contact.phone}</span>
+                      </div>
+                    ) : <span className="text-xs text-[var(--muted-foreground)]">—</span>}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1.5 text-sm">
@@ -326,8 +308,28 @@ export function CrmContactsPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={STATUS_STYLE[contact.status] ?? ""}>
-                      {contact.status}
+                      {STATUS_LABEL[contact.status] ?? contact.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-[var(--muted-foreground)] whitespace-nowrap">
+                    {contact.created_at ? formatDate(contact.created_at) : "—"}
+                  </TableCell>
+                  <TableCell className="text-xs text-[var(--muted-foreground)] whitespace-nowrap">
+                    {contact.last_contacted_at ? timeAgo(contact.last_contacted_at) : "—"}
+                  </TableCell>
+                  <TableCell>
+                    {contact.tags.length > 0 ? (
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {contact.tags.slice(0, 2).map((tag) => (
+                          <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">
+                            <Tag className="w-2.5 h-2.5 mr-0.5" />{tag}
+                          </Badge>
+                        ))}
+                        {contact.tags.length > 2 && (
+                          <span className="text-[10px] text-[var(--muted-foreground)] font-medium">+{contact.tags.length - 2}</span>
+                        )}
+                      </div>
+                    ) : <span className="text-xs text-[var(--muted-foreground)]">—</span>}
                   </TableCell>
                   <TableCell>
                     {contact.deal_count > 0 ? (
@@ -363,104 +365,7 @@ export function CrmContactsPage() {
       />
 
       {/* --- Create dialog --- */}
-      <Dialog open={createOpen} onOpenChange={(open) => { if (!open) setCreateOpen(false); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Contact</DialogTitle>
-            <DialogDescription>Add a new contact to your CRM.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>First Name *</Label>
-                <Input
-                  placeholder="First name"
-                  value={formFirstName}
-                  onChange={(e) => setFormFirstName(e.target.value)}
-                />
-                {formErrors.first_name && (
-                  <p className="text-xs text-red-500">{formErrors.first_name}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>Last Name *</Label>
-                <Input
-                  placeholder="Last name"
-                  value={formLastName}
-                  onChange={(e) => setFormLastName(e.target.value)}
-                />
-                {formErrors.last_name && (
-                  <p className="text-xs text-red-500">{formErrors.last_name}</p>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Email *</Label>
-                <Input
-                  type="email"
-                  placeholder="email@example.com"
-                  value={formEmail}
-                  onChange={(e) => setFormEmail(e.target.value)}
-                />
-                {formErrors.email && (
-                  <p className="text-xs text-red-500">{formErrors.email}</p>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Company *</Label>
-                <Input
-                  placeholder="Company name"
-                  value={formCompany}
-                  onChange={(e) => setFormCompany(e.target.value)}
-                />
-                {formErrors.company && (
-                  <p className="text-xs text-red-500">{formErrors.company}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>Phone</Label>
-                <Input
-                  placeholder="+1 555-0100"
-                  value={formPhone}
-                  onChange={(e) => setFormPhone(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Role</Label>
-                <Input
-                  placeholder="e.g. Marketing Director"
-                  value={formRole}
-                  onChange={(e) => setFormRole(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={formStatus} onValueChange={setFormStatus}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="prospect">Prospect</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreate}>Add Contact</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ContactCreateDialog open={createOpen} onOpenChange={setCreateOpen} />
 
       {/* --- Delete dialog --- */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
@@ -486,4 +391,28 @@ export function CrmContactsPage() {
       <DeletedContactsDialog open={deletedOpen} onOpenChange={setDeletedOpen} />
     </div>
   );
+}
+
+function formatDate(d: string): string {
+  try {
+    return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch { return d; }
+}
+
+function timeAgo(d: string): string {
+  try {
+    const diff = Date.now() - new Date(d).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return `${days}d ago`;
+    const weeks = Math.floor(days / 7);
+    if (weeks < 5) return `${weeks}w ago`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return `${months}mo ago`;
+    return `${Math.floor(months / 12)}y ago`;
+  } catch { return d; }
 }

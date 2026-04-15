@@ -7,6 +7,7 @@ import { useAdminSettings, useSaveAdminSettings } from "@/api/admin-settings";
 import { TAB_FIELDS, type FieldDef } from "./settings-field-config";
 import { toast } from "sonner";
 import { cn } from "@/lib/cn";
+import { SocialOAuthTab } from "./social-oauth/social-oauth-tab";
 
 const TABS = [
 	{ key: "general", label: "General" },
@@ -74,6 +75,9 @@ export function AdminSettingsPage() {
 
 				{/* Form */}
 				<div className="flex-1 min-w-0">
+					{activeTab === "social_oauth" ? (
+						<SocialOAuthTab />
+					) : (
 					<Card>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2 text-lg">
@@ -104,6 +108,7 @@ export function AdminSettingsPage() {
 							)}
 						</CardContent>
 					</Card>
+					)}
 				</div>
 			</div>
 		</div>

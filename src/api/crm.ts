@@ -65,11 +65,20 @@ export interface ApiContact {
   first_name: string;
   last_name: string;
   email: string;
+  secondary_email: string;
   company: string;
   phone: string;
+  phone_type: string;
+  phone_country_code: string;
+  secondary_phone: string;
+  secondary_phone_type: string;
+  secondary_phone_country_code: string;
   role: string;
   status: string;
+  contact_type: string;
+  timezone: string;
   initials: string;
+  avatar: string;
   tags: string[];
   deal_count: number;
   total_value: number;
@@ -91,10 +100,14 @@ export interface ApiTask {
   due_date: string | null;
   linked_deal_id: number | null;
   linked_contact_id: number | null;
+  assigned_to: number | null;
+  assignee_name: string;
+  assignee_avatar: string;
   tags: string[];
   subtasks: { title: string; done: boolean }[];
   recurrence: string | null;
   time_tracked_minutes: number;
+  sort_order: number;
   created_at: string;
 }
 
@@ -250,6 +263,18 @@ export function useCrmContactSave() {
   });
 }
 
+export function useCrmContactAvatarUpload() {
+  return useMutation({
+    mutationFn: (data: { contactId: number; file: File }) => {
+      const fd = new FormData();
+      fd.append("contact_id", String(data.contactId));
+      fd.append("avatar", data.file);
+      return apiClient.upload<{ avatar_url: string }>("/api/spa/crm/contacts/avatar", fd);
+    },
+    onSuccess: () => inv("contacts"),
+  });
+}
+
 export function useCrmContactDelete() {
   return useMutation({
     mutationFn: (id: number) => apiClient.post<ApiSaveResponse>("/api/spa/crm/contacts/delete", { id }),
@@ -389,6 +414,13 @@ export function useCrmTaskDelete() {
   return useMutation({
     mutationFn: (id: number) => apiClient.post<ApiSaveResponse>("/api/spa/crm/tasks/delete", { id }),
     onSuccess: () => { inv("tasks"); inv("dashboard"); },
+  });
+}
+
+export function useCrmTaskReorder() {
+  return useMutation({
+    mutationFn: (ids: number[]) => apiClient.post<ApiSaveResponse>("/api/spa/crm/tasks/reorder", { ids }),
+    onSuccess: () => inv("tasks"),
   });
 }
 

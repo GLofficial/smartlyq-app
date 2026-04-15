@@ -131,24 +131,7 @@ export const TAB_FIELDS: Record<string, FieldDef[]> = {
 		{ key: "default_model", label: "Default generation model", type: "text", placeholder: "gpt-4o-mini" },
 		{ key: "default_chat_model", label: "Default chat model", type: "text", placeholder: "gpt-4o" },
 	],
-	social_oauth: [
-		{ key: "facebook_app_id", label: "Facebook App ID", type: "text", half: true },
-		{ key: "facebook_app_secret", label: "Facebook App Secret", type: "password", half: true },
-		{ key: "instagram_app_id", label: "Instagram App ID", type: "text", half: true },
-		{ key: "instagram_app_secret", label: "Instagram App Secret", type: "password", half: true },
-		{ key: "linkedin_client_id", label: "LinkedIn Client ID", type: "text", half: true },
-		{ key: "linkedin_client_secret", label: "LinkedIn Client Secret", type: "password", half: true },
-		{ key: "twitter_consumer_key", label: "Twitter Consumer Key", type: "text", half: true },
-		{ key: "twitter_consumer_secret", label: "Twitter Consumer Secret", type: "password", half: true },
-		{ key: "youtube_client_id", label: "YouTube Client ID", type: "text", half: true },
-		{ key: "youtube_client_secret", label: "YouTube Client Secret", type: "password", half: true },
-		{ key: "tiktok_client_key", label: "TikTok Client Key", type: "text", half: true },
-		{ key: "tiktok_client_secret", label: "TikTok Client Secret", type: "password", half: true },
-		{ key: "pinterest_app_id", label: "Pinterest App ID", type: "text", half: true },
-		{ key: "pinterest_app_secret", label: "Pinterest App Secret", type: "password", half: true },
-		{ key: "google_client_id", label: "Google Client ID", type: "text", half: true },
-		{ key: "google_client_secret", label: "Google Client Secret", type: "password", half: true },
-	],
+	// social_oauth: handled by SocialOAuthTab component (reads social_oauth_providers table)
 	storage: [
 		{ key: "storage_driver", label: "Storage driver", type: "select", options: [
 			{ value: "local", label: "Local" }, { value: "r2", label: "Cloudflare R2" }, { value: "s3", label: "AWS S3" },

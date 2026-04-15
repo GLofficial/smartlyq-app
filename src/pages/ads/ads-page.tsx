@@ -1,13 +1,20 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Megaphone, Search, Plus, X, Pause, Play, Trash2 } from "lucide-react";
+import { Megaphone, Search, Plus, X, Pause, Play, Trash2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAds } from "@/api/ad-manager/ads";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
 import { useAdAction2 } from "@/api/ad-manager/mutations";
 import { DeleteDialog, PauseDialog } from "./ad-dialogs";
+import { useSort } from "./use-sort";
+import { SortableHeader } from "./sortable-header";
+import { CreateAdDialog } from "./ad-dialogs-2";
+import { useAdSets } from "@/api/ad-manager/ad-sets";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
+import { toast } from "sonner";
 
 const FORMAT_TABS = ["All", "Image", "Video", "Carousel", "Text"] as const;
 
@@ -16,10 +23,19 @@ export function AdsPage() {
 	const [tab, setTab] = useState<string>("All");
 	const [search, setSearch] = useState("");
 	const [selected, setSelected] = useState<number | null>(null);
+	const [showCreate, setShowCreate] = useState(false);
+	const { data: adSetData } = useAdSets();
+	const qc = useQueryClient();
+	const createMutation = useMutation({
+		mutationFn: (body: Record<string, unknown>) => apiClient.post<{ created?: boolean }>("/api/spa/ad-manager/ads", { action: "create", ...body }),
+		onSuccess: () => { toast.success("Ad created"); qc.invalidateQueries({ queryKey: ["ad-manager", "ads"] }); setShowCreate(false); },
+		onError: (e: Error) => toast.error(e.message),
+	});
 
-	const ads = (data?.ads ?? [])
+	const filtered = (data?.ads ?? [])
 		.filter((a) => tab === "All" || a.format.toLowerCase() === tab.toLowerCase())
 		.filter((a) => !search || a.name.toLowerCase().includes(search.toLowerCase()));
+	const { sorted: ads, sortKey, sortDir, toggle: toggleSort } = useSort(filtered, "spent" as any);
 
 	const detail = selected ? ads.find((a) => a.id === selected) : null;
 
@@ -31,7 +47,7 @@ export function AdsPage() {
 					<h1 className="text-2xl font-bold text-[var(--foreground)]">Ads</h1>
 					<p className="text-sm text-[var(--muted-foreground)]">Manage individual ads across all campaigns and ad sets / ad groups.</p>
 				</div>
-				<Button size="sm" className="bg-[var(--sq-primary)]"><Plus size={14} /><span className="ml-1.5">Create Ad</span></Button>
+				<Button size="sm" className="bg-[var(--sq-primary)]" onClick={() => setShowCreate(true)}><Plus size={14} /><span className="ml-1.5">Create Ad</span></Button>
 			</div>
 
 			<div className="flex items-center gap-4">
@@ -66,14 +82,14 @@ export function AdsPage() {
 							<table className="w-full text-sm">
 								<thead>
 									<tr className="border-b border-[var(--border)] text-left text-xs text-[var(--muted-foreground)] uppercase tracking-wider">
-										<th className="px-4 py-3 font-medium">Ad</th>
-										<th className="px-3 py-3 font-medium">Ad Set</th>
-										<th className="px-3 py-3 font-medium">Status</th>
+										<SortableHeader label="Ad" sortKey="name" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as any)} />
+										<SortableHeader label="Ad Set" sortKey="ad_set_name" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as any)} />
+										<SortableHeader label="Status" sortKey="status" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as any)} />
 										<th className="px-3 py-3 font-medium">Format</th>
-										<th className="px-3 py-3 font-medium text-right">Spend</th>
-										<th className="px-3 py-3 font-medium text-right">Impr.</th>
-										<th className="px-3 py-3 font-medium text-right">Clicks</th>
-										<th className="px-3 py-3 font-medium text-right">CTR</th>
+										<SortableHeader label="Spend" sortKey="spent" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as any)} align="right" />
+										<SortableHeader label="Impr." sortKey="impressions" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as any)} align="right" />
+										<SortableHeader label="Clicks" sortKey="clicks" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as any)} align="right" />
+										<SortableHeader label="CTR" sortKey="ctr" currentKey={sortKey as string} currentDir={sortDir} onSort={(k) => toggleSort(k as any)} align="right" />
 									</tr>
 								</thead>
 								<tbody>
@@ -128,6 +144,9 @@ export function AdsPage() {
 					</Card>
 				)}
 			</div>
+			<CreateAdDialog open={showCreate} onClose={() => setShowCreate(false)}
+				adSets={(adSetData?.ad_sets ?? []).map((s) => ({ id: s.id, name: s.name }))}
+				onConfirm={(d) => createMutation.mutate(d)} loading={createMutation.isPending} />
 		</div>
 	);
 }
@@ -149,6 +168,9 @@ function AdActions({ id, status, name }: { id: number; status: string; name: str
 		<div className="flex gap-2 pt-3 border-t border-[var(--border)] mt-2">
 			<Button variant="outline" size="sm" onClick={() => setDialog("pause")}>
 				{isPaused ? <><Play size={13} className="mr-1 text-emerald-600" /> Resume</> : <><Pause size={13} className="mr-1 text-amber-600" /> Pause</>}
+			</Button>
+			<Button variant="outline" size="sm" onClick={() => mutation.mutate({ action: "duplicate", id })} disabled={mutation.isPending}>
+				<Copy size={13} className="mr-1" /> Duplicate
 			</Button>
 			<Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => setDialog("delete")}>
 				<Trash2 size={13} className="mr-1" /> Delete

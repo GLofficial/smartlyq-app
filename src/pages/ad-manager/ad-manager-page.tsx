@@ -78,14 +78,14 @@ export function AdManagerPage() {
 				</div>
 			</div>
 
-			{/* Stat Cards — 6 metrics like Bootstrap */}
+			{/* Stat Cards — 6 metrics with trend % */}
 			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				<StatCard icon={DollarSign} label="Total Spend" value={`€${totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} color="text-red-500" bg="bg-red-50" loading={isLoading} />
-				<StatCard icon={ShoppingCart} label="Purchase Value" value={`€${totalPurchaseValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} color="text-blue-500" bg="bg-blue-50" loading={isLoading} />
+				<StatCard icon={DollarSign} label="Total Spend" value={`€${totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} color="text-red-500" bg="bg-red-50" loading={isLoading} trend={(analyticsData as any)?.trends?.spent} />
+				<StatCard icon={ShoppingCart} label="Purchase Value" value={`€${totalPurchaseValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} color="text-blue-500" bg="bg-blue-50" loading={isLoading} trend={(analyticsData as any)?.trends?.purchase_value} />
 				<StatCard icon={Target} label="Leads" value={String(totalLeads)} color="text-purple-500" bg="bg-purple-50" loading={isLoading} />
-				<StatCard icon={Eye} label="Impressions" value={fmt(totalImpr)} color="text-amber-500" bg="bg-amber-50" loading={isLoading} />
-				<StatCard icon={MousePointer} label="Clicks" value={fmt(totalClicks)} color="text-green-500" bg="bg-green-50" loading={isLoading} />
-				<StatCard icon={TrendingUp} label="Conversions" value={fmt(totalConversions)} color="text-indigo-500" bg="bg-indigo-50" loading={isLoading} />
+				<StatCard icon={Eye} label="Impressions" value={fmt(totalImpr)} color="text-amber-500" bg="bg-amber-50" loading={isLoading} trend={(analyticsData as any)?.trends?.impressions} />
+				<StatCard icon={MousePointer} label="Clicks" value={fmt(totalClicks)} color="text-green-500" bg="bg-green-50" loading={isLoading} trend={(analyticsData as any)?.trends?.clicks} />
+				<StatCard icon={TrendingUp} label="Conversions" value={fmt(totalConversions)} color="text-indigo-500" bg="bg-indigo-50" loading={isLoading} trend={(analyticsData as any)?.trends?.conversions} />
 			</div>
 
 			{/* Ad Spend Chart */}
@@ -152,8 +152,8 @@ export function AdManagerPage() {
 	);
 }
 
-function StatCard({ icon: Icon, label, value, color, bg, loading }: {
-	icon: React.ElementType; label: string; value: string; color: string; bg: string; loading: boolean;
+function StatCard({ icon: Icon, label, value, color, bg, loading, trend }: {
+	icon: React.ElementType; label: string; value: string; color: string; bg: string; loading: boolean; trend?: number;
 }) {
 	return (
 		<Card>
@@ -162,6 +162,11 @@ function StatCard({ icon: Icon, label, value, color, bg, loading }: {
 					<div className={`flex h-9 w-9 items-center justify-center rounded-lg ${bg}`}>
 						<Icon size={18} className={color} />
 					</div>
+					{trend != null && trend !== 0 && (
+						<span className={`text-xs font-medium ${trend > 0 ? "text-emerald-600" : "text-red-500"}`}>
+							{trend > 0 ? "↑" : "↓"} {Math.abs(trend).toFixed(1)}%
+						</span>
+					)}
 				</div>
 				<p className="text-xs text-[var(--muted-foreground)] mb-1">{label}</p>
 				<p className="text-2xl font-bold text-[var(--foreground)] font-mono">{loading ? "..." : value}</p>

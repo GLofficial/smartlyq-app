@@ -51,11 +51,20 @@ export interface Contact {
   first_name: string;
   last_name: string;
   email: string;
+  secondary_email: string;
   company: string;
   phone: string;
+  phone_type: string;
+  phone_country_code: string;
+  secondary_phone: string;
+  secondary_phone_type: string;
+  secondary_phone_country_code: string;
   role: string;
   status: "active" | "prospect" | "in_progress" | "lost";
+  contact_type: string;
+  timezone: string;
   initials: string;
+  avatar: string;
   tags: string[];
   deal_count: number;
   total_value: number;
@@ -80,10 +89,14 @@ export interface CrmTask {
   due_date: string | null;
   linked_deal_id: number | null;
   linked_contact_id: number | null;
+  assigned_to: number | null;
+  assignee_name: string;
+  assignee_avatar: string;
   tags: string[];
   subtasks: Subtask[];
   recurrence: string | null;
   time_tracked_minutes: number;
+  sort_order: number;
   created_at: string;
 }
 

@@ -38,9 +38,9 @@ export function getNavGroups(wsHash: string): NavGroup[] {
 					label: "Sales", path: p("crm"), icon: Briefcase,
 					children: [
 						{ label: "Dashboard", path: p("crm"), icon: LayoutDashboard },
+						{ label: "Contacts", path: p("crm/contacts"), icon: Users },
 						{ label: "Pipeline", path: p("crm/pipeline"), icon: LayoutGrid },
 						{ label: "Projects", path: p("crm/projects"), icon: FolderOpen },
-						{ label: "Contacts", path: p("crm/contacts"), icon: Users },
 						{ label: "Tasks", path: p("crm/tasks"), icon: ClipboardList },
 					],
 				},
@@ -84,16 +84,15 @@ export function getNavGroups(wsHash: string): NavGroup[] {
 		{
 			label: "Analyze", icon: BarChart3, path: p("social-media/analytics"),
 			items: [
-				{ label: "Analytics", path: p("social-media/analytics"), icon: BarChart3 },
-				{ label: "Reports", path: p("social-media/report"), icon: FileBarChart },
-				{ label: "Custom Reports", path: p("social-media/custom-report"), icon: FileSpreadsheet },
-				{ label: "Scheduled Reports", path: p("social-media/schedule-report"), icon: CalendarCheck },
+				{ label: "Social Reports", path: p("social-media/analytics"), icon: BarChart3 },
 				{ label: "Facebook Ads", path: p("integrations/facebook/ads"), icon: CircleDollarSign },
 				{ label: "Google Ads", path: p("integrations/google/ads"), icon: CircleDollarSign },
 				{ label: "TikTok Ads", path: p("integrations/tiktok/ads"), icon: CircleDollarSign },
 				{ label: "LinkedIn Ads", path: p("integrations/linkedin/ads"), icon: CircleDollarSign },
 				{ label: "Google Analytics", path: p("integrations/google/traffic"), icon: TrendingUp },
 				{ label: "WooCommerce", path: p("integrations/woocommerce/insights"), icon: ShoppingCart },
+				{ label: "Custom Reports", path: p("social-media/custom-report"), icon: FileSpreadsheet },
+				{ label: "Scheduled Reports", path: p("social-media/schedule-report"), icon: CalendarCheck },
 			],
 		},
 		{

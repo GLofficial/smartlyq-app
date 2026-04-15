@@ -49,7 +49,7 @@ export function IntegrationsPage() {
 	const connectedPlatforms = new Set(connected.map((c: { platform: string }) => c.platform));
 
 	const handleConnect = (platform: string) => {
-		oauthMut.mutate(platform, { onError: (e) => toast.error((e as { error?: string })?.error ?? "OAuth failed") });
+		oauthMut.mutate({ platform }, { onError: (e) => toast.error((e as { error?: string })?.error ?? "OAuth failed") });
 	};
 
 	const wp = useWorkspacePath();

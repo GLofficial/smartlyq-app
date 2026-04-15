@@ -29,6 +29,7 @@ export function AdCreativesPage() {
 	const { data, isLoading } = useAdCreatives();
 	const [tab, setTab] = useState<string>("All");
 	const [search, setSearch] = useState("");
+	const [showSizeGuide, setShowSizeGuide] = useState(false);
 	const [showUpload, setShowUpload] = useState(false);
 	const qc = useQueryClient();
 	const uploadMutation = useMutation({
@@ -50,7 +51,7 @@ export function AdCreativesPage() {
 					<p className="text-sm text-[var(--muted-foreground)]">Manage your ad creatives across all platforms</p>
 				</div>
 				<div className="flex gap-2">
-					<Button variant="outline" size="sm"><FileText size={14} /><span className="ml-1.5">Size Guide</span></Button>
+					<Button variant="outline" size="sm" onClick={() => setShowSizeGuide(!showSizeGuide)}><FileText size={14} /><span className="ml-1.5">Size Guide</span></Button>
 					<Button size="sm" className="bg-[var(--sq-primary)]" onClick={() => setShowUpload(true)}><Upload size={14} /><span className="ml-1.5">Upload Creative</span></Button>
 				</div>
 			</div>
@@ -68,6 +69,41 @@ export function AdCreativesPage() {
 					))}
 				</div>
 			</div>
+
+			{/* Size Guide Panel */}
+			{showSizeGuide && (
+				<div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
+					<h3 className="text-sm font-semibold text-[var(--foreground)] mb-3">Creative Size Reference</h3>
+					<div className="grid lg:grid-cols-2 gap-6">
+						<div>
+							<p className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wider mb-2">Meta (Facebook/Instagram)</p>
+							<table className="w-full text-xs">
+								<thead><tr className="border-b border-[var(--border)] text-[var(--muted-foreground)]">
+									<th className="py-1.5 text-left font-medium">Placement</th><th className="py-1.5 text-left font-medium">Size</th><th className="py-1.5 text-left font-medium">Format</th>
+								</tr></thead>
+								<tbody>
+									{[["Feed","1080×1080","JPG/PNG/MP4"],["Stories","1080×1920","JPG/PNG/MP4"],["Reels","1080×1920","MP4 only"],["Marketplace","1200×628","JPG/PNG"],["Right Column","1200×1200","JPG/PNG"]].map(([p,s,f]) => (
+										<tr key={p} className="border-b border-[var(--border)] last:border-0"><td className="py-1.5">{p}</td><td className="py-1.5 font-mono">{s}</td><td className="py-1.5">{f}</td></tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+						<div>
+							<p className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wider mb-2">Google Ads</p>
+							<table className="w-full text-xs">
+								<thead><tr className="border-b border-[var(--border)] text-[var(--muted-foreground)]">
+									<th className="py-1.5 text-left font-medium">Placement</th><th className="py-1.5 text-left font-medium">Size</th><th className="py-1.5 text-left font-medium">Format</th>
+								</tr></thead>
+								<tbody>
+									{[["Search","Text only","—"],["Display","300×250, 728×90","JPG/PNG/GIF"],["Display","160×600, 300×600","JPG/PNG/GIF"],["YouTube","1920×1080","MP4 (16:9)"],["YouTube","1280×720","MP4 (16:9)"]].map(([p,s,f], i) => (
+										<tr key={i} className="border-b border-[var(--border)] last:border-0"><td className="py-1.5">{p}</td><td className="py-1.5 font-mono">{s}</td><td className="py-1.5">{f}</td></tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			)}
 
 			{isLoading ? (
 				<div className="flex h-40 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" /></div>
