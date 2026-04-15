@@ -186,22 +186,24 @@ function AccountPicker({ accounts, selectedId, onChange, selectedName }: { accou
 				<ChevronDown size={12} />
 			</Button>
 			{open && (
-				<div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-lg border border-[var(--border)] bg-[var(--card)] p-2 shadow-lg">
-					<p className="px-2 py-1 text-xs font-medium text-[var(--muted-foreground)]">Ad Accounts</p>
-					{accounts.length === 0 && (
-						<p className="px-3 py-4 text-xs text-[var(--muted-foreground)] text-center">No accounts available</p>
-					)}
-					{accounts.map((a) => (
-						<button key={a.id || a.account_id} onClick={() => { onChange(a); setOpen(false); }}
-							className={`w-full rounded px-3 py-2 text-left text-sm transition-colors ${
-								(a.id === selectedId || a.account_id === selectedId)
-									? "bg-[var(--sq-primary)]/10 text-[var(--sq-primary)]"
-									: "hover:bg-[var(--muted)]"
-							}`}>
-							<p className="font-medium text-xs">{a.name}</p>
-							<p className="text-[10px] text-[var(--muted-foreground)]">{a.account_id} · {a.currency} · {a.timezone}</p>
-						</button>
-					))}
+				<div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-lg">
+					<p className="px-3 py-2 text-xs font-medium text-[var(--muted-foreground)] border-b border-[var(--border)]">Ad Accounts ({accounts.length})</p>
+					<div className="max-h-[280px] overflow-y-auto p-1.5">
+						{accounts.length === 0 && (
+							<p className="px-3 py-4 text-xs text-[var(--muted-foreground)] text-center">No accounts available</p>
+						)}
+						{accounts.map((a) => (
+							<button key={a.id || a.account_id} onClick={() => { onChange(a); setOpen(false); }}
+								className={`w-full rounded px-3 py-1.5 text-left text-sm transition-colors ${
+									(a.id === selectedId || a.account_id === selectedId)
+										? "bg-[var(--sq-primary)]/10 text-[var(--sq-primary)]"
+										: "hover:bg-[var(--muted)]"
+								}`}>
+								<p className="font-medium text-xs truncate">{a.name}</p>
+								<p className="text-[10px] text-[var(--muted-foreground)] truncate">{a.account_id} · {a.currency}</p>
+							</button>
+						))}
+					</div>
 				</div>
 			)}
 		</div>
