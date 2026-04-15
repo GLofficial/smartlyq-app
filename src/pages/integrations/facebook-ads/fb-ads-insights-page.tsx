@@ -38,8 +38,9 @@ export function FbAdsInsightsPage() {
 		...(cursor ? { after: cursor } : {}),
 	};
 
-	const { data, isLoading, refetch } = useFbAdsInsights(params);
+	const { data, isLoading, error, refetch } = useFbAdsInsights(params);
 	const actionMutation = useFbAdsAction();
+	const fetchError = error ? (error as { error?: string; message?: string })?.error || (error as { message?: string })?.message || "Failed to load data" : null;
 
 	// Initialize account ID from response
 	useEffect(() => {
@@ -106,6 +107,7 @@ export function FbAdsInsightsPage() {
 	}
 
 	const insights = data?.verdicts?.insights ?? [];
+	const displayError = data?.error || fetchError;
 
 	return (
 		<div className="space-y-5">
@@ -127,6 +129,16 @@ export function FbAdsInsightsPage() {
 				<div className="flex h-48 items-center justify-center">
 					<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
 				</div>
+			) : displayError && !data?.totals ? (
+				<Card>
+					<CardContent className="py-8 text-center">
+						<p className="text-sm text-red-500 font-medium mb-2">Error loading data</p>
+						<p className="text-sm text-[var(--muted-foreground)]">{displayError}</p>
+						<Button variant="outline" size="sm" className="mt-4" onClick={() => refetch()}>
+							Try Again
+						</Button>
+					</CardContent>
+				</Card>
 			) : data?.totals ? (
 				<>
 					<FbAdsKpiCards
