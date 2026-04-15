@@ -9,7 +9,7 @@ import { FbAdsKpiCards } from "./fb-ads-kpi-cards";
 import { FbAdsPerformanceChart } from "./fb-ads-performance-chart";
 import { FbAdsDataTable } from "./fb-ads-data-table";
 import { FbAdsDeviceBreakdown } from "./fb-ads-device-breakdown";
-import { FbAdsAiInsights, FbAdsTopInsights } from "./fb-ads-ai-insights";
+import { FbAdsAiInsights } from "./fb-ads-ai-insights";
 import { FbAdsPreviewModal } from "./fb-ads-preview-modal";
 import { FbAdsCreativeInsights } from "./fb-ads-creative-insights";
 import { DemographicsChart, PlacementChart, HourOfDayChart, ConversionFunnelChart } from "./fb-ads-tab-charts";
@@ -202,8 +202,7 @@ function OverviewLayout({ data, allRows, currency, insights, isLoading, accountI
 						initiate_checkout: (data.totals as unknown as Record<string, number>).initiate_checkout,
 					}} />
 				)}
-				<TopInsightsSection accountId={accountId} dateRange={dateRange} />
-				<DeviceBreakdownSection accountId={accountId} dateRange={dateRange} />
+				<LazyDeviceBreakdown accountId={accountId} dateRange={dateRange} />
 				{allRows.length > 0 && (
 					<FbAdsDataTable rows={allRows} tab="campaigns" currency={currency}
 						nextCursor="" onLoadMore={() => {}} isLoadingMore={false}
@@ -228,19 +227,14 @@ function TabWithChart({ chart, table, insights, isLoading }: { chart: React.Reac
 	);
 }
 
-/* ── Secondary Queries ─────────────────────────────────────────────── */
+/* ── Lazy Device Breakdown (deferred to avoid competing with main call) */
 
-function DeviceBreakdownSection({ accountId, dateRange }: { accountId: string; dateRange: { start: string; end: string } }) {
-	const { data } = useFbAdsInsights({ tab: "devices", start: dateRange.start, end: dateRange.end, ...(accountId ? { ad_account_id: accountId } : {}) });
+function LazyDeviceBreakdown({ accountId, dateRange }: { accountId: string; dateRange: { start: string; end: string } }) {
+	const [enabled, setEnabled] = useState(false);
+	useEffect(() => { const t = setTimeout(() => setEnabled(true), 1500); return () => clearTimeout(t); }, [accountId, dateRange.start, dateRange.end]);
+	const { data } = useFbAdsInsights({ tab: "devices", start: dateRange.start, end: dateRange.end, ...(accountId ? { ad_account_id: accountId } : {}) }, enabled);
 	if (!data?.rows?.length) return null;
 	return <FbAdsDeviceBreakdown rows={data.rows} currency={data?.account?.currency || data?.totals?.currency || "USD"} />;
-}
-
-function TopInsightsSection({ accountId, dateRange }: { accountId: string; dateRange: { start: string; end: string } }) {
-	const { data: demoData } = useFbAdsInsights({ tab: "demographics", start: dateRange.start, end: dateRange.end, ...(accountId ? { ad_account_id: accountId } : {}) });
-	const { data: hoursData } = useFbAdsInsights({ tab: "hours", start: dateRange.start, end: dateRange.end, ...(accountId ? { ad_account_id: accountId } : {}) });
-	const { data: regionsData } = useFbAdsInsights({ tab: "regions", start: dateRange.start, end: dateRange.end, ...(accountId ? { ad_account_id: accountId } : {}) });
-	return <FbAdsTopInsights demographicsRows={demoData?.rows} hoursRows={hoursData?.rows} regionsRows={regionsData?.rows} />;
 }
 
 /* ── Not Connected / Token Expired ─────────────────────────────────── */
