@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, ChevronDown, Download, Settings, Calendar } from "lucide-react";
+import { RefreshCw, ChevronDown, Download, Settings, Calendar, ArrowLeftRight, ShoppingCart, Users } from "lucide-react";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { FB_ADS_TABS } from "./fb-ads-types";
 import type { FbAdsTab, FbAdsAccount } from "./fb-ads-types";
@@ -19,6 +19,11 @@ interface FbAdsHeaderProps {
 	onExport: (fmt: string) => void;
 	isLoading: boolean;
 	currency: string;
+	conversionType: string;
+	onConversionTypeChange: (t: string) => void;
+	compare: boolean;
+	onCompareChange: (c: boolean) => void;
+	attribution?: string;
 }
 
 const PRESETS: { label: string; days: number }[] = [
@@ -32,15 +37,12 @@ function daysAgo(n: number): DateRange {
 	const end = new Date();
 	const start = new Date();
 	start.setDate(end.getDate() - (n - 1));
-	return {
-		start: fmt(start), end: fmt(end),
-		label: PRESETS.find((p) => p.days === n)?.label ?? `Last ${n} Days`,
-	};
+	return { start: fmt(start), end: fmt(end), label: PRESETS.find((p) => p.days === n)?.label ?? `Last ${n} Days` };
 }
 function fmt(d: Date): string { return d.toISOString().slice(0, 10); }
 
 export function FbAdsHeader(props: FbAdsHeaderProps) {
-	const { tab, onTabChange, dateRange, onDateRangeChange, accounts, selectedAccountId, onAccountChange, onRefresh, onExport, isLoading } = props;
+	const { tab, onTabChange, dateRange, onDateRangeChange, accounts, selectedAccountId, onAccountChange, onRefresh, onExport, isLoading, conversionType, onConversionTypeChange, compare, onCompareChange, attribution } = props;
 	const selectedAccount = accounts.find((a) => a.id === selectedAccountId || a.account_id === selectedAccountId);
 
 	return (
@@ -57,14 +59,36 @@ export function FbAdsHeader(props: FbAdsHeaderProps) {
 							<span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
 								<span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> LIVE
 							</span>
+							{attribution && (
+								<span className="rounded bg-[var(--muted)] px-1.5 py-0.5 text-[9px] text-[var(--muted-foreground)]">
+									{attribution.replace(/_/g, " ")}
+								</span>
+							)}
 						</div>
 						{selectedAccount && (
-							<p className="text-xs text-[var(--muted-foreground)]">{selectedAccount.name}</p>
+							<p className="text-xs text-[var(--muted-foreground)]">{selectedAccount.name} · {selectedAccount.currency}</p>
 						)}
 					</div>
 				</div>
 
 				<div className="flex items-center gap-2">
+					{/* Conversion type toggle */}
+					<div className="flex rounded-lg border border-[var(--border)] overflow-hidden">
+						<button onClick={() => onConversionTypeChange("purchases")}
+							className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium transition-colors ${conversionType === "purchases" ? "bg-[var(--sq-primary)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--muted)]"}`}>
+							<ShoppingCart size={12} /> Purchases
+						</button>
+						<button onClick={() => onConversionTypeChange("leads")}
+							className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium transition-colors ${conversionType === "leads" ? "bg-[var(--sq-primary)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--muted)]"}`}>
+							<Users size={12} /> Leads
+						</button>
+					</div>
+
+					{/* Compare toggle */}
+					<Button variant={compare ? "default" : "outline"} size="sm" onClick={() => onCompareChange(!compare)} className="gap-1 text-xs">
+						<ArrowLeftRight size={12} /> vs
+					</Button>
+
 					<DateRangePicker value={dateRange} onChange={onDateRangeChange} />
 					<Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading} className="gap-1.5">
 						<RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
@@ -108,7 +132,7 @@ function DateRangePicker({ value, onChange }: { value: DateRange; onChange: (r: 
 		<div className="relative" ref={ref}>
 			<Button variant="outline" size="sm" onClick={() => setOpen(!open)} className="gap-1.5 text-xs">
 				<Calendar size={14} />
-				<span>{value.label || `${value.start} - ${value.end}`}</span>
+				<span>{value.label || `${value.start} – ${value.end}`}</span>
 				<ChevronDown size={12} />
 			</Button>
 			{open && (
@@ -192,12 +216,6 @@ function ExportMenu({ onExport }: { onExport: (fmt: string) => void }) {
 		return () => document.removeEventListener("mousedown", handler);
 	}, []);
 
-	const items = [
-		{ key: "csv", label: "CSV" },
-		{ key: "xls", label: "Excel (XLS)" },
-		{ key: "pdf", label: "PDF" },
-	];
-
 	return (
 		<div className="relative" ref={ref}>
 			<Button variant="outline" size="sm" onClick={() => setOpen(!open)} className="gap-1.5 text-xs">
@@ -205,7 +223,7 @@ function ExportMenu({ onExport }: { onExport: (fmt: string) => void }) {
 			</Button>
 			{open && (
 				<div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-lg border border-[var(--border)] bg-[var(--card)] p-1 shadow-lg">
-					{items.map((i) => (
+					{[{ key: "csv", label: "CSV" }, { key: "xls", label: "Excel (XLS)" }, { key: "pdf", label: "PDF" }, { key: "ai", label: "AI Report" }].map((i) => (
 						<button key={i.key} onClick={() => { onExport(i.key); setOpen(false); }}
 							className="w-full rounded px-3 py-2 text-left text-sm hover:bg-[var(--muted)] transition-colors">
 							{i.label}
