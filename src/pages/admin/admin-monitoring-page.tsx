@@ -1,7 +1,7 @@
 import { ServerHealth, ClickHouseServerHealth } from "./monitoring/server-health";
 import { ServicesPanel } from "./monitoring/services-panel";
 import { DatabasePanel, EndpointsPanel, SSLPanel, RedisPanel, FpmPanel, R2Panel } from "./monitoring/infra-panels";
-import { SocialApiPanel, CronPanel, AiQueuePanel, ErrorLogsPanel, NginxPanel, AuthAuditPanel, ApiQueuePanel } from "./monitoring/ops-panels";
+import { SocialApiPanel, CronPanel, AiQueuePanel, ErrorLogsPanel, NginxPanel, AuthAuditPanel, ApiQueuePanel, ApiAuditPanel } from "./monitoring/ops-panels";
 
 export function AdminMonitoringPage() {
 	return (
@@ -58,7 +58,10 @@ export function AdminMonitoringPage() {
 			{/* Row 6: Cron Jobs */}
 			<CronPanel />
 
-			{/* Row 7: Error Logs + Auth Audit */}
+			{/* Row 7: API Audit Log */}
+			<ApiAuditPanel />
+
+			{/* Row 8: Error Logs + Auth Audit */}
 			<div className="grid gap-6 lg:grid-cols-2">
 				<ErrorLogsPanel />
 				<AuthAuditPanel />

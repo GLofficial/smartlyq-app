@@ -37,6 +37,16 @@ export function useErrorLogs(page = 1, search = "", severity = "") {
 }
 
 export function useAuthAudit() { return useFeed("auth"); }
+
+export function useApiAudit(page = 1, platform = "") {
+	return useQuery({
+		queryKey: ["admin", "monitoring", "api_audit", page, platform],
+		queryFn: () => apiClient.get<any>(
+			`/api/spa/admin/monitoring?feed=api_audit&page=${page}${platform ? `&platform=${platform}` : ""}`
+		),
+		refetchInterval: 15000,
+	});
+}
 export function useBgTasks() { return useFeed("bg_tasks"); }
 
 export function useAdminBillingDebug(userId: number) {

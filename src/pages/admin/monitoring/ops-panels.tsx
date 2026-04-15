@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Share2, Clock, Zap, AlertTriangle, Search, ShieldCheck, Globe } from "lucide-react";
-import { useSocialApi, useCron, useAiQueue, useErrorLogs, useAuthAudit, useNginx } from "@/api/admin-monitoring";
+import { Share2, Clock, Zap, AlertTriangle, Search, ShieldCheck, Globe, Activity } from "lucide-react";
+import { useSocialApi, useCron, useAiQueue, useErrorLogs, useAuthAudit, useNginx, useApiAudit } from "@/api/admin-monitoring";
 import { apiClient } from "@/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { Section, SectionSkeleton, BigStat } from "./section";
@@ -245,6 +245,82 @@ export function ApiQueuePanel() {
 								</tr>))}
 						</tbody></table>
 					</div>)}
+				</div>
+			)}
+		</Section>
+	);
+}
+
+/* ── API Audit Log Panel ───────────────────────────────────────────── */
+
+const PLATFORM_COLORS: Record<string, string> = { meta: "text-blue-600", google: "text-green-600", tiktok: "text-gray-900", linkedin: "text-blue-700" };
+
+export function ApiAuditPanel() {
+	const [page, setPage] = useState(1);
+	const [platform, setPlatform] = useState("");
+	const { data, isLoading } = useApiAudit(page, platform);
+	if (isLoading || !data) return <SectionSkeleton />;
+	const rows = Array.isArray(data.rows) ? data.rows : [];
+	const stats = Array.isArray(data.stats_1h) ? data.stats_1h : [];
+	const totalPages = (data.pages as number) ?? 1;
+
+	return (
+		<Section icon={Activity} title="API Audit Log">
+			<div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+				<BigStat label="Calls Today" value={String(data.calls_today ?? 0)} />
+				{stats.map((s: any) => (
+					<div key={s.platform} className="rounded-lg border border-[var(--border)] p-3">
+						<p className={`text-xs font-semibold capitalize ${PLATFORM_COLORS[s.platform] ?? ""}`}>{s.platform}</p>
+						<p className="text-lg font-bold text-[var(--foreground)]">{s.total} <span className="text-xs font-normal text-[var(--muted-foreground)]">calls/1h</span></p>
+						<div className="flex gap-3 mt-1 text-[10px] text-[var(--muted-foreground)]">
+							<span>{s.errors} err</span>
+							<span>{Math.round(s.avg_ms ?? 0)}ms</span>
+							{(s.max_rate_pct ?? 0) > 0 && <span className="text-amber-600">{s.max_rate_pct}%</span>}
+						</div>
+					</div>
+				))}
+			</div>
+			<div className="flex items-center gap-2 mb-3">
+				<span className="text-xs text-[var(--muted-foreground)]">Filter:</span>
+				{["", "meta", "google", "tiktok", "linkedin"].map((p) => (
+					<button key={p} onClick={() => { setPlatform(p); setPage(1); }}
+						className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${platform === p ? "bg-[var(--sq-primary)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--muted)]"}`}>
+						{p === "" ? "All" : p.charAt(0).toUpperCase() + p.slice(1)}
+					</button>
+				))}
+				<span className="ml-auto text-[10px] text-[var(--muted-foreground)]">{data.total ?? 0} rows</span>
+			</div>
+			<div className="overflow-x-auto">
+				<table className="w-full text-xs">
+					<thead><tr className="border-b border-[var(--border)] text-left text-[var(--muted-foreground)]">
+						<th className="py-2 pr-3 font-medium">Time</th><th className="py-2 pr-3 font-medium">Platform</th>
+						<th className="py-2 pr-3 font-medium">Account</th><th className="py-2 pr-3 font-medium">Endpoint</th>
+						<th className="py-2 pr-3 font-medium">Status</th><th className="py-2 pr-3 font-medium">ms</th>
+						<th className="py-2 pr-3 font-medium">Error</th>
+					</tr></thead>
+					<tbody>
+						{rows.map((r: any) => {
+							const st = Number(r.http_status ?? 0);
+							const sc = st >= 400 ? "text-red-600 font-semibold" : st >= 300 ? "text-amber-600" : "text-emerald-600";
+							return (<tr key={String(r.id)} className="border-b border-[var(--border)] hover:bg-[var(--muted)]/20">
+								<td className="py-1.5 pr-3 whitespace-nowrap text-[var(--muted-foreground)]">{String(r.created_at ?? "").slice(11, 19)}</td>
+								<td className={`py-1.5 pr-3 font-medium capitalize ${PLATFORM_COLORS[String(r.platform)] ?? ""}`}>{String(r.platform)}</td>
+								<td className="py-1.5 pr-3 font-mono text-[10px]">{String(r.ad_account_id ?? "").slice(0, 18)}</td>
+								<td className="py-1.5 pr-3 max-w-[200px] truncate" title={String(r.endpoint ?? "")}>{String(r.endpoint ?? "").replace(/https:\/\/[^/]+\/[^/]+\//, "")}</td>
+								<td className={`py-1.5 pr-3 ${sc}`}>{st || "—"}</td>
+								<td className="py-1.5 pr-3 font-mono">{r.response_time_ms || "—"}</td>
+								<td className="py-1.5 pr-3 text-red-500">{String(r.error_code ?? "")}</td>
+							</tr>);
+						})}
+						{rows.length === 0 && <tr><td colSpan={7} className="py-6 text-center text-[var(--muted-foreground)]">No API calls logged yet</td></tr>}
+					</tbody>
+				</table>
+			</div>
+			{totalPages > 1 && (
+				<div className="flex items-center justify-center gap-2 mt-3">
+					<button disabled={page <= 1} onClick={() => setPage(page - 1)} className="rounded px-2 py-1 text-xs border border-[var(--border)] disabled:opacity-30">Prev</button>
+					<span className="text-xs text-[var(--muted-foreground)]">Page {page}/{totalPages}</span>
+					<button disabled={page >= totalPages} onClick={() => setPage(page + 1)} className="rounded px-2 py-1 text-xs border border-[var(--border)] disabled:opacity-30">Next</button>
 				</div>
 			)}
 		</Section>
