@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -181,15 +181,22 @@ export function AdminUsersPage() {
 function AddUserDialog({ plans, onClose }: { plans: { id: number; name: string; duration: string }[]; onClose: () => void }) {
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
-	const [planId, setPlanId] = useState(0);
+	const [planId, setPlanId] = useState<number | null>(null);
 	const [loading, setLoading] = useState(false);
 	const create = useAdminUserCreate();
+
+	// Auto-select the first plan once plans are loaded
+	useEffect(() => {
+		if (plans.length > 0 && planId === null) {
+			setPlanId(plans[0]!.id);
+		}
+	}, [plans]);
 
 	const submit = async () => {
 		if (!name.trim() || !email.trim()) { toast.error("Name and email are required."); return; }
 		setLoading(true);
 		try {
-			const res = await create({ name, email, plan_id: planId });
+			const res = await create({ name, email, plan_id: planId ?? 0 });
 			toast.success(`User created. Temporary password: ${res.password}`);
 			onClose();
 		} catch {
@@ -212,9 +219,9 @@ function AddUserDialog({ plans, onClose }: { plans: { id: number; name: string; 
 					<div><label className="text-xs font-medium text-[var(--muted-foreground)]">Email Address</label>
 						<Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="john@example.com" className="mt-1" /></div>
 					<div><label className="text-xs font-medium text-[var(--muted-foreground)]">Plan</label>
-						<select value={planId} onChange={(e) => setPlanId(Number(e.target.value))}
+						<select value={planId ?? ""} onChange={(e) => setPlanId(Number(e.target.value))}
 							className="mt-1 w-full h-9 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm">
-							<option value={0}>No Plan</option>
+							{planId === null && <option value="" disabled>Loading plans...</option>}
 							{plans.filter(p => p.duration === "month").length > 0 && <optgroup label="Monthly">{plans.filter(p => p.duration === "month").map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>}
 							{plans.filter(p => p.duration === "year").length > 0 && <optgroup label="Annual">{plans.filter(p => p.duration === "year").map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>}
 							{plans.filter(p => p.duration === "lifetime").length > 0 && <optgroup label="Lifetime">{plans.filter(p => p.duration === "lifetime").map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>}
