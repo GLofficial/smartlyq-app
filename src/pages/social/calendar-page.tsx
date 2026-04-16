@@ -7,7 +7,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import type { EventContentArg, DatesSetArg, EventClickArg } from "@fullcalendar/core";
 import type { DateClickArg } from "@fullcalendar/interaction";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Share2 } from "lucide-react";
 import { useCalendarEvents } from "@/api/social";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useNavigate } from "react-router-dom";
@@ -102,9 +102,14 @@ export function CalendarPage() {
 					<CalendarIcon size={20} className="text-[var(--sq-primary)]" />
 					<h1 className="text-xl font-bold text-[var(--foreground)]">Content Calendar</h1>
 				</div>
-				<Button size="sm" onClick={() => navigate(wsHash ? `/w/${wsHash}/social-media/create` : "/social-media/create")}>
-					<Plus size={14} className="mr-1.5" /> Create Post
-				</Button>
+				<div className="flex items-center gap-2">
+					<Button variant="outline" size="sm" className="gap-1.5">
+						<Share2 size={14} /> Share
+					</Button>
+					<Button size="sm" onClick={() => navigate(wsHash ? `/w/${wsHash}/social-media/create` : "/social-media/create")}>
+						<Plus size={14} className="mr-1.5" /> Create Post
+					</Button>
+				</div>
 			</div>
 
 			{/* Toolbar */}
@@ -138,7 +143,7 @@ export function CalendarPage() {
 					initialView="dayGridMonth"
 					headerToolbar={false}
 					height="auto"
-					dayMaxEvents={3}
+					dayMaxEvents={4}
 					eventDisplay="block"
 					nextDayThreshold="09:00:00"
 					events={filteredEvents.filter((e) => e.start !== null) as any}
