@@ -143,7 +143,7 @@ export function ManagePostsPage() {
 										</span>
 									</div>
 
-									{/* Right side: platforms + account + date */}
+									{/* Right side: platforms + account + date + actions */}
 									<div className="shrink-0 text-right">
 										<div className="flex items-center justify-end gap-1 mb-1">
 											{post.platforms.slice(0, 5).map((p: string) => <PlatformIcon key={p} platform={p} size={16} />)}
@@ -160,24 +160,23 @@ export function ManagePostsPage() {
 												: post.created_at ? new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + ", " + new Date(post.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
 												: ""}
 										</p>
-									</div>
-
-									{/* Action buttons (show on hover) */}
-									<div className="shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-										<Link to={editPath(post.id)}>
-											<Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Edit"><Pencil size={13} /></Button>
-										</Link>
-										<Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Duplicate"><Copy size={13} /></Button>
-										{(post.status === "failed" || post.status === "partially_published") && (
-											<Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-blue-600" title="Retry"
-												onClick={() => retryMut.mutate(post.id, { onSuccess: () => toast.success("Queued for retry") })}>
-												<RotateCw size={13} />
+										{/* Action buttons — below date, appear on hover */}
+										<div className="flex items-center justify-end gap-0.5 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+											<Link to={editPath(post.id)}>
+												<Button variant="outline" size="sm" className="h-7 w-7 p-0" title="Edit"><Pencil size={13} /></Button>
+											</Link>
+											<Button variant="outline" size="sm" className="h-7 w-7 p-0" title="Duplicate"><Copy size={13} /></Button>
+											{(post.status === "failed" || post.status === "partially_published") && (
+												<Button variant="outline" size="sm" className="h-7 w-7 p-0 text-blue-600" title="Retry"
+													onClick={() => retryMut.mutate(post.id, { onSuccess: () => toast.success("Queued for retry") })}>
+													<RotateCw size={13} />
+												</Button>
+											)}
+											<Button variant="outline" size="sm" className="h-7 w-7 p-0 text-red-500" title="Delete"
+												onClick={() => { if (confirm("Delete this post?")) deleteMut.mutate(post.id, { onSuccess: () => toast.success("Deleted") }); }}>
+												<Trash2 size={13} />
 											</Button>
-										)}
-										<Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500" title="Delete"
-											onClick={() => { if (confirm("Delete this post?")) deleteMut.mutate(post.id, { onSuccess: () => toast.success("Deleted") }); }}>
-											<Trash2 size={13} />
-										</Button>
+										</div>
 									</div>
 								</div>
 							);
