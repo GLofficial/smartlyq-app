@@ -234,15 +234,17 @@ export function useCrmDealDelete() {
 
 // Contacts
 
-export function useCrmContacts(params?: { status?: string; search?: string }) {
+export function useCrmContacts(params?: { status?: string; search?: string; page?: number; limit?: number }) {
   return useQuery({
     queryKey: ["crm", "contacts", params ?? {}],
     queryFn: () => {
       const sp = new URLSearchParams();
       if (params?.status) sp.set("status", params.status);
       if (params?.search) sp.set("search", params.search);
+      if (params?.page) sp.set("page", String(params.page));
+      if (params?.limit) sp.set("limit", String(params.limit));
       const qs = sp.toString();
-      return apiClient.get<{ contacts: ApiContact[] }>(`/api/spa/crm/contacts${qs ? `?${qs}` : ""}`);
+      return apiClient.get<{ contacts: ApiContact[]; pagination: { page: number; limit: number; total: number; pages: number } }>(`/api/spa/crm/contacts${qs ? `?${qs}` : ""}`);
     },
   });
 }
