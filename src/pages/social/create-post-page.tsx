@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSocialHub } from "@/api/social";
 import { useCreatePost, type CreatePostData } from "@/api/social-posts";
+import { useAiRewrite, useAiImage } from "@/api/ai-generate";
+import { useGenerateVideo } from "@/api/video-gen";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { toast } from "sonner";
 import PostComposer from "./PostComposer";
@@ -24,6 +26,9 @@ export function CreatePostPage() {
   const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
   const { data: hubData, isLoading: hubLoading } = useSocialHub();
   const createPost = useCreatePost();
+  const aiRewrite = useAiRewrite();
+  const aiImage = useAiImage();
+  const aiVideo = useGenerateVideo();
 
   const state = location.state as LocationState | null;
   const accounts = Array.isArray(hubData?.accounts) ? hubData.accounts : [];
@@ -74,6 +79,21 @@ export function CreatePostPage() {
     [content, selectedPlatforms, selectedAccountIds, createPost, navigate, wsHash],
   );
 
+  const handleAiText = useCallback(async (topic: string, tone: string) => {
+    const result = await aiRewrite.mutateAsync({ content: topic, tone });
+    return result.rewritten;
+  }, [aiRewrite]);
+
+  const handleAiImage = useCallback(async (prompt: string) => {
+    const result = await aiImage.mutateAsync({ prompt });
+    return result.image_url;
+  }, [aiImage]);
+
+  const handleAiVideo = useCallback(async (prompt: string, config: Record<string, string>) => {
+    const result = await aiVideo.mutateAsync({ prompt, type: config.type });
+    return `Video generation started (ID: ${result.video_id}). Check Media Library when complete.`;
+  }, [aiVideo]);
+
   if (hubLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -105,6 +125,9 @@ export function CreatePostPage() {
           onPostNow={() => handleSubmit("post_now")}
           onSchedulePost={(date, time) => handleSubmit("scheduled", `${date}T${time}:00`)}
           isSubmitting={createPost.isPending}
+          onAiGenerateText={handleAiText}
+          onAiGenerateImage={handleAiImage}
+          onAiGenerateVideo={handleAiVideo}
         />
         <PostPreview
           selectedPlatforms={selectedPlatforms}

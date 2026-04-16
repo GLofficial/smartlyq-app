@@ -391,6 +391,10 @@ interface PostComposerProps {
   /** Selected account IDs (real) — synced with parent */
   selectedAccountIds?: number[];
   onSelectedAccountIdsChange?: (ids: number[]) => void;
+  /** AI generation callbacks */
+  onAiGenerateText?: (topic: string, tone: string, contentType: string) => Promise<string>;
+  onAiGenerateImage?: (prompt: string) => Promise<string>;
+  onAiGenerateVideo?: (prompt: string, config: Record<string, string>) => Promise<string>;
 }
 
 function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
@@ -432,6 +436,9 @@ export default function PostComposer({
   isSubmitting,
   selectedAccountIds,
   onSelectedAccountIdsChange,
+  onAiGenerateText,
+  onAiGenerateImage,
+  onAiGenerateVideo,
 }: PostComposerProps) {
   // Map real accounts to the internal format used by the UI
   const useRealAccounts = Array.isArray(realAccounts) && realAccounts.length > 0;
@@ -1916,7 +1923,17 @@ export default function PostComposer({
             <Button variant="outline" onClick={() => setAiTextOpen(false)}>Cancel</Button>
             <Button
               className="bg-gradient-to-r from-amber-400 to-orange-400 text-white hover:from-amber-500 hover:to-orange-500"
-              onClick={() => setAiTextConfig(prev => ({ ...prev, generated: "✨ AI-generated content will appear here once connected to Lovable Cloud." }))}
+              onClick={async () => {
+                if (onAiGenerateText) {
+                  try {
+                    setAiTextConfig(prev => ({ ...prev, generated: "Generating..." }));
+                    const result = await onAiGenerateText(aiTextConfig.topic, aiTextConfig.tone, aiTextConfig.contentType);
+                    setAiTextConfig(prev => ({ ...prev, generated: result }));
+                  } catch { setAiTextConfig(prev => ({ ...prev, generated: "Generation failed. Please try again." })); }
+                } else {
+                  setAiTextConfig(prev => ({ ...prev, generated: "AI text generation not connected yet." }));
+                }
+              }}
             >
               <Sparkles className="w-4 h-4" /> Generate Content
             </Button>
@@ -1991,7 +2008,17 @@ export default function PostComposer({
             <Button variant="outline" onClick={() => setAiImageOpen(false)}>Cancel</Button>
             <Button
               className="bg-gradient-to-r from-amber-400 to-orange-400 text-white hover:from-amber-500 hover:to-orange-500"
-              onClick={() => setAiImageConfig(prev => ({ ...prev, preview: "🖼️ AI-generated image will appear here once connected to Lovable Cloud." }))}
+              onClick={async () => {
+                if (onAiGenerateImage) {
+                  try {
+                    setAiImageConfig(prev => ({ ...prev, preview: "Generating..." }));
+                    const url = await onAiGenerateImage(aiImageConfig.prompt);
+                    setAiImageConfig(prev => ({ ...prev, preview: url }));
+                  } catch { setAiImageConfig(prev => ({ ...prev, preview: "Generation failed." })); }
+                } else {
+                  setAiImageConfig(prev => ({ ...prev, preview: "AI image generation not connected yet." }));
+                }
+              }}
             >
               <Sparkles className="w-4 h-4" /> Generate Image
             </Button>
@@ -2119,7 +2146,17 @@ export default function PostComposer({
             <Button variant="outline" onClick={() => setAiVideoOpen(false)}>Cancel</Button>
             <Button
               className="bg-gradient-to-r from-amber-400 to-orange-400 text-white hover:from-amber-500 hover:to-orange-500"
-              onClick={() => setAiVideoConfig(prev => ({ ...prev, status: "🎬 AI video generation will be available once connected to Lovable Cloud." }))}
+              onClick={async () => {
+                if (onAiGenerateVideo) {
+                  try {
+                    setAiVideoConfig(prev => ({ ...prev, status: "Generating video..." }));
+                    const result = await onAiGenerateVideo(aiVideoConfig.prompt, { type: aiVideoConfig.type, length: aiVideoConfig.length, resolution: aiVideoConfig.resolution, quality: aiVideoConfig.quality });
+                    setAiVideoConfig(prev => ({ ...prev, status: result }));
+                  } catch { setAiVideoConfig(prev => ({ ...prev, status: "Generation failed." })); }
+                } else {
+                  setAiVideoConfig(prev => ({ ...prev, status: "AI video generation not connected yet." }));
+                }
+              }}
             >
               <Film className="w-4 h-4" /> Generate Video
             </Button>

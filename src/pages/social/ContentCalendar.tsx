@@ -204,10 +204,44 @@ function PlatformIcons({ platforms }: { platforms: { id: string }[] }) {
   );
 }
 
-export default function ContentCalendar() {
+interface CalendarProps {
+  /** Real events from API — if provided, replaces DEMO_POSTS */
+  realEvents?: { id: number | string; title: string; start: string | null; extendedProps: Record<string, unknown> }[];
+  onDeletePost?: (postId: number) => void;
+  onRetryPost?: (postId: number) => void;
+  onReschedulePost?: (postId: number, newDate: string, newTime: string) => void;
+}
+
+export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost, onReschedulePost }: CalendarProps = {}) {
   const navigate = useNavigate();
   // toast imported from sonner at top
   const calendarRef = useRef<FullCalendar>(null);
+
+  // Convert real API events to DemoPost format
+  const apiPosts: DemoPost[] = useMemo(() => {
+    if (!realEvents?.length) return [];
+    return realEvents.map(ev => {
+      const ep = ev.extendedProps || {};
+      const startStr = ev.start ?? "";
+      const [datePart, timePart] = startStr.split("T");
+      return {
+        id: String(ev.id),
+        title: ev.title || (ep.content as string || "").slice(0, 50) || "Untitled",
+        content: (ep.content as string) || "",
+        date: datePart || "",
+        time: timePart ? timePart.slice(0, 5) : "00:00",
+        platforms: Array.isArray(ep.platforms) ? (ep.platforms as string[]).map(pid => ({
+          id: pid,
+          name: (ep.accountName as string) || pid,
+          status: ((ep.status as string) || "scheduled") as "published" | "scheduled" | "draft" | "failed",
+        })) : [],
+        thumbnail: (ep.thumbnail as string) || undefined,
+        status: ((ep.status as string) || "scheduled") as DemoPost["status"],
+      };
+    });
+  }, [realEvents]);
+
+  const useReal = apiPosts.length > 0;
   const [posts, setPosts] = useState<DemoPost[]>(DEMO_POSTS);
   const [currentView, setCurrentView] = useState<CalendarView>("dayGridMonth");
   const [searchQuery, setSearchQuery] = useState("");
@@ -238,7 +272,8 @@ export default function ContentCalendar() {
     }
   }, []);
 
-  const filteredPosts = posts.filter((p) => {
+  const sourcePosts = useReal ? apiPosts : posts;
+  const filteredPosts = sourcePosts.filter((p) => {
     if (searchQuery && !p.title.toLowerCase().includes(searchQuery.toLowerCase()) && !p.content.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (statusFilter !== "All Status" && p.status !== statusFilter.toLowerCase()) return false;
     if (platformFilter !== "all" && !p.platforms.some((pl) => pl.id === platformFilter)) return false;
@@ -285,8 +320,12 @@ export default function ContentCalendar() {
       )
     );
 
+    // Call API to reschedule if wired
+    if (onReschedulePost && post.id) {
+      onReschedulePost(Number(post.id), newDate, newTime);
+    }
     toast.success(`Post rescheduled: "${post.title}" moved to ${formatDate(newDate)} at ${newTime}`);
-  }, []);
+  }, [onReschedulePost]);
 
   const postsForDay = dayDetailDate
     ? filteredPosts.filter((p) => p.date === dayDetailDate)
@@ -549,12 +588,12 @@ export default function ContentCalendar() {
                 )}
                 {selectedPost.status === "partial" && (
                   <>
-                    <Button variant="warning" className="gap-1.5"><RotateCw className="w-4 h-4" /> Retry Failed</Button>
-                    <Button variant="outline" className="gap-1.5"><MinusCircle className="w-4 h-4" /> Remove Failed</Button>
+                    <Button variant="warning" className="gap-1.5" onClick={() => { if (onRetryPost && selectedPost) { onRetryPost(Number(selectedPost.id)); setSelectedPost(null); } }}><RotateCw className="w-4 h-4" /> Retry Failed</Button>
+                    <Button variant="outline" className="gap-1.5" onClick={() => { if (onDeletePost && selectedPost) { onDeletePost(Number(selectedPost.id)); setSelectedPost(null); } }}><MinusCircle className="w-4 h-4" /> Remove Failed</Button>
                   </>
                 )}
                 <Button variant="outline" className="gap-1.5"><Share2 className="w-4 h-4" /> Share</Button>
-                <Button variant="outline" className="gap-1.5 text-destructive hover:text-destructive"><Trash2 className="w-4 h-4" /> Delete</Button>
+                <Button variant="outline" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => { if (onDeletePost && selectedPost) { onDeletePost(Number(selectedPost.id)); setSelectedPost(null); } }}><Trash2 className="w-4 h-4" /> Delete</Button>
                 {selectedPost.status === "partial" && (
                   <Button className="gap-1.5 bg-warning text-warning-foreground hover:bg-warning/90"><FileEdit className="w-4 h-4" /> Edit Failed</Button>
                 )}
