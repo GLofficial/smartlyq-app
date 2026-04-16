@@ -91,6 +91,10 @@ export function WorkspaceSwitcher() {
 			setActiveWorkspace(wsId, res.active_workspace_hash);
 			setOpen(false);
 
+			// Clear all cached data from the previous workspace to prevent data leaks
+			const { queryClient } = await import("@/lib/query-client");
+			queryClient.clear();
+
 			// Navigate to same subpath under new workspace hash (no full reload)
 			const currentSubpath = location.pathname.replace(/^\/w\/[A-Za-z0-9_-]{22}\/?/, "");
 			navigate(`/w/${res.active_workspace_hash}/${currentSubpath || "dashboard"}`);

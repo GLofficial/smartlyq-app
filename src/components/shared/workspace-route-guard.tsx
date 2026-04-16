@@ -44,10 +44,13 @@ export function WorkspaceRouteGuard() {
 				"/api/spa/workspace/switch-by-hash",
 				{ hash_id: hashId },
 			)
-			.then((res) => {
+			.then(async (res) => {
 				if (inflightRef.current !== hashId) return; // Stale response
 				localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, res.access_token);
 				setActiveWorkspace(res.active_workspace_id, res.active_workspace_hash);
+				// Clear all cached data from the previous workspace to prevent data leaks
+				const { queryClient } = await import("@/lib/query-client");
+				queryClient.clear();
 			})
 			.catch(() => {
 				if (inflightRef.current !== hashId) return;
