@@ -72,13 +72,21 @@ export function useAdminSubscriptions(page = 1, search = "", planId = "", status
 	});
 }
 
-export function useAdminTransactions(page = 1) {
+export function useAdminTransactions(page = 1, search = "", status = "", method = "", planId = "", sort = "desc") {
+	const p = new URLSearchParams({ page: String(page) });
+	if (search) p.set("search", search);
+	if (status) p.set("status", status);
+	if (method) p.set("method", method);
+	if (planId) p.set("plan_id", planId);
+	if (sort) p.set("sort", sort);
 	return useQuery({
-		queryKey: ["admin", "transactions", page],
+		queryKey: ["admin", "transactions", page, search, status, method, planId, sort],
 		queryFn: () => apiClient.get<{
-			transactions: { id: number; user_name: string; user_email: string; amount: number; currency: string; status: string; description: string; created_at: string }[];
+			transactions: { id: number; user_name: string; user_email: string; amount: number; currency: string; status: string; method: string; plan_name: string; payment_id: string; created_at: string }[];
 			total: number; page: number; pages: number;
-		}>(`/api/spa/admin/transactions?page=${page}`),
+			chart: { date: string; revenue: number }[];
+			methods: string[];
+		}>(`/api/spa/admin/transactions?${p.toString()}`),
 	});
 }
 
