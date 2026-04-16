@@ -124,6 +124,20 @@ function TruncatedText({ text, className, placeholder }: { text: string; classNa
   );
 }
 
+function AccountAvatar({ avatar, name, size = 10 }: { avatar?: string; name?: string; size?: number }) {
+  const sizeClass = size === 10 ? "w-10 h-10" : "w-8 h-8";
+  const textSize = size === 10 ? "text-sm" : "text-xs";
+  if (avatar) {
+    return <img src={avatar} alt="" className={cn(sizeClass, "rounded-full object-cover")} />;
+  }
+  const initial = (name || "?").charAt(0).toUpperCase();
+  return (
+    <div className={cn(sizeClass, "rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary", textSize)}>
+      {initial}
+    </div>
+  );
+}
+
 function InstagramCaption({ username, text }: { username: string; text: string }) {
   const [expanded, setExpanded] = useState(false);
   const needsTruncation = text.length > SEE_MORE_CHAR_LIMIT && !expanded;
@@ -403,11 +417,7 @@ function FacebookPreview({ content, device, imageCount = 1, mediaUrls, accountIn
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-3 flex items-center gap-2">
-        {accountInfo?.avatar ? (
-          <img src={accountInfo.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-muted" />
-        )}
+        <AccountAvatar avatar={accountInfo?.avatar} name={accountInfo?.name} size={10} />
         <div>
           <p className="text-sm font-semibold text-foreground">{accountInfo?.name || "Your Page"}</p>
           <p className="text-xs text-muted-foreground">Just now · 🌐</p>
@@ -438,11 +448,7 @@ function InstagramPreview({ content, device, imageCount = 1, mediaUrls, accountI
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-3 flex items-center gap-2">
-        {accountInfo?.avatar ? (
-          <img src={accountInfo.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
-        ) : (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[hsl(45,100%,60%)] via-[hsl(var(--instagram))] to-[hsl(280,70%,55%)]" />
-        )}
+        <AccountAvatar avatar={accountInfo?.avatar} name={displayName} size={8} />
         <p className="text-sm font-semibold text-foreground">{displayName}</p>
         <MoreHorizontal className="w-5 h-5 text-muted-foreground ml-auto" />
       </div>
@@ -1388,13 +1394,7 @@ function GenericPreview({ platform, content, device, imageCount = 1, mediaUrls, 
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-4 flex items-center gap-2">
-        {accountInfo?.avatar ? (
-          <img src={accountInfo.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
-        ) : (
-          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-primary-foreground", brand.color)}>
-            <PlatformIcon platformId={platform} size={16} />
-          </div>
-        )}
+        <AccountAvatar avatar={accountInfo?.avatar} name={accountInfo?.name || brand.label} size={8} />
         <div>
           <p className="text-sm font-semibold text-foreground">{accountInfo?.name || brand.label}</p>
           <p className="text-xs text-muted-foreground">Just now</p>
