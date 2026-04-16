@@ -65,7 +65,10 @@ export function WorkspaceRouteGuard() {
 			});
 	}, [hashId, activeHash, workspaces, isLoading, setActiveWorkspace]);
 
-	if (isLoading || switching) {
+	// Show spinner while auth loads, during active switch, OR when hash doesn't match
+	// (prevents a flash where Outlet renders with stale JWT before the switch fires)
+	const needsSwitch = hashId && activeHash && hashId !== activeHash;
+	if (isLoading || switching || needsSwitch) {
 		return (
 			<div className="flex h-screen items-center justify-center">
 				<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
