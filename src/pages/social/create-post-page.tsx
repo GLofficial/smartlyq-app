@@ -38,11 +38,20 @@ export function CreatePostPage() {
 	const location = useLocation();
 	const navigate = useNavigate();
 	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
-	const { data: hubData } = useSocialHub();
+	const { data: hubData, isLoading: hubLoading } = useSocialHub();
 	const createPost = useCreatePost();
 
 	const state = (location.state as LocationState) ?? {};
 	const accounts = Array.isArray(hubData?.accounts) ? hubData.accounts : [];
+
+	// Show loading while hub data loads
+	if (hubLoading) {
+		return (
+			<div className="flex items-center justify-center h-64">
+				<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
+			</div>
+		);
+	}
 
 	const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
 	const [content, setContent] = useState(state.editPost?.content ?? "");
