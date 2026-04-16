@@ -168,7 +168,7 @@ export function PostContentEditor({
       </Popover>
       <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Add Image" onClick={onOpenImagePicker}><Image className="w-4 h-4" /></Button>
       <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Add Video" onClick={onOpenVideoPicker}><Film className="w-4 h-4" /></Button>
-      <Button size="sm" variant="ghost" className="h-8 rounded-md px-3 text-xs font-semibold text-primary-foreground bg-gradient-to-r from-[hsl(262,60%,55%)] to-[hsl(180,60%,45%)] hover:opacity-90 ml-0.5" onClick={onOpenCanva}>Canva</Button>
+      <Button size="sm" variant="ghost" className="h-8 rounded-md px-3 text-xs font-semibold text-primary-foreground bg-gradient-to-r from-[hsl(262,60%,55%)] to-[hsl(180,60%,45%)] hover:opacity-90 ml-0.5" onClick={onOpenCanva}>© Canva</Button>
       <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Hashtags" onClick={onOpenHashtag}><Hash className="w-4 h-4" /></Button>
       <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Link" onClick={onOpenLink}><Link2 className="w-4 h-4" /></Button>
     </div>
