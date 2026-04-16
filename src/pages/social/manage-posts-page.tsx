@@ -1,185 +1,190 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronLeft, ChevronRight, Check, X, RotateCw, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, ChevronLeft, ChevronRight, Search, Pencil, Copy, Trash2, RotateCw, XCircle, SlidersHorizontal, Loader2, Calendar, Inbox as InboxIcon } from "lucide-react";
 import { useSocialPosts } from "@/api/social";
-import { useApprovePost, useRejectPost, useRetryPost, useDeletePost } from "@/api/social-posts";
+import { useRetryPost, useDeletePost } from "@/api/social-posts";
 import { PlatformIcon } from "./platform-icon";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 import { toast } from "sonner";
 
-const STATUSES = [
-	{ value: "", label: "All" },
-	{ value: "scheduled", label: "Scheduled" },
-	{ value: "published", label: "Published" },
-	{ value: "draft", label: "Draft" },
-	{ value: "failed", label: "Failed" },
-];
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+const TABS = [
+	{ key: "", label: "Queued Posts", countKey: "queued" },
+	{ key: "unscheduled", label: "Unscheduled", countKey: "unscheduled" },
+	{ key: "error", label: "Error", countKey: "error" },
+	{ key: "published", label: "Published", countKey: "published" },
+	{ key: "pending_review", label: "Pending Review", countKey: "pending_review" },
+	{ key: "cancelled", label: "Cancelled", countKey: "cancelled" },
+] as const;
+
+const STATUS_COLORS: Record<string, { bg: string; text: string; label: string; emoji: string }> = {
+	draft: { bg: "bg-gray-100", text: "text-gray-600", label: "Draft", emoji: "📝" },
+	scheduled: { bg: "bg-blue-50", text: "text-blue-600", label: "Scheduled", emoji: "⏰" },
+	published: { bg: "bg-emerald-50", text: "text-emerald-600", label: "Published", emoji: "✅" },
+	processing: { bg: "bg-teal-50", text: "text-teal-600", label: "Processing", emoji: "⏳" },
+	failed: { bg: "bg-red-50", text: "text-red-600", label: "Failed", emoji: "❌" },
+	partially_published: { bg: "bg-orange-50", text: "text-orange-600", label: "Partial", emoji: "⚠️" },
+	pending_review: { bg: "bg-purple-50", text: "text-purple-600", label: "Pending", emoji: "👁" },
+	cancelled: { bg: "bg-gray-100", text: "text-gray-500", label: "Cancelled", emoji: "🚫" },
+};
 
 export function ManagePostsPage() {
-	const [status, setStatus] = useState("");
+	const [tab, setTab] = useState("");
 	const [page, setPage] = useState(1);
-	const { data, isLoading } = useSocialPosts(status || undefined, page);
-
-	return (
-		<div className="space-y-6">
-			<div className="flex items-center justify-between">
-				<h1 className="text-2xl font-bold">Manage Posts</h1>
-				<Link to="../create-post">
-					<Button>
-						<Plus size={16} />
-						Create Post
-					</Button>
-				</Link>
-			</div>
-
-			{/* Filters */}
-			<div className="flex gap-2">
-				{STATUSES.map((s) => (
-					<Button
-						key={s.value}
-						variant={status === s.value ? "default" : "outline"}
-						size="sm"
-						onClick={() => {
-							setStatus(s.value);
-							setPage(1);
-						}}
-					>
-						{s.label}
-					</Button>
-				))}
-			</div>
-
-			{/* Posts List */}
-			<Card>
-				<CardHeader>
-					<CardTitle className="text-lg">
-						{data ? `${data?.total} posts` : "Loading..."}
-					</CardTitle>
-				</CardHeader>
-				<CardContent>
-					{isLoading ? (
-						<div className="flex h-32 items-center justify-center">
-							<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
-						</div>
-					) : !(data?.posts ?? []).length ? (
-						<p className="py-8 text-center text-sm text-[var(--muted-foreground)]">
-							No posts found.
-						</p>
-					) : (
-						<div className="space-y-2">
-							{data?.posts.map((post) => (
-								<div
-									key={post.id}
-									className="flex items-center gap-4 rounded-md border border-[var(--border)] p-4 transition-colors hover:bg-[var(--accent)]"
-								>
-									<div className="min-w-0 flex-1">
-										<p className="truncate font-medium">
-											{post.title || post.content || "Untitled post"}
-										</p>
-										<div className="mt-1 flex items-center gap-3">
-											<div className="flex items-center gap-1">
-												{post.platforms.map((p) => (
-													<PlatformIcon key={p} platform={p} size={14} />
-												))}
-											</div>
-											<span className="text-xs text-[var(--muted-foreground)]">
-												{post.scheduled_time
-													? `Scheduled: ${new Date(post.scheduled_time).toLocaleString()}`
-													: post.published_at
-														? `Published: ${new Date(post.published_at).toLocaleString()}`
-														: post.created_at
-															? `Created: ${new Date(post.created_at).toLocaleDateString()}`
-															: ""}
-											</span>
-										</div>
-									</div>
-									<StatusBadge status={post.status} />
-									<PostActions postId={post.id} status={post.status} />
-								</div>
-							))}
-						</div>
-					)}
-
-					{/* Pagination */}
-					{data && data?.pages > 1 && (
-						<div className="mt-4 flex items-center justify-between">
-							<p className="text-sm text-[var(--muted-foreground)]">
-								Page {data?.page} of {data?.pages}
-							</p>
-							<div className="flex gap-2">
-								<Button
-									variant="outline"
-									size="sm"
-									disabled={page <= 1}
-									onClick={() => setPage((p) => p - 1)}
-								>
-									<ChevronLeft size={16} />
-								</Button>
-								<Button
-									variant="outline"
-									size="sm"
-									disabled={page >= data?.pages}
-									onClick={() => setPage((p) => p + 1)}
-								>
-									<ChevronRight size={16} />
-								</Button>
-							</div>
-						</div>
-					)}
-				</CardContent>
-			</Card>
-		</div>
-	);
-}
-
-function PostActions({ postId, status }: { postId: number; status: string }) {
-	const approveMut = useApprovePost();
-	const rejectMut = useRejectPost();
+	const [search, setSearch] = useState("");
+	const [debouncedSearch, setDebouncedSearch] = useState("");
+	const [searchTimer, setSearchTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
 	const retryMut = useRetryPost();
 	const deleteMut = useDeletePost();
 
-	return (
-		<div className="flex shrink-0 gap-1">
-			{(status === "draft" || status === "scheduled") && (
-				<Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" title="Approve"
-					onClick={() => approveMut.mutate(postId, { onSuccess: () => toast.success("Approved"), onError: (e) => toast.error((e as { error?: string })?.error ?? "Failed") })}>
-					<Check size={14} />
-				</Button>
-			)}
-			{(status === "draft" || status === "scheduled") && (
-				<Button variant="ghost" size="icon" className="h-7 w-7 text-orange-500" title="Reject"
-					onClick={() => { if (confirm("Reject this post?")) rejectMut.mutate({ post_id: postId }, { onSuccess: () => toast.success("Rejected"), onError: (e) => toast.error((e as { error?: string })?.error ?? "Failed") }); }}>
-					<X size={14} />
-				</Button>
-			)}
-			{(status === "failed" || status === "partially_published") && (
-				<Button variant="ghost" size="icon" className="h-7 w-7 text-blue-600" title="Retry"
-					onClick={() => retryMut.mutate(postId, { onSuccess: () => toast.success("Queued for retry"), onError: (e) => toast.error((e as { error?: string })?.error ?? "Failed") })}>
-					<RotateCw size={14} />
-				</Button>
-			)}
-			<Button variant="ghost" size="icon" className="h-7 w-7 text-red-500" title="Delete"
-				onClick={() => { if (confirm("Delete this post?")) deleteMut.mutate(postId, { onSuccess: () => toast.success("Deleted"), onError: (e) => toast.error((e as { error?: string })?.error ?? "Failed") }); }}>
-				<Trash2 size={14} />
-			</Button>
-		</div>
-	);
-}
+	const handleSearch = useCallback((val: string) => {
+		setSearch(val);
+		if (searchTimer) clearTimeout(searchTimer);
+		setSearchTimer(setTimeout(() => { setDebouncedSearch(val); setPage(1); }, 400));
+	}, [searchTimer]);
 
-function StatusBadge({ status }: { status: string }) {
-	const colors: Record<string, string> = {
-		scheduled: "bg-blue-100 text-blue-700",
-		published: "bg-green-100 text-green-700",
-		draft: "bg-gray-100 text-gray-600",
-		failed: "bg-red-100 text-red-700",
-		partially_published: "bg-yellow-100 text-yellow-700",
-	};
+	// Build query params — send tab OR status to backend
+	const queryStatus = tab === "" ? "scheduled" : undefined;
+	const { data, isLoading } = useSocialPosts(queryStatus, page, tab || undefined, debouncedSearch || undefined);
+	const posts = data?.posts ?? [];
+	const tabCounts = (data as any)?.tab_counts ?? {};
+	const total = data?.total ?? 0;
+	const pages = data?.pages ?? 1;
+
+	const editPath = (id: number) => wsHash ? `/w/${wsHash}/social-media/create?edit=${id}` : `/social-media/create?edit=${id}`;
+	const createPath = wsHash ? `/w/${wsHash}/social-media/create-post` : "/social-media/create-post";
+
 	return (
-		<span
-			className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${colors[status] ?? "bg-gray-100 text-gray-600"}`}
-		>
-			{status.replace("_", " ")}
-		</span>
+		<div className="space-y-5">
+			{/* Header */}
+			<div className="flex items-center justify-between">
+				<h1 className="text-2xl font-bold text-[var(--foreground)]">Manage Posts</h1>
+				<Link to={createPath}><Button><Plus size={14} className="mr-1.5" /> Create Post</Button></Link>
+			</div>
+
+			{/* Tabs */}
+			<div className="flex gap-0.5 border-b border-[var(--border)] pb-px overflow-x-auto">
+				{TABS.map((t) => {
+					const count = tabCounts[t.countKey] ?? 0;
+					const active = tab === t.key;
+					return (
+						<button key={t.key} onClick={() => { setTab(t.key); setPage(1); }}
+							className={`whitespace-nowrap px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${active ? "border-[var(--sq-primary)] text-[var(--foreground)]" : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}>
+							{t.label} {count > 0 && <span className={`ml-1 text-xs ${t.key === "error" ? "text-red-500 font-bold" : ""}`}>({count})</span>}
+						</button>
+					);
+				})}
+			</div>
+
+			{/* Filters bar */}
+			<div className="flex flex-wrap items-center gap-3">
+				<div className="relative flex-1 max-w-[250px]">
+					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-foreground)]" />
+					<Input placeholder="Search a Post" value={search} onChange={(e) => handleSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+				</div>
+				<Button variant="outline" size="sm" className="gap-1.5 text-xs"><SlidersHorizontal size={14} /> Filter Posts</Button>
+				{total > 0 && (
+					<span className="ml-auto text-xs text-[var(--muted-foreground)]">
+						{(page - 1) * 20 + 1} — {Math.min(page * 20, total)} of {total}
+					</span>
+				)}
+				{pages > 1 && (
+					<div className="flex gap-1">
+						<Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)} className="h-8 w-8 p-0"><ChevronLeft size={16} /></Button>
+						<Button variant="outline" size="sm" disabled={page >= pages} onClick={() => setPage(page + 1)} className="h-8 w-8 p-0"><ChevronRight size={16} /></Button>
+					</div>
+				)}
+			</div>
+
+			{/* Post list */}
+			<div className="rounded-xl border border-[var(--border)] bg-[var(--card)] overflow-hidden">
+				{isLoading ? (
+					<div className="flex items-center justify-center h-48"><Loader2 className="w-6 h-6 animate-spin text-[var(--muted-foreground)]" /></div>
+				) : posts.length === 0 ? (
+					<div className="flex flex-col items-center justify-center py-16 gap-3">
+						<InboxIcon size={48} className="text-[var(--muted-foreground)]/30" />
+						<p className="text-sm font-medium text-[var(--foreground)]">
+							{tab === "" ? "No queued posts" : tab === "pending_review" ? "You are all caught up!" : "No posts found"}
+						</p>
+						<p className="text-xs text-[var(--muted-foreground)]">
+							{tab === "" ? "Posts scheduled for later will appear here." : tab === "pending_review" ? "All posts that require approval will end up here." : ""}
+						</p>
+						<Link to={createPath}><Button size="sm"><Plus size={14} className="mr-1" /> Create post</Button></Link>
+					</div>
+				) : (
+					<div>
+						{posts.map((post: any) => {
+							const sc = STATUS_COLORS[post.status] ?? STATUS_COLORS.draft;
+							return (
+								<div key={post.id} className="flex items-center gap-4 px-4 py-3 border-b border-[var(--border)] last:border-0 hover:bg-[var(--muted)]/20 transition-colors group">
+									{/* Thumbnail */}
+									<div className="shrink-0">
+										{post.thumbnail ? (
+											<img src={post.thumbnail} alt="" className="h-14 w-14 rounded-lg object-cover border border-[var(--border)]"
+												onError={(e) => { e.currentTarget.style.display = "none"; }} />
+										) : (
+											<div className="h-14 w-14 rounded-lg bg-[var(--muted)] flex items-center justify-center">
+												<Calendar size={20} className="text-[var(--muted-foreground)]/30" />
+											</div>
+										)}
+									</div>
+
+									{/* Content */}
+									<div className="flex-1 min-w-0">
+										<p className="text-sm font-semibold text-[var(--foreground)] truncate">{post.title || post.content || "Untitled post"}</p>
+										<p className="text-xs text-[var(--muted-foreground)] truncate mt-0.5">{post.content}</p>
+										{post.error_message && <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><XCircle size={10} /> {post.error_message}</p>}
+										<span className={`inline-flex items-center gap-1 mt-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${sc?.bg} ${sc?.text}`}>
+											{sc?.emoji} {sc?.label}
+										</span>
+									</div>
+
+									{/* Right side: platforms + account + date */}
+									<div className="shrink-0 text-right">
+										<div className="flex items-center justify-end gap-1 mb-1">
+											{post.platforms.slice(0, 5).map((p: string) => <PlatformIcon key={p} platform={p} size={16} />)}
+										</div>
+										{post.account_name && post.account_name !== "Cross-Platform Post" ? (
+											<p className="text-xs text-[var(--foreground)]">{post.account_name}</p>
+										) : post.platforms.length > 1 ? (
+											<p className="text-xs text-[var(--sq-primary)]">Cross-Platform Post →</p>
+										) : null}
+										<p className="text-[10px] text-[var(--muted-foreground)] flex items-center justify-end gap-0.5 mt-0.5">
+											<Calendar size={10} />
+											{post.scheduled_time ? new Date(post.scheduled_time).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + ", " + new Date(post.scheduled_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+												: post.published_at ? new Date(post.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + ", " + new Date(post.published_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+												: post.created_at ? new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + ", " + new Date(post.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+												: ""}
+										</p>
+									</div>
+
+									{/* Action buttons (show on hover) */}
+									<div className="shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+										<Link to={editPath(post.id)}>
+											<Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Edit"><Pencil size={13} /></Button>
+										</Link>
+										<Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Duplicate"><Copy size={13} /></Button>
+										{(post.status === "failed" || post.status === "partially_published") && (
+											<Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-blue-600" title="Retry"
+												onClick={() => retryMut.mutate(post.id, { onSuccess: () => toast.success("Queued for retry") })}>
+												<RotateCw size={13} />
+											</Button>
+										)}
+										<Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500" title="Delete"
+											onClick={() => { if (confirm("Delete this post?")) deleteMut.mutate(post.id, { onSuccess: () => toast.success("Deleted") }); }}>
+											<Trash2 size={13} />
+										</Button>
+									</div>
+								</div>
+							);
+						})}
+					</div>
+				)}
+			</div>
+		</div>
 	);
 }

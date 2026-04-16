@@ -52,13 +52,15 @@ export function useSocialHub() {
 	});
 }
 
-export function useSocialPosts(status?: string, page = 1) {
+export function useSocialPosts(status?: string, page = 1, tab?: string, search?: string) {
 	const params = new URLSearchParams();
 	if (status) params.set("status", status);
+	if (tab) params.set("tab", tab);
+	if (search) params.set("search", search);
 	params.set("page", String(page));
 
 	return useQuery({
-		queryKey: ["social", "posts", status, page],
+		queryKey: ["social", "posts", status, tab, search, page],
 		queryFn: () =>
 			apiClient.get<SocialPostsResponse>(`/api/spa/social/posts?${params.toString()}`),
 	});
