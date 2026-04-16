@@ -105,8 +105,8 @@ export function AdminTransactionsPage() {
 						<select value={statusFilter} onChange={(e) => handleFilter(setStatusFilter, e.target.value)}
 							className="h-9 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm">
 							<option value="">All Statuses</option>
-							<option value="completed">Completed</option>
-							<option value="pending">Pending</option>
+							<option value="paid">Paid</option>
+							<option value="cancelled">Cancelled</option>
 							<option value="refunded">Refunded</option>
 						</select>
 						<select value={methodFilter} onChange={(e) => handleFilter(setMethodFilter, e.target.value)}
@@ -159,7 +159,7 @@ export function AdminTransactionsPage() {
 											<td className="px-4 py-2"><StatusBadge status={t.status} /></td>
 											<td className="px-4 py-2 text-xs text-[var(--muted-foreground)]">{fmtDate(t.created_at)}</td>
 											<td className="px-4 py-2">
-												{t.status === "completed" && (
+												{t.status === "paid" && (
 													<Button variant="ghost" size="sm" className="h-7 text-xs"
 														onClick={() => setConfirmRefund(t as TxRow)}>
 														<Undo2 size={13} className="mr-1" /> Refund
@@ -189,9 +189,9 @@ export function AdminTransactionsPage() {
 
 function StatusBadge({ status }: { status: string }) {
 	const map: Record<string, string> = {
-		completed: "bg-green-100 text-green-700",
-		pending:   "bg-yellow-100 text-yellow-700",
-		refunded:  "bg-orange-100 text-orange-700",
+		paid:       "bg-green-100 text-green-700",
+		cancelled:  "bg-red-100 text-red-600",
+		refunded:   "bg-orange-100 text-orange-700",
 	};
 	const label = status.charAt(0).toUpperCase() + status.slice(1);
 	return (
