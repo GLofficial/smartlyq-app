@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { TenantProvider } from "./tenant-provider";
 import { AuthProvider } from "./auth-provider";
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
+import { AdCooldownDialog } from "@/components/ad-cooldown-dialog";
 
 interface AppProvidersProps {
 	children: ReactNode;
@@ -19,6 +20,7 @@ export function AppProviders({ children }: AppProvidersProps) {
 						{children}
 					</ConfirmProvider>
 					<Toaster position="top-right" richColors closeButton />
+					<AdCooldownDialog />
 				</TenantProvider>
 			</AuthProvider>
 		</QueryClientProvider>

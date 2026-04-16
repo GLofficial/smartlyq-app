@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart3, ExternalLink, Settings } from "lucide-react";
+import { BarChart3, ExternalLink, Settings, Clock } from "lucide-react";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { useFbAdsInsights, useFbAdsAction, fbAdsExportUrl } from "@/api/facebook-ads-insights";
 import { FbAdsHeader } from "./fb-ads-header";
@@ -131,9 +131,24 @@ export function FbAdsInsightsPage() {
 			) : displayError && !data?.totals ? (
 				<Card>
 					<CardContent className="py-8 text-center">
-						<p className="text-sm text-red-500 font-medium mb-2">Error loading data</p>
-						<p className="text-sm text-[var(--muted-foreground)]">{displayError}</p>
-						<Button variant="outline" size="sm" className="mt-4" onClick={() => refetch()}>Try Again</Button>
+						{displayError.toLowerCase().includes("rate limit") || displayError.toLowerCase().includes("too many") ? (
+							<>
+								<div className="flex justify-center mb-3">
+									<div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+										<Clock size={24} className="text-amber-600" />
+									</div>
+								</div>
+								<p className="text-sm text-amber-600 font-medium mb-2">Rate Limited</p>
+								<p className="text-sm text-[var(--muted-foreground)]">Facebook is temporarily limiting API requests for this ad account. Data will auto-refresh when available.</p>
+								<p className="text-xs text-[var(--muted-foreground)] mt-2">This usually resolves within 5-10 minutes.</p>
+							</>
+						) : (
+							<>
+								<p className="text-sm text-red-500 font-medium mb-2">Error loading data</p>
+								<p className="text-sm text-[var(--muted-foreground)]">{displayError}</p>
+								<Button variant="outline" size="sm" className="mt-4" onClick={() => refetch()}>Try Again</Button>
+							</>
+						)}
 					</CardContent>
 				</Card>
 			) : data?.totals ? (

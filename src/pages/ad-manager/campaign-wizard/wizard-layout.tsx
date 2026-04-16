@@ -65,10 +65,15 @@ export function CampaignWizard() {
 					pixel_tracking: state.pixel_tracking, utm_source: state.utm_source,
 					utm_medium: state.utm_medium, utm_campaign: state.utm_campaign, sandbox_mode: state.sandbox_mode },
 			};
-			const res = await apiClient.post<{ created?: boolean; id?: number; error?: string }>("/api/spa/ad-manager/campaigns/new", body);
+			const res = await apiClient.post<{ created?: boolean; id?: number; error?: string; violations?: string[] }>("/api/spa/ad-manager/campaigns/new", body);
 			if (res.created) {
 				toast.success(asDraft ? "Campaign saved as draft" : "Campaign launched!");
 				navigate(wsHash ? `/w/${wsHash}/ad-manager/campaigns` : "/ad-manager/campaigns");
+			} else if (res.violations && res.violations.length > 0) {
+				// Ad copy compliance violations — show each one
+				res.violations.forEach((v) => toast.error(v, { duration: 8000 }));
+			} else if (res.error?.toLowerCase().includes("rate limit")) {
+				toast.error("Rate limit reached", { description: "Too many requests. Please wait a few minutes.", duration: 10000 });
 			} else { toast.error(res.error || "Failed to create campaign"); }
 		} catch (e: unknown) { toast.error((e as Error).message || "Failed"); }
 		finally { setSubmitting(false); }
