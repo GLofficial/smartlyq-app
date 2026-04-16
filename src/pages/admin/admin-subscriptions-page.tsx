@@ -1,13 +1,21 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, XCircle, CheckCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ChevronLeft, ChevronRight, XCircle, CheckCircle, Search } from "lucide-react";
 import { useAdminSubscriptions } from "@/api/admin";
+import { useAdminPlansFull } from "@/api/admin-plans";
 import { useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { queryClient } from "@/lib/query-client";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+
+const fmtDate = (d: string | null) => {
+	if (!d) return "—";
+	const dt = new Date(d);
+	return `${String(dt.getDate()).padStart(2, "0")}/${String(dt.getMonth() + 1).padStart(2, "0")}/${dt.getFullYear()}`;
+};
 
 interface SubRow {
 	id: number;
@@ -21,8 +29,18 @@ interface SubRow {
 
 export function AdminSubscriptionsPage() {
 	const [page, setPage] = useState(1);
-	const { data, isLoading } = useAdminSubscriptions(page);
+	const [searchInput, setSearchInput] = useState("");
+	const [search, setSearch] = useState("");
+	const [planFilter, setPlanFilter] = useState("");
+	const [statusFilter, setStatusFilter] = useState("");
+	const [sort, setSort] = useState("desc");
+	const { data, isLoading } = useAdminSubscriptions(page, search, planFilter, statusFilter, sort);
+	const { data: plansData } = useAdminPlansFull();
+	const plans = (plansData?.plans ?? []) as { id: number; name: string }[];
 	const [confirmCancel, setConfirmCancel] = useState<SubRow | null>(null);
+
+	const applySearch = () => { setSearch(searchInput); setPage(1); };
+	const handleFilter = (setter: (v: string) => void, val: string) => { setter(val); setPage(1); };
 
 	return (
 		<div className="space-y-6">
@@ -62,8 +80,35 @@ export function AdminSubscriptionsPage() {
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-lg">
-						{data ? `${data.total} active` : "Loading..."}
+						{data ? `${data.total.toLocaleString()} subscriptions` : "Loading..."}
 					</CardTitle>
+					{/* Filters */}
+					<div className="mt-3 flex flex-wrap gap-3">
+						<div className="relative flex-1 min-w-48">
+							<Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" />
+							<Input placeholder="Search subscriptions..." value={searchInput}
+								onChange={(e) => setSearchInput(e.target.value)}
+								onKeyDown={(e) => { if (e.key === "Enter") applySearch(); }}
+								className="pl-9 h-9 text-sm" />
+						</div>
+						<Button size="sm" onClick={applySearch}>Search</Button>
+						<select value={planFilter} onChange={(e) => handleFilter(setPlanFilter, e.target.value)}
+							className="h-9 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm">
+							<option value="">All Plans</option>
+							{plans.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}
+						</select>
+						<select value={statusFilter} onChange={(e) => handleFilter(setStatusFilter, e.target.value)}
+							className="h-9 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm">
+							<option value="">All Statuses</option>
+							<option value="1">Active</option>
+							<option value="0">Cancelled</option>
+						</select>
+						<select value={sort} onChange={(e) => handleFilter(setSort, e.target.value)}
+							className="h-9 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm">
+							<option value="desc">Date Descending</option>
+							<option value="asc">Date Ascending</option>
+						</select>
+					</div>
 				</CardHeader>
 				<CardContent>
 					{isLoading ? (
@@ -102,12 +147,8 @@ export function AdminSubscriptionsPage() {
 													</span>
 												)}
 											</td>
-											<td className="py-2 text-[var(--muted-foreground)]">
-												{new Date(s.created_at).toLocaleDateString()}
-											</td>
-											<td className="py-2 text-[var(--muted-foreground)]">
-												{s.expires_at ? new Date(s.expires_at).toLocaleDateString() : "—"}
-											</td>
+											<td className="py-2 text-[var(--muted-foreground)]">{fmtDate(s.created_at)}</td>
+											<td className="py-2 text-[var(--muted-foreground)]">{fmtDate(s.expires_at)}</td>
 											<td className="py-2">
 												{s.status === 1 && (
 													<Button

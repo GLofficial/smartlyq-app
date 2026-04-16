@@ -56,14 +56,19 @@ export function useAdminPlans() {
 	});
 }
 
-export function useAdminSubscriptions(page = 1) {
+export function useAdminSubscriptions(page = 1, search = "", planId = "", status = "", sort = "desc") {
+	const p = new URLSearchParams({ page: String(page) });
+	if (search) p.set("search", search);
+	if (planId) p.set("plan_id", planId);
+	if (status !== "") p.set("status", status);
+	if (sort) p.set("sort", sort);
 	return useQuery({
-		queryKey: ["admin", "subscriptions", page],
+		queryKey: ["admin", "subscriptions", page, search, planId, status, sort],
 		queryFn: () => apiClient.get<{
 			subscriptions: { id: number; user_name: string; user_email: string; plan_name: string; status: number; created_at: string; expires_at: string | null }[];
 			total: number; page: number; pages: number;
 			chart: { date: string; count: number }[];
-		}>(`/api/spa/admin/subscriptions?page=${page}`),
+		}>(`/api/spa/admin/subscriptions?${p.toString()}`),
 	});
 }
 
