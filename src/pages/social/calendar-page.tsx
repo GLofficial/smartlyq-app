@@ -1,129 +1,169 @@
-import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState, useCallback, useMemo, useRef } from "react";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import listPlugin from "@fullcalendar/list";
+import interactionPlugin from "@fullcalendar/interaction";
+import type { EventContentArg, DatesSetArg, EventClickArg } from "@fullcalendar/core";
+import type { DateClickArg } from "@fullcalendar/interaction";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useSocialCalendar, type CalendarEvent } from "@/api/social";
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon } from "lucide-react";
+import { useCalendarEvents } from "@/api/social";
+import { useWorkspaceStore } from "@/stores/workspace-store";
+import { useNavigate } from "react-router-dom";
+import { CalendarEventCard } from "./calendar-event-card";
+import { CalendarEventModal, type CalendarEventData } from "./calendar-event-modal";
+import { CalendarFilters } from "./calendar-filters";
 
-const STATUS_COLORS: Record<string, string> = {
-	scheduled: "bg-blue-500",
-	published: "bg-green-500",
-	draft: "bg-gray-400",
-	failed: "bg-red-500",
-	partially_published: "bg-yellow-500",
-};
+type ViewType = "dayGridMonth" | "timeGridWeek" | "timeGridDay" | "listWeek";
+const VIEWS: { key: ViewType; label: string }[] = [
+	{ key: "dayGridMonth", label: "Month" },
+	{ key: "timeGridWeek", label: "Week" },
+	{ key: "timeGridDay", label: "Day" },
+	{ key: "listWeek", label: "Agenda" },
+];
 
 export function CalendarPage() {
-	const [currentMonth, setCurrentMonth] = useState(() => {
-		const d = new Date();
-		return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-	});
+	const calendarRef = useRef<FullCalendar>(null);
+	const [currentView, setCurrentView] = useState<ViewType>("dayGridMonth");
+	const [dateRange, setDateRange] = useState({ start: "", end: "" });
+	const [titleText, setTitleText] = useState("");
+	const [selectedEvent, setSelectedEvent] = useState<CalendarEventData | null>(null);
+	const [search, setSearch] = useState("");
+	const [statusFilter, setStatusFilter] = useState("");
+	const [platformFilter, setPlatformFilter] = useState("");
+	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
+	const navigate = useNavigate();
 
-	const { data, isLoading } = useSocialCalendar(currentMonth);
+	const { data } = useCalendarEvents(dateRange.start, dateRange.end);
+	const allEvents = data?.events ?? [];
 
-	const monthDate = new Date(currentMonth + "-01");
-	const monthLabel = monthDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-
-	const prevMonth = () => {
-		const d = new Date(monthDate);
-		d.setMonth(d.getMonth() - 1);
-		setCurrentMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
-	};
-
-	const nextMonth = () => {
-		const d = new Date(monthDate);
-		d.setMonth(d.getMonth() + 1);
-		setCurrentMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
-	};
-
-	// Build calendar grid
-	const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1).getDay();
-	const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
-	const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-	const blanks = Array.from({ length: firstDay }, (_, i) => i);
-
-	const eventsByDay: Record<number, CalendarEvent[]> = {};
-	for (const ev of data?.events ?? []) {
-		if (ev.date) {
-			const day = Number.parseInt(ev.date.split("-")[2] ?? "0", 10);
-			if (day > 0) {
-				(eventsByDay[day] ??= []).push(ev);
-			}
+	// Client-side filtering
+	const filteredEvents = useMemo(() => {
+		let events = allEvents;
+		if (search) {
+			const q = search.toLowerCase();
+			events = events.filter((e) => {
+				const title = (e.title ?? "").toLowerCase();
+				const content = (e.extendedProps?.content ?? "").toLowerCase();
+				return title.includes(q) || content.includes(q);
+			});
 		}
-	}
+		if (statusFilter) {
+			events = events.filter((e) => (e.extendedProps?.status ?? e.status) === statusFilter || e.extendedProps?.type === "note");
+		}
+		if (platformFilter) {
+			const pf = platformFilter.toLowerCase();
+			events = events.filter((e) => {
+				const platforms = e.extendedProps?.platforms ?? e.platforms ?? [];
+				return platforms.some((p: string) => p.toLowerCase() === pf) || e.extendedProps?.type === "note";
+			});
+		}
+		return events;
+	}, [allEvents, search, statusFilter, platformFilter]);
+
+	const handleDatesSet = useCallback((arg: DatesSetArg) => {
+		setDateRange({ start: arg.startStr.slice(0, 10), end: arg.endStr.slice(0, 10) });
+		setTitleText(arg.view.title);
+	}, []);
+
+	const handleEventClick = useCallback((info: EventClickArg) => {
+		const e = info.event;
+		setSelectedEvent({
+			id: Number(e.id) || 0,
+			title: e.title,
+			start: e.startStr,
+			extendedProps: e.extendedProps as CalendarEventData["extendedProps"],
+		});
+	}, []);
+
+	const handleDateClick = useCallback((info: DateClickArg) => {
+		if (new Date(info.dateStr) < new Date(new Date().toDateString())) return;
+		const path = wsHash ? `/w/${wsHash}/social-media/create` : "/social-media/create";
+		navigate(path + `?date=${info.dateStr}`);
+	}, [wsHash, navigate]);
+
+	const handleViewChange = useCallback((view: ViewType) => {
+		setCurrentView(view);
+		calendarRef.current?.getApi().changeView(view);
+	}, []);
+
+	const goToday = useCallback(() => calendarRef.current?.getApi().today(), []);
+	const goPrev = useCallback(() => calendarRef.current?.getApi().prev(), []);
+	const goNext = useCallback(() => calendarRef.current?.getApi().next(), []);
+
+	const renderEventContent = useCallback((eventInfo: EventContentArg) => <CalendarEventCard eventInfo={eventInfo} />, []);
 
 	return (
-		<div className="space-y-6">
-			<div className="flex items-center justify-between">
-				<h1 className="text-2xl font-bold">Calendar</h1>
+		<div className="space-y-4">
+			{/* Header */}
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				<div className="flex items-center gap-3">
+					<CalendarIcon size={20} className="text-[var(--sq-primary)]" />
+					<h1 className="text-xl font-bold text-[var(--foreground)]">Content Calendar</h1>
+				</div>
+				<Button size="sm" onClick={() => navigate(wsHash ? `/w/${wsHash}/social-media/create` : "/social-media/create")}>
+					<Plus size={14} className="mr-1.5" /> Create Post
+				</Button>
+			</div>
+
+			{/* Toolbar */}
+			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div className="flex items-center gap-2">
-					<Button variant="outline" size="icon" onClick={prevMonth}>
-						<ChevronLeft size={16} />
-					</Button>
-					<span className="min-w-[160px] text-center font-medium">{monthLabel}</span>
-					<Button variant="outline" size="icon" onClick={nextMonth}>
-						<ChevronRight size={16} />
-					</Button>
+					<Button variant="outline" size="sm" onClick={goPrev} className="h-8 w-8 p-0"><ChevronLeft size={16} /></Button>
+					<Button variant="outline" size="sm" onClick={goToday} className="text-xs">Today</Button>
+					<Button variant="outline" size="sm" onClick={goNext} className="h-8 w-8 p-0"><ChevronRight size={16} /></Button>
+					<span className="text-sm font-semibold text-[var(--foreground)] ml-2">{titleText}</span>
+				</div>
+				<div className="flex rounded-lg border border-[var(--border)] overflow-hidden">
+					{VIEWS.map((v) => (
+						<button key={v.key} onClick={() => handleViewChange(v.key)}
+							className={`px-3 py-1.5 text-xs font-medium transition-colors ${currentView === v.key ? "bg-[var(--sq-primary)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--muted)]"}`}>
+							{v.label}
+						</button>
+					))}
 				</div>
 			</div>
 
-			<Card>
-				<CardContent className="p-4">
-					{isLoading ? (
-						<div className="flex h-64 items-center justify-center">
-							<div className="h-6 w-6 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
-						</div>
-					) : (
-						<div className="grid grid-cols-7 gap-px">
-							{/* Day headers */}
-							{["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-								<div key={d} className="p-2 text-center text-xs font-medium text-[var(--muted-foreground)]">
-									{d}
-								</div>
-							))}
-							{/* Blanks */}
-							{blanks.map((b) => (
-								<div key={`b-${b}`} className="min-h-[80px] rounded border border-transparent p-1" />
-							))}
-							{/* Days */}
-							{days.map((day) => {
-								const events = eventsByDay[day] ?? [];
-								const isToday =
-									new Date().getDate() === day &&
-									new Date().getMonth() === monthDate.getMonth() &&
-									new Date().getFullYear() === monthDate.getFullYear();
+			{/* Filters */}
+			<CalendarFilters search={search} onSearchChange={setSearch}
+				statusFilter={statusFilter} onStatusFilterChange={setStatusFilter}
+				platformFilter={platformFilter} onPlatformFilterChange={setPlatformFilter} />
 
-								return (
-									<div
-										key={day}
-										className={`min-h-[80px] rounded border p-1 ${isToday ? "border-[var(--sq-primary)] bg-[color-mix(in_srgb,var(--sq-primary)_5%,transparent)]" : "border-[var(--border)]"}`}
-									>
-										<span className={`text-xs font-medium ${isToday ? "text-[var(--sq-primary)]" : ""}`}>
-											{day}
-										</span>
-										<div className="mt-1 space-y-0.5">
-											{events.slice(0, 3).map((ev) => (
-												<div
-													key={ev.id}
-													className="flex items-center gap-1 rounded px-1 py-0.5"
-													title={ev.title}
-												>
-													<div className={`h-1.5 w-1.5 shrink-0 rounded-full ${STATUS_COLORS[ev.status] ?? "bg-gray-400"}`} />
-													<span className="truncate text-[10px]">{ev.title}</span>
-												</div>
-											))}
-											{events.length > 3 && (
-												<span className="text-[10px] text-[var(--muted-foreground)]">
-													+{events.length - 3} more
-												</span>
-											)}
-										</div>
-									</div>
-								);
-							})}
-						</div>
-					)}
-				</CardContent>
-			</Card>
+			{/* Calendar */}
+			<div className="rounded-xl border border-[var(--border)] bg-[var(--card)] overflow-hidden fc-smartlyq">
+				<FullCalendar
+					ref={calendarRef}
+					plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
+					initialView="dayGridMonth"
+					headerToolbar={false}
+					height="auto"
+					dayMaxEvents={3}
+					eventDisplay="block"
+					nextDayThreshold="09:00:00"
+					events={filteredEvents.filter((e) => e.start !== null) as any}
+					datesSet={handleDatesSet}
+					eventClick={handleEventClick}
+					dateClick={handleDateClick}
+					eventContent={renderEventContent}
+					nowIndicator
+				/>
+			</div>
+
+			<CalendarEventModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+
+			{/* FullCalendar theme */}
+			<style>{`
+				.fc-smartlyq { --fc-border-color: var(--border); --fc-page-bg-color: var(--card); --fc-neutral-bg-color: var(--muted); --fc-today-bg-color: rgba(59,130,246,0.04); --fc-event-border-color: transparent; --fc-event-bg-color: transparent; --fc-event-text-color: var(--foreground); }
+				.fc-smartlyq .fc-daygrid-day-number { font-size: 12px; color: var(--muted-foreground); padding: 4px 8px; }
+				.fc-smartlyq .fc-col-header-cell-cushion { font-size: 11px; font-weight: 600; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.05em; }
+				.fc-smartlyq .fc-daygrid-more-link { font-size: 11px; color: var(--sq-primary); font-weight: 600; }
+				.fc-smartlyq .fc-event { cursor: pointer; border-radius: 6px; margin: 1px 2px; }
+				.fc-smartlyq .fc-daygrid-event { padding: 0; }
+				.fc-smartlyq .fc-timegrid-event .fc-event-main { padding: 2px 4px; }
+				.fc-smartlyq .fc-list-event td { font-size: 13px; }
+				.fc-smartlyq .fc-day-today { background: rgba(59,130,246,0.04) !important; }
+			`}</style>
 		</div>
 	);
 }

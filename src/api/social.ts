@@ -65,22 +65,54 @@ export function useSocialPosts(status?: string, page = 1) {
 }
 
 export interface CalendarEvent {
-	id: number;
+	id: number | string;
 	title: string;
-	date: string | null;
-	time: string | null;
-	status: string;
-	platforms: string[];
-	has_media: boolean;
+	start: string | null;
+	allDay?: boolean;
+	extendedProps: {
+		type: "post" | "note";
+		postId?: number;
+		noteId?: number;
+		status?: string;
+		platforms?: string[];
+		accountName?: string;
+		content?: string;
+		thumbnail?: string;
+		mediaUrls?: string[];
+		postUrls?: Record<string, string>;
+		hasMedia?: boolean;
+		timeDisplay?: string;
+		bgColor?: string;
+	};
+	// Legacy fields (keep for backward compat)
+	date?: string | null;
+	time?: string | null;
+	status?: string;
+	platforms?: string[];
+	has_media?: boolean;
 }
 
+/** Legacy month-based calendar hook */
 export function useSocialCalendar(month: string) {
 	return useQuery({
 		queryKey: ["social", "calendar", month],
 		queryFn: () =>
-			apiClient.get<{ events: CalendarEvent[]; month: string }>(
+			apiClient.get<{ events: CalendarEvent[] }>(
 				`/api/spa/social/calendar?month=${month}`,
 			),
+	});
+}
+
+/** FullCalendar date-range based calendar hook */
+export function useCalendarEvents(start: string, end: string) {
+	return useQuery({
+		queryKey: ["social", "calendar", start, end],
+		queryFn: () =>
+			apiClient.get<{ events: CalendarEvent[] }>(
+				`/api/spa/social/calendar?start=${start}&end=${end}`,
+			),
+		enabled: !!start && !!end,
+		staleTime: 60_000,
 	});
 }
 
