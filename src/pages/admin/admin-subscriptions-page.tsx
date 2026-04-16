@@ -36,7 +36,11 @@ export function AdminSubscriptionsPage() {
 	const [sort, setSort] = useState("desc");
 	const { data, isLoading } = useAdminSubscriptions(page, search, planFilter, statusFilter, sort);
 	const { data: plansData } = useAdminPlansFull();
-	const plans = (plansData?.plans ?? []) as { id: number; name: string }[];
+	const plans = (plansData?.plans ?? []).map((p) => ({ id: Number(p.id), name: String(p.name ?? ""), duration: String(p.duration ?? "month") }));
+	const monthlyPlans  = plans.filter((p) => p.duration === "month");
+	const annualPlans   = plans.filter((p) => p.duration === "year");
+	const lifetimePlans = plans.filter((p) => p.duration === "lifetime");
+	const prepaidPlans  = plans.filter((p) => p.duration === "prepaid");
 	const [confirmCancel, setConfirmCancel] = useState<SubRow | null>(null);
 
 	const applySearch = () => { setSearch(searchInput); setPage(1); };
@@ -95,7 +99,10 @@ export function AdminSubscriptionsPage() {
 						<select value={planFilter} onChange={(e) => handleFilter(setPlanFilter, e.target.value)}
 							className="h-9 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm">
 							<option value="">All Plans</option>
-							{plans.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}
+							{monthlyPlans.length > 0 && <optgroup label="Monthly">{monthlyPlans.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}</optgroup>}
+							{annualPlans.length > 0 && <optgroup label="Annual">{annualPlans.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}</optgroup>}
+							{lifetimePlans.length > 0 && <optgroup label="Lifetime">{lifetimePlans.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}</optgroup>}
+							{prepaidPlans.length > 0 && <optgroup label="Prepaid">{prepaidPlans.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}</optgroup>}
 						</select>
 						<select value={statusFilter} onChange={(e) => handleFilter(setStatusFilter, e.target.value)}
 							className="h-9 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm">
