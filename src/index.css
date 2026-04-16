@@ -34,6 +34,17 @@
 	--ring: var(--sq-primary);
 	--radius: 0.5rem;
 
+	/* Platform brand colors (used by social media components) */
+	--facebook: 220 46% 48%;
+	--instagram: 340 75% 54%;
+	--twitter: 0 0% 0%;
+	--linkedin: 201 100% 35%;
+	--youtube: 0 100% 50%;
+	--tiktok: 0 0% 0%;
+	--pinterest: 0 78% 51%;
+	--reddit: 16 100% 50%;
+	--threads: 0 0% 0%;
+
 	--sidebar-background: #ffffff;
 	--sidebar-foreground: var(--sq-text);
 	--sidebar-primary: var(--sq-primary);
