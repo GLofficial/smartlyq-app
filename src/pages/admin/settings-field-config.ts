@@ -144,13 +144,46 @@ export const TAB_FIELDS: Record<string, FieldDef[]> = {
 		], half: true },
 	],
 	openai: [
-		{ key: "openai_apikey", label: "OpenAI API Key", type: "password" },
-		{ key: "anthropic_apikey", label: "Anthropic API Key", type: "password" },
-		{ key: "google_apikey", label: "Google Gemini API Key", type: "password" },
-		{ key: "deepseek_apikey", label: "DeepSeek API Key", type: "password" },
-		{ key: "xai_apikey", label: "xAI (Grok) API Key", type: "password" },
-		{ key: "default_model", label: "Default generation model", type: "text", placeholder: "gpt-4o-mini" },
-		{ key: "default_chat_model", label: "Default chat model", type: "text", placeholder: "gpt-4o" },
+		{ key: "_ai_providers", label: "AI Providers", type: "heading" },
+		{ key: "openai_apikey", label: "OpenAI API Key", type: "password", half: true },
+		{ key: "anthropic_apikey", label: "Anthropic API Key", type: "password", half: true },
+		{ key: "anthropic_api_version", label: "Anthropic API Version (header)", type: "text", placeholder: "2023-06-01", half: true },
+		{ key: "gemini_apikey", label: "Google Gemini API Key", type: "password", half: true },
+		{ key: "deepseek_apikey", label: "DeepSeek API Key", type: "password", half: true },
+		{ key: "xai_apikey", label: "xAI (Grok) API Key", type: "password", half: true },
+
+		{ key: "_image_gen", label: "Image Generation", type: "heading" },
+		{ key: "bfl_apikey", label: "BFL (Flux) API Key", type: "password", half: true },
+		{ key: "recraft_apikey", label: "Recraft API Key", type: "password", half: true },
+		{ key: "unsplash_apikey", label: "Unsplash API Key", type: "password", half: true },
+		{ key: "pixabay_apikey", label: "Pixabay API Key", type: "password", half: true },
+
+		{ key: "_video", label: "Video", type: "heading" },
+		{ key: "pollo_apikey", label: "Pollo AI API Key", type: "password", half: true },
+
+		{ key: "_research", label: "Research & Web", type: "heading" },
+		{ key: "youtube_apikey", label: "YouTube API Key", type: "password", half: true },
+		{ key: "search_engine_apikey", label: "Google Search API Key", type: "password", half: true },
+		{ key: "search_engine_id", label: "Google Search Engine ID", type: "text", half: true },
+		{ key: "scrappingbee_apikey", label: "ScrapingBee API Key", type: "password", half: true },
+		{ key: "tavily_apikey", label: "Tavily API Key", type: "password", half: true },
+		{ key: "apify_token", label: "Apify Token", type: "password", half: true },
+
+		{ key: "_audio", label: "Audio / Transcription", type: "heading" },
+		{ key: "deepgram_apikey", label: "Deepgram API Key", type: "password", half: true },
+		{ key: "deepgram_model", label: "Deepgram Model", type: "text", placeholder: "nova-2", half: true },
+
+		{ key: "_seo", label: "SEO / Analytics", type: "heading" },
+		{ key: "dataforseo_login", label: "DataForSEO Login", type: "text", half: true },
+		{ key: "dataforseo_password", label: "DataForSEO Password", type: "password", half: true },
+
+		{ key: "_default_models", label: "Default Models", type: "heading",
+		  description: "Set which AI model is used by default for each feature. Enter the model ID (e.g. gpt-4o, claude-3-5-sonnet-20241022)." },
+		{ key: "default_template_model", label: "Templates", type: "text", placeholder: "gpt-4o-mini", half: true },
+		{ key: "default_chat_model", label: "Assistant (Chat)", type: "text", placeholder: "gpt-4o", half: true },
+		{ key: "default_analyst_model", label: "Data Analyst", type: "text", placeholder: "gpt-4o", half: true },
+		{ key: "default_article_model", label: "Article Generator", type: "text", placeholder: "gpt-4o-mini", half: true },
+		{ key: "default_image_model", label: "Image Generator", type: "text", placeholder: "dall-e-3", half: true },
 	],
 	// social_oauth: handled by SocialOAuthTab component (reads social_oauth_providers table)
 	storage: [
