@@ -11,6 +11,7 @@ export interface AdminDashboard {
 	chart: {
 		words: { x: string; y: number }[];
 		images: { x: string; y: number }[];
+		videos: { x: string; y: number }[];
 	};
 	recent_users: { id: number; name: string; email: string; role: number; status: number; plan_name: string; created_at: string }[];
 	recent_subscriptions: { id: number; user_name: string; user_email: string; plan_name: string; amount: number; method: string; status: number; created_at: string; expires_at: string | null }[];

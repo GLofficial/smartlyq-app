@@ -8,11 +8,12 @@ export function AdminDashboardPage() {
 	const { data, isLoading } = useAdminDashboard();
 	const v = (n?: number) => (isLoading ? "..." : (n ?? 0).toLocaleString());
 
-	// Merge words + images chart data by date
+	// Merge words + images + videos chart data by date
 	const chartData = (data?.chart?.words ?? []).map((w, i) => ({
 		date: w.x.slice(5), // "MM-DD"
 		words: w.y,
 		images: data?.chart?.images?.[i]?.y ?? 0,
+		videos: data?.chart?.videos?.[i]?.y ?? 0,
 	}));
 
 	return (
@@ -35,6 +36,7 @@ export function AdminDashboardPage() {
 					<div className="flex items-center gap-4 mt-1">
 						<Legend color="#6366f1" label="Words" />
 						<Legend color="#22c55e" label="Images" />
+						<Legend color="#f59e0b" label="Videos" />
 					</div>
 				</CardHeader>
 				<CardContent>
@@ -52,6 +54,10 @@ export function AdminDashboardPage() {
 										<stop offset="5%" stopColor="#22c55e" stopOpacity={0.15} />
 										<stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
 									</linearGradient>
+									<linearGradient id="gVideos" x1="0" y1="0" x2="0" y2="1">
+										<stop offset="5%" stopColor="#f59e0b" stopOpacity={0.15} />
+										<stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+									</linearGradient>
 								</defs>
 								<CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
 								<XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
@@ -59,6 +65,7 @@ export function AdminDashboardPage() {
 								<Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
 								<Area type="monotone" dataKey="words" stroke="#6366f1" strokeWidth={2} fill="url(#gWords)" dot={false} />
 								<Area type="monotone" dataKey="images" stroke="#22c55e" strokeWidth={2} fill="url(#gImages)" dot={false} />
+								<Area type="monotone" dataKey="videos" stroke="#f59e0b" strokeWidth={2} fill="url(#gVideos)" dot={false} />
 							</AreaChart>
 						</ResponsiveContainer>
 					)}
