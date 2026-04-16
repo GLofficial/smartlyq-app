@@ -11,6 +11,7 @@ interface PostPreviewProps {
   customizeChannel?: boolean;
   imageCount?: number;
   platformPostType?: Record<string, string>;
+  mediaUrls?: { url: string; type: "image" | "video" }[];
 }
 
 type Device = "desktop" | "mobile";
@@ -99,7 +100,22 @@ const PLATFORM_DIMENSIONS: Record<string, {
 
 // Use PLATFORM_BRANDS from PlatformIcons.tsx instead of inline PLATFORM_META
 
-function SingleImagePlaceholder({ aspect, label }: { aspect: string; label: string }) {
+function SingleImagePlaceholder({ aspect, label, mediaUrl, mediaType }: { aspect: string; label: string; mediaUrl?: string; mediaType?: "image" | "video" }) {
+  if (mediaUrl && mediaType === "video") {
+    return (
+      <div className="relative" style={{ aspectRatio: aspect }}>
+        <video src={mediaUrl} className="w-full h-full object-cover" muted />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
+            <Play className="w-5 h-5 text-white ml-0.5" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (mediaUrl) {
+    return <img src={mediaUrl} alt="Preview" className="w-full object-cover" style={{ aspectRatio: aspect }} />;
+  }
   return (
     <div className="bg-muted flex flex-col items-center justify-center text-muted-foreground gap-1" style={{ aspectRatio: aspect }}>
       <span className="text-xs">Image preview</span>
@@ -108,28 +124,30 @@ function SingleImagePlaceholder({ aspect, label }: { aspect: string; label: stri
   );
 }
 
-function ImagePlaceholder({ platform, device, imageCount = 1 }: { platform: string; device: Device; imageCount?: number }) {
+function ImagePlaceholder({ platform, device, imageCount = 1, mediaUrls }: { platform: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
   const dims = PLATFORM_DIMENSIONS[platform];
   const spec = dims ? dims[device] : { imageAspect: "16/9", imageLabel: "1200 × 630px" };
+  const firstMedia = mediaUrls?.[0];
 
   if (imageCount <= 1) {
-    return <SingleImagePlaceholder aspect={spec.imageAspect} label={spec.imageLabel} />;
+    return <SingleImagePlaceholder aspect={spec.imageAspect} label={spec.imageLabel} mediaUrl={firstMedia?.url} mediaType={firstMedia?.type} />;
   }
 
   // Platform-specific multi-image layouts
-  return <MultiImageGrid platform={platform} device={device} imageCount={imageCount} spec={spec} />;
+  return <MultiImageGrid platform={platform} device={device} imageCount={imageCount} spec={spec} mediaUrls={mediaUrls} />;
 }
 
 // Platform-specific multi-image carousel/grid layouts
-function MultiImageGrid({ platform, device, imageCount, spec }: { platform: string; device: Device; imageCount: number; spec: { imageAspect: string; imageLabel: string } }) {
+function MultiImageGrid({ platform, device, imageCount, spec, mediaUrls }: { platform: string; device: Device; imageCount: number; spec: { imageAspect: string; imageLabel: string }; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
   const [carouselIndex, setCarouselIndex] = useState(0);
   const capped = Math.min(imageCount, 10);
 
   // Instagram & Threads: swipeable carousel with dots
   if (platform === "instagram" || platform === "threads") {
+    const currentMedia = mediaUrls?.[carouselIndex];
     return (
       <div className="relative">
-        <SingleImagePlaceholder aspect={spec.imageAspect} label={`Image ${carouselIndex + 1} of ${capped}`} />
+        <SingleImagePlaceholder aspect={spec.imageAspect} label={`Image ${carouselIndex + 1} of ${capped}`} mediaUrl={currentMedia?.url} mediaType={currentMedia?.type} />
         {carouselIndex > 0 && (
           <button onClick={() => setCarouselIndex(i => i - 1)} className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-card/80 shadow flex items-center justify-center">
             <ChevronLeft className="w-3.5 h-3.5 text-foreground" />
@@ -326,7 +344,7 @@ function MultiImageGrid({ platform, device, imageCount, spec }: { platform: stri
   );
 }
 
-function FacebookPreview({ content, device, imageCount = 1 }: { content: string; device: Device; imageCount?: number }) {
+function FacebookPreview({ content, device, imageCount = 1, mediaUrls }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-3 flex items-center gap-2">
@@ -338,7 +356,7 @@ function FacebookPreview({ content, device, imageCount = 1 }: { content: string;
         <MoreHorizontal className="w-5 h-5 text-muted-foreground ml-auto" />
       </div>
       <p className="px-3 pb-3 text-sm text-foreground whitespace-pre-wrap">{content || "Your post preview will appear here..."}</p>
-      <ImagePlaceholder platform="facebook" device={device} imageCount={imageCount} />
+      <ImagePlaceholder platform="facebook" device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
       <div className="px-3 py-1.5 flex items-center text-xs text-muted-foreground">
         <span>❤️😊 0 others</span>
         <span className="ml-auto">0 comments · 0 shares</span>
@@ -354,7 +372,7 @@ function FacebookPreview({ content, device, imageCount = 1 }: { content: string;
   );
 }
 
-function InstagramPreview({ content, device, imageCount = 1 }: { content: string; device: Device; imageCount?: number }) {
+function InstagramPreview({ content, device, imageCount = 1, mediaUrls }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-3 flex items-center gap-2">
@@ -362,7 +380,7 @@ function InstagramPreview({ content, device, imageCount = 1 }: { content: string
         <p className="text-sm font-semibold text-foreground">your_page</p>
         <MoreHorizontal className="w-5 h-5 text-muted-foreground ml-auto" />
       </div>
-      <ImagePlaceholder platform="instagram" device={device} imageCount={imageCount} />
+      <ImagePlaceholder platform="instagram" device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
       <div className="p-3 flex items-center gap-3">
         <Heart className="w-6 h-6 text-foreground" />
         <MessageCircle className="w-6 h-6 text-foreground" />
@@ -1110,7 +1128,7 @@ const STORY_PREVIEW_MAP: Record<string, React.FC<{ content: string }>> = {
   snapchat: SnapchatStoryPreview,
 };
 
-const PREVIEW_MAP: Record<string, React.FC<{ content: string; device: Device; imageCount?: number }>> = {
+const PREVIEW_MAP: Record<string, React.FC<{ content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[] }>> = {
   facebook: FacebookPreview,
   instagram: InstagramPreview,
   twitter: TwitterPreview,
@@ -1129,7 +1147,7 @@ const PREVIEW_MAP: Record<string, React.FC<{ content: string; device: Device; im
   whatsapp: WhatsAppPreview,
 };
 
-export default function PostPreview({ selectedPlatforms, content, platformContent, customizeChannel, imageCount = 1, platformPostType = {} }: PostPreviewProps) {
+export default function PostPreview({ selectedPlatforms, content, platformContent, customizeChannel, imageCount = 1, platformPostType = {}, mediaUrls }: PostPreviewProps) {
   const [device, setDevice] = useState<Device>("desktop");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("feed");
   const platforms = selectedPlatforms.length > 0 ? selectedPlatforms : ["facebook"];
@@ -1240,7 +1258,7 @@ export default function PostPreview({ selectedPlatforms, content, platformConten
                   return <LinkedInDocumentPreview content={displayContent} device={device} />;
                 }
                 const FeedComp = PREVIEW_MAP[currentPreview];
-                return FeedComp ? <FeedComp content={displayContent} device={device} imageCount={imageCount} /> : <GenericPreview platform={currentPreview} content={displayContent} device={device} imageCount={imageCount} />;
+                return FeedComp ? <FeedComp content={displayContent} device={device} imageCount={imageCount} mediaUrls={mediaUrls} /> : <GenericPreview platform={currentPreview} content={displayContent} device={device} imageCount={imageCount} mediaUrls={mediaUrls} />;
               })()
           }
         </div>
@@ -1249,7 +1267,7 @@ export default function PostPreview({ selectedPlatforms, content, platformConten
   );
 }
 
-function GenericPreview({ platform, content, device, imageCount = 1 }: { platform: string; content: string; device: Device; imageCount?: number }) {
+function GenericPreview({ platform, content, device, imageCount = 1, mediaUrls }: { platform: string; content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
   const brand = PLATFORM_BRANDS[platform];
   if (!brand) return null;
   return (
@@ -1264,7 +1282,7 @@ function GenericPreview({ platform, content, device, imageCount = 1 }: { platfor
         </div>
       </div>
       <p className="px-4 pb-3 text-sm text-foreground whitespace-pre-wrap">{content || "Your post preview will appear here..."}</p>
-      <ImagePlaceholder platform={platform} device={device} imageCount={imageCount} />
+      <ImagePlaceholder platform={platform} device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
     </div>
   );
 }

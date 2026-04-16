@@ -49,6 +49,7 @@ export function CreatePostPage() {
   const [platformPostType, setPlatformPostType] = useState<Record<string, string>>({});
   const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [previewMedia, setPreviewMedia] = useState<{ url: string; type: "image" | "video" }[]>([]);
 
   useEffect(() => {
     if (state) window.history.replaceState({}, document.title);
@@ -125,18 +126,23 @@ export function CreatePostPage() {
     [content, selectedPlatforms, selectedAccountIds, createPost, navigate, wsHash, validatePost],
   );
 
-  const handleAiText = useCallback(async (topic: string, tone: string, contentType: string) => {
-    const result = await aiRewrite.mutateAsync({ content: topic, tone, content_type: contentType });
+  const handleAiText = useCallback(async (topic: string, tone: string, contentType: string, opts?: { model?: string; brand_voice?: boolean; brand_id?: number }) => {
+    const result = await aiRewrite.mutateAsync({
+      content: topic, tone, content_type: contentType,
+      model: opts?.model, brand_voice: opts?.brand_voice, brand_id: opts?.brand_id,
+    });
     return result.rewritten;
   }, [aiRewrite]);
 
-  const handleAiImage = useCallback(async (prompt: string) => {
-    const result = await aiImage.mutateAsync({ prompt });
+  const handleAiImage = useCallback(async (prompt: string, opts?: { model?: string; brand_voice?: boolean; brand_id?: number }) => {
+    const result = await aiImage.mutateAsync({
+      prompt, model: opts?.model, brand_voice: opts?.brand_voice, brand_id: opts?.brand_id,
+    });
     return result.image_url;
   }, [aiImage]);
 
   const handleAiVideo = useCallback(async (prompt: string, config: Record<string, string>) => {
-    const result = await aiVideo.mutateAsync({ prompt, type: config.type });
+    const result = await aiVideo.mutateAsync({ prompt, type: config.type, model: config.model });
     return `Video generation started (ID: ${result.video_id}). Check Media Library when complete.`;
   }, [aiVideo]);
 
@@ -250,7 +256,10 @@ export function CreatePostPage() {
             onCanvaDesign={handleCanvaDesign}
             mediaLibraryImages={imageLib?.files?.map(f => ({ id: f.id, url: f.url, preview_url: f.preview_url, name: f.name })) ?? []}
             mediaLibraryVideos={videoLib?.files?.map(f => ({ id: f.id, url: f.url, preview_url: f.preview_url, name: f.name })) ?? []}
-            onUploadedMediaChange={(media) => setMediaUrls(media.filter(m => m.url).map(m => m.url!))}
+            onUploadedMediaChange={(media) => {
+              setMediaUrls(media.filter(m => m.url).map(m => m.url!));
+              setPreviewMedia(media.filter(m => m.url).map(m => ({ url: m.url!, type: m.type })));
+            }}
           />
           <PostPreview
             selectedPlatforms={selectedPlatforms}
@@ -259,6 +268,7 @@ export function CreatePostPage() {
             customizeChannel={customizeChannel}
             imageCount={imageCount}
             platformPostType={platformPostType}
+            mediaUrls={previewMedia}
           />
         </div>
       </div>

@@ -8,13 +8,16 @@ import {
   Sparkles, Save, CalendarDays, Send, ListOrdered, Tag, Clock,
   ChevronDown, ChevronUp, X, Trash2, Info, Heart, Plus, MessageSquareText,
   FileText, ImageIcon, Video, Search, PlusCircle, AlertTriangle, Check, RefreshCw,
-  GripVertical, Play
+  GripVertical, Play, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
+import { useAiModels } from "@/api/ai-generate";
+import { useVideoModels } from "@/api/video-gen";
+import { useBrands } from "@/api/brands";
 
 // Unicode bold/italic character maps for social media formatting
 const BOLD_MAP: Record<string, string> = {};
@@ -392,8 +395,8 @@ interface PostComposerProps {
   selectedAccountIds?: number[];
   onSelectedAccountIdsChange?: (ids: number[]) => void;
   /** AI generation callbacks */
-  onAiGenerateText?: (topic: string, tone: string, contentType: string) => Promise<string>;
-  onAiGenerateImage?: (prompt: string) => Promise<string>;
+  onAiGenerateText?: (topic: string, tone: string, contentType: string, opts?: { model?: string; brand_voice?: boolean; brand_id?: number }) => Promise<string>;
+  onAiGenerateImage?: (prompt: string, opts?: { model?: string; brand_voice?: boolean; brand_id?: number }) => Promise<string>;
   onAiGenerateVideo?: (prompt: string, config: Record<string, string>) => Promise<string>;
   /** Media upload callback — returns CDN URL */
   onMediaUpload?: (file: File) => Promise<{ url: string; name: string; type: "image" | "video" }>;
@@ -501,9 +504,19 @@ export default function PostComposer({
   const [aiTextOpen, setAiTextOpen] = useState(false);
   const [aiImageOpen, setAiImageOpen] = useState(false);
   const [aiVideoOpen, setAiVideoOpen] = useState(false);
-  const [aiTextConfig, setAiTextConfig] = useState({ contentType: "Social Media Post", tone: "Professional", platform: "All Platforms", brandVoice: false, topic: "", generated: "" });
-  const [aiImageConfig, setAiImageConfig] = useState({ prompt: "", brandVoice: false, preview: "" });
-  const [aiVideoConfig, setAiVideoConfig] = useState({ type: "Text to Video", length: "5", resolution: "720p", quality: "Auto", prompt: "", brandVoice: false, generateAudio: false, status: "" });
+  const [aiTextConfig, setAiTextConfig] = useState({ contentType: "Social Media Post", tone: "Professional", platform: "All Platforms", brandVoice: false, brandId: 0, model: "", topic: "", generated: "", loading: false });
+  const [aiImageConfig, setAiImageConfig] = useState({ prompt: "", brandVoice: false, brandId: 0, model: "", preview: "", previewUrl: "", loading: false });
+  const [aiVideoConfig, setAiVideoConfig] = useState({ type: "Text to Video", length: "5", resolution: "720p", quality: "Auto", prompt: "", brandVoice: false, brandId: 0, model: "", generateAudio: false, status: "", loading: false });
+
+  // Fetch real models & brands
+  const { data: aiModelsData } = useAiModels();
+  const { data: videoModelsData } = useVideoModels();
+  const { data: brandsData } = useBrands();
+  const textModels = aiModelsData?.text_models ?? [];
+  const imageModels = aiModelsData?.image_models ?? [];
+  const videoTextModels = videoModelsData?.text_models ?? [];
+  const videoImageModels = videoModelsData?.image_models ?? [];
+  const brands = brandsData?.brands ?? [];
   const [canvaOpen, setCanvaOpen] = useState(false);
   const [canvaWidth, setCanvaWidth] = useState("1080");
   const [canvaHeight, setCanvaHeight] = useState("1080");
@@ -1062,6 +1075,49 @@ export default function PostComposer({
         {customizeChannel && <div className="pb-4" />}
       </div>
 
+
+      {/* Uploaded Media Grid */}
+      {uploadedMedia.length > 0 && (
+        <div className="bg-card rounded-lg border border-border p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-foreground">Media ({uploadedMedia.length})</h3>
+            <Button variant="ghost" size="sm" className="text-xs text-destructive hover:text-destructive" onClick={clearMedia}>
+              <Trash2 className="w-3 h-3" /> Clear all
+            </Button>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {uploadedMedia.map((item, idx) => (
+              <div
+                key={item.id}
+                className="relative aspect-square rounded-lg bg-muted overflow-hidden border-2 border-transparent group"
+              >
+                {item.url ? (
+                  item.type === "video" ? (
+                    <video src={item.url} className="w-full h-full object-cover" muted />
+                  ) : (
+                    <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
+                  )
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    {item.type === "video" ? <Film className="w-6 h-6 text-muted-foreground/30" /> : <Image className="w-6 h-6 text-muted-foreground/30" />}
+                  </div>
+                )}
+                {item.type === "video" && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-8 h-8 rounded-full bg-foreground/50 flex items-center justify-center">
+                      <Play className="w-4 h-4 text-card ml-0.5" />
+                    </div>
+                  </div>
+                )}
+                <button onClick={() => removeMedia(idx)} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-foreground/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <X className="w-3 h-3 text-card" />
+                </button>
+                <span className="absolute bottom-1 left-1 right-1 text-[9px] text-card truncate bg-foreground/40 px-1 rounded">{item.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Video Thumbnail Picker (shown when video is uploaded) */}
       {hasVideos && (
@@ -1745,12 +1801,18 @@ export default function PostComposer({
                   if (onMediaUpload) {
                     try {
                       const result = await onMediaUpload(file);
-                      setUploadedMedia(prev => [...prev, { id: `img-${Date.now()}`, type: "image", name: result.name }]);
-                      onImageCountChange?.(uploadedMedia.length + 1);
+                      setUploadedMedia(prev => {
+                        const next = [...prev, { id: `img-${Date.now()}`, type: "image" as const, name: result.name, url: result.url }];
+                        onImageCountChange?.(next.length);
+                        return next;
+                      });
                     } catch { /* toast handled in parent */ }
                   } else {
-                    setUploadedMedia(prev => [...prev, { id: `img-${Date.now()}`, type: "image", name: file.name }]);
-                    onImageCountChange?.(uploadedMedia.length + 1);
+                    setUploadedMedia(prev => {
+                      const next = [...prev, { id: `img-${Date.now()}`, type: "image" as const, name: file.name }];
+                      onImageCountChange?.(next.length);
+                      return next;
+                    });
                   }
                 }
                 setImagePickerOpen(false);
@@ -1823,12 +1885,18 @@ export default function PostComposer({
                   if (onMediaUpload) {
                     try {
                       const result = await onMediaUpload(file);
-                      setUploadedMedia(prev => [...prev, { id: `vid-${Date.now()}`, type: "video", name: result.name }]);
-                      onImageCountChange?.(uploadedMedia.length + 1);
+                      setUploadedMedia(prev => {
+                        const next = [...prev, { id: `vid-${Date.now()}`, type: "video" as const, name: result.name, url: result.url }];
+                        onImageCountChange?.(next.length);
+                        return next;
+                      });
                     } catch { /* toast handled in parent */ }
                   } else {
-                    setUploadedMedia(prev => [...prev, { id: `vid-${Date.now()}`, type: "video", name: file.name }]);
-                    onImageCountChange?.(uploadedMedia.length + 1);
+                    setUploadedMedia(prev => {
+                      const next = [...prev, { id: `vid-${Date.now()}`, type: "video" as const, name: file.name }];
+                      onImageCountChange?.(next.length);
+                      return next;
+                    });
                   }
                 }
                 setVideoPickerOpen(false);
@@ -1892,13 +1960,25 @@ export default function PostComposer({
           <div className="space-y-5">
             <div>
               <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Model</label>
-              <div className="border border-border rounded-lg px-4 py-3 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold">✦</div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">GPT-4o Mini</p>
-                  <p className="text-xs text-muted-foreground">OpenAI text generation · 0.01 credits</p>
+              {textModels.length > 0 ? (
+                <select
+                  value={aiTextConfig.model || textModels[0]?.model || ""}
+                  onChange={(e) => setAiTextConfig(prev => ({ ...prev, model: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {textModels.map(m => (
+                    <option key={m.id} value={m.model}>{m.name} ({m.provider})</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="border border-border rounded-lg px-4 py-3 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold">✦</div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">SmartlyQ AI</p>
+                    <p className="text-xs text-muted-foreground">No text models available on your plan</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div>
@@ -1954,20 +2034,40 @@ export default function PostComposer({
               </select>
             </div>
 
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Brand Voice</span>
-              <div className="flex items-center gap-2">
-                <Toggle enabled={aiTextConfig.brandVoice} onToggle={() => setAiTextConfig(prev => ({ ...prev, brandVoice: !prev.brandVoice }))} />
-                <span className="text-sm text-foreground">Use Brand Voice</span>
+            {/* Brand Voice */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Brand Voice</span>
+                <div className="flex items-center gap-2">
+                  <Toggle enabled={aiTextConfig.brandVoice} onToggle={() => setAiTextConfig(prev => ({ ...prev, brandVoice: !prev.brandVoice, brandId: prev.brandVoice ? 0 : prev.brandId }))} />
+                  <span className="text-sm text-foreground">Use Brand Voice</span>
+                </div>
               </div>
+              {aiTextConfig.brandVoice && brands.length > 0 && (
+                <select
+                  value={aiTextConfig.brandId}
+                  onChange={(e) => setAiTextConfig(prev => ({ ...prev, brandId: Number(e.target.value) }))}
+                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value={0}>Choose brand...</option>
+                  {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              )}
+              {aiTextConfig.brandVoice && brands.length === 0 && (
+                <p className="text-xs text-muted-foreground">No brands configured. Go to Brands to create one.</p>
+              )}
             </div>
 
             <div>
               <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Generated Content</label>
               <div className="bg-muted/40 rounded-lg px-4 py-3 min-h-[60px]">
-                <p className="text-sm text-muted-foreground">
-                  {aiTextConfig.generated || 'Click "Generate Content" to create AI-powered content...'}
-                </p>
+                {aiTextConfig.loading ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Generating...</div>
+                ) : (
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {aiTextConfig.generated || 'Click "Generate Content" to create AI-powered content...'}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -1975,13 +2075,19 @@ export default function PostComposer({
             <Button variant="outline" onClick={() => setAiTextOpen(false)}>Cancel</Button>
             <Button
               className="bg-gradient-to-r from-amber-400 to-orange-400 text-white hover:from-amber-500 hover:to-orange-500"
+              disabled={aiTextConfig.loading || !aiTextConfig.topic.trim()}
               onClick={async () => {
                 if (onAiGenerateText) {
                   try {
-                    setAiTextConfig(prev => ({ ...prev, generated: "Generating..." }));
-                    const result = await onAiGenerateText(aiTextConfig.topic, aiTextConfig.tone, aiTextConfig.contentType);
-                    setAiTextConfig(prev => ({ ...prev, generated: result }));
-                  } catch { setAiTextConfig(prev => ({ ...prev, generated: "Generation failed. Please try again." })); }
+                    setAiTextConfig(prev => ({ ...prev, loading: true, generated: "" }));
+                    const selectedModel = aiTextConfig.model || textModels[0]?.model || "";
+                    const result = await onAiGenerateText(aiTextConfig.topic, aiTextConfig.tone, aiTextConfig.contentType, {
+                      model: selectedModel || undefined,
+                      brand_voice: aiTextConfig.brandVoice && aiTextConfig.brandId > 0 ? true : undefined,
+                      brand_id: aiTextConfig.brandId > 0 ? aiTextConfig.brandId : undefined,
+                    });
+                    setAiTextConfig(prev => ({ ...prev, generated: result, loading: false }));
+                  } catch { setAiTextConfig(prev => ({ ...prev, generated: "Generation failed. Please try again.", loading: false })); }
                 } else {
                   setAiTextConfig(prev => ({ ...prev, generated: "AI text generation not connected yet." }));
                 }
@@ -1992,12 +2098,12 @@ export default function PostComposer({
             <Button
               variant="secondary"
               className="bg-primary/20 text-primary hover:bg-primary/30"
-              disabled={!aiTextConfig.generated}
+              disabled={!aiTextConfig.generated || aiTextConfig.loading}
               onClick={() => {
                 if (aiTextConfig.generated) {
                   onContentChange(content + aiTextConfig.generated);
                   setAiTextOpen(false);
-                  setAiTextConfig(prev => ({ ...prev, generated: "", topic: "" }));
+                  setAiTextConfig(prev => ({ ...prev, generated: "", topic: "", loading: false }));
                 }
               }}
             >
@@ -2016,13 +2122,25 @@ export default function PostComposer({
           <div className="space-y-5">
             <div>
               <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Model</label>
-              <div className="border border-border rounded-lg px-4 py-3 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">◆</div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">DALL-E 3</p>
-                  <p className="text-xs text-muted-foreground">OpenAI image generation · 0.02 credits</p>
+              {imageModels.length > 0 ? (
+                <select
+                  value={aiImageConfig.model || imageModels[0]?.model || ""}
+                  onChange={(e) => setAiImageConfig(prev => ({ ...prev, model: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {imageModels.map(m => (
+                    <option key={m.id} value={m.model}>{m.name} ({m.provider})</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="border border-border rounded-lg px-4 py-3 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">◆</div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">SmartlyQ AI — Image</p>
+                    <p className="text-xs text-muted-foreground">No image models available on your plan</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div>
@@ -2036,20 +2154,42 @@ export default function PostComposer({
               <p className="text-xs text-muted-foreground mt-1.5">Tip: you can paste your offer/product + what should be visible.</p>
             </div>
 
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Brand Voice</span>
-              <div className="flex items-center gap-2">
-                <Toggle enabled={aiImageConfig.brandVoice} onToggle={() => setAiImageConfig(prev => ({ ...prev, brandVoice: !prev.brandVoice }))} />
-                <span className="text-sm text-foreground">Use Brand Voice</span>
+            {/* Brand Voice */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Brand Voice</span>
+                <div className="flex items-center gap-2">
+                  <Toggle enabled={aiImageConfig.brandVoice} onToggle={() => setAiImageConfig(prev => ({ ...prev, brandVoice: !prev.brandVoice, brandId: prev.brandVoice ? 0 : prev.brandId }))} />
+                  <span className="text-sm text-foreground">Use Brand Voice</span>
+                </div>
               </div>
+              {aiImageConfig.brandVoice && brands.length > 0 && (
+                <select
+                  value={aiImageConfig.brandId}
+                  onChange={(e) => setAiImageConfig(prev => ({ ...prev, brandId: Number(e.target.value) }))}
+                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value={0}>Choose brand...</option>
+                  {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              )}
+              {aiImageConfig.brandVoice && brands.length === 0 && (
+                <p className="text-xs text-muted-foreground">No brands configured. Go to Brands to create one.</p>
+              )}
             </div>
 
             <div>
               <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Preview</label>
               <div className="bg-muted/40 rounded-lg px-4 py-3 min-h-[60px]">
-                <p className="text-sm text-muted-foreground">
-                  {aiImageConfig.preview || 'Click "Generate Image" to create an image.'}
-                </p>
+                {aiImageConfig.loading ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Generating image...</div>
+                ) : aiImageConfig.previewUrl ? (
+                  <img src={aiImageConfig.previewUrl} alt="AI Generated" className="w-full rounded-lg" />
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {aiImageConfig.preview || 'Click "Generate Image" to create an image.'}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -2057,13 +2197,19 @@ export default function PostComposer({
             <Button variant="outline" onClick={() => setAiImageOpen(false)}>Cancel</Button>
             <Button
               className="bg-gradient-to-r from-amber-400 to-orange-400 text-white hover:from-amber-500 hover:to-orange-500"
+              disabled={aiImageConfig.loading || !aiImageConfig.prompt.trim()}
               onClick={async () => {
                 if (onAiGenerateImage) {
                   try {
-                    setAiImageConfig(prev => ({ ...prev, preview: "Generating..." }));
-                    const url = await onAiGenerateImage(aiImageConfig.prompt);
-                    setAiImageConfig(prev => ({ ...prev, preview: url }));
-                  } catch { setAiImageConfig(prev => ({ ...prev, preview: "Generation failed." })); }
+                    setAiImageConfig(prev => ({ ...prev, loading: true, preview: "", previewUrl: "" }));
+                    const selectedModel = aiImageConfig.model || imageModels[0]?.model || "";
+                    const url = await onAiGenerateImage(aiImageConfig.prompt, {
+                      model: selectedModel || undefined,
+                      brand_voice: aiImageConfig.brandVoice && aiImageConfig.brandId > 0 ? true : undefined,
+                      brand_id: aiImageConfig.brandId > 0 ? aiImageConfig.brandId : undefined,
+                    });
+                    setAiImageConfig(prev => ({ ...prev, previewUrl: url, preview: url, loading: false }));
+                  } catch { setAiImageConfig(prev => ({ ...prev, preview: "Generation failed.", loading: false })); }
                 } else {
                   setAiImageConfig(prev => ({ ...prev, preview: "AI image generation not connected yet." }));
                 }
@@ -2074,11 +2220,15 @@ export default function PostComposer({
             <Button
               variant="secondary"
               className="bg-primary/20 text-primary hover:bg-primary/30"
-              disabled={!aiImageConfig.preview}
+              disabled={!aiImageConfig.previewUrl || aiImageConfig.loading}
               onClick={() => {
-                handleImageUpload();
+                if (aiImageConfig.previewUrl) {
+                  const newMedia = [...uploadedMedia, { id: `ai-img-${Date.now()}`, type: "image" as const, name: "AI Generated Image", url: aiImageConfig.previewUrl }];
+                  setUploadedMedia(newMedia);
+                  onImageCountChange?.(newMedia.length);
+                }
                 setAiImageOpen(false);
-                setAiImageConfig(prev => ({ ...prev, preview: "", prompt: "" }));
+                setAiImageConfig(prev => ({ ...prev, preview: "", previewUrl: "", prompt: "", loading: false }));
               }}
             >
               Use This Image
@@ -2099,7 +2249,7 @@ export default function PostComposer({
                 <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Type</label>
                 <select
                   value={aiVideoConfig.type}
-                  onChange={(e) => setAiVideoConfig(prev => ({ ...prev, type: e.target.value }))}
+                  onChange={(e) => setAiVideoConfig(prev => ({ ...prev, type: e.target.value, model: "" }))}
                   className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option>Text to Video</option>
@@ -2108,13 +2258,28 @@ export default function PostComposer({
               </div>
               <div>
                 <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Model</label>
-                <div className="border border-border rounded-lg px-3 py-2 flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-white text-[8px] font-bold">▶</div>
-                  <div>
-                    <p className="text-xs font-medium text-foreground">Pollo.ai</p>
-                    <p className="text-[10px] text-muted-foreground">AI video generation · 0.10 credits</p>
-                  </div>
-                </div>
+                {(() => {
+                  const availableVideoModels = aiVideoConfig.type === "Image to Video" ? videoImageModels : videoTextModels;
+                  return availableVideoModels.length > 0 ? (
+                    <select
+                      value={aiVideoConfig.model || availableVideoModels[0]?.model || ""}
+                      onChange={(e) => setAiVideoConfig(prev => ({ ...prev, model: e.target.value }))}
+                      className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      {availableVideoModels.map(m => (
+                        <option key={m.model} value={m.model}>{m.model}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="border border-border rounded-lg px-3 py-2 flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-white text-[8px] font-bold">▶</div>
+                      <div>
+                        <p className="text-xs font-medium text-foreground">No models available</p>
+                        <p className="text-[10px] text-muted-foreground">Contact admin</p>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -2166,12 +2331,28 @@ export default function PostComposer({
               />
             </div>
 
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Brand Voice</span>
-              <div className="flex items-center gap-2">
-                <Toggle enabled={aiVideoConfig.brandVoice} onToggle={() => setAiVideoConfig(prev => ({ ...prev, brandVoice: !prev.brandVoice }))} />
-                <span className="text-sm text-foreground">Use Brand Voice</span>
+            {/* Brand Voice */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Brand Voice</span>
+                <div className="flex items-center gap-2">
+                  <Toggle enabled={aiVideoConfig.brandVoice} onToggle={() => setAiVideoConfig(prev => ({ ...prev, brandVoice: !prev.brandVoice, brandId: prev.brandVoice ? 0 : prev.brandId }))} />
+                  <span className="text-sm text-foreground">Use Brand Voice</span>
+                </div>
               </div>
+              {aiVideoConfig.brandVoice && brands.length > 0 && (
+                <select
+                  value={aiVideoConfig.brandId}
+                  onChange={(e) => setAiVideoConfig(prev => ({ ...prev, brandId: Number(e.target.value) }))}
+                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value={0}>Choose brand...</option>
+                  {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              )}
+              {aiVideoConfig.brandVoice && brands.length === 0 && (
+                <p className="text-xs text-muted-foreground">No brands configured. Go to Brands to create one.</p>
+              )}
             </div>
 
             <div className="flex items-center gap-3">
@@ -2182,9 +2363,13 @@ export default function PostComposer({
             <div>
               <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Status</label>
               <div className="bg-muted/40 rounded-lg px-4 py-3 min-h-[50px]">
-                <p className="text-sm text-muted-foreground">
-                  {aiVideoConfig.status || 'Click "Generate Video" to start. You can close this modal and come back later.'}
-                </p>
+                {aiVideoConfig.loading ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Generating video...</div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {aiVideoConfig.status || 'Click "Generate Video" to start. You can close this modal and come back later.'}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -2192,13 +2377,16 @@ export default function PostComposer({
             <Button variant="outline" onClick={() => setAiVideoOpen(false)}>Cancel</Button>
             <Button
               className="bg-gradient-to-r from-amber-400 to-orange-400 text-white hover:from-amber-500 hover:to-orange-500"
+              disabled={aiVideoConfig.loading || !aiVideoConfig.prompt.trim()}
               onClick={async () => {
                 if (onAiGenerateVideo) {
                   try {
-                    setAiVideoConfig(prev => ({ ...prev, status: "Generating video..." }));
-                    const result = await onAiGenerateVideo(aiVideoConfig.prompt, { type: aiVideoConfig.type, length: aiVideoConfig.length, resolution: aiVideoConfig.resolution, quality: aiVideoConfig.quality });
-                    setAiVideoConfig(prev => ({ ...prev, status: result }));
-                  } catch { setAiVideoConfig(prev => ({ ...prev, status: "Generation failed." })); }
+                    const availableVideoModels = aiVideoConfig.type === "Image to Video" ? videoImageModels : videoTextModels;
+                    const selectedModel = aiVideoConfig.model || availableVideoModels[0]?.model || "";
+                    setAiVideoConfig(prev => ({ ...prev, loading: true, status: "" }));
+                    const result = await onAiGenerateVideo(aiVideoConfig.prompt, { type: aiVideoConfig.type, model: selectedModel, length: aiVideoConfig.length, resolution: aiVideoConfig.resolution, quality: aiVideoConfig.quality });
+                    setAiVideoConfig(prev => ({ ...prev, status: result, loading: false }));
+                  } catch { setAiVideoConfig(prev => ({ ...prev, status: "Generation failed.", loading: false })); }
                 } else {
                   setAiVideoConfig(prev => ({ ...prev, status: "AI video generation not connected yet." }));
                 }
@@ -2209,11 +2397,11 @@ export default function PostComposer({
             <Button
               variant="secondary"
               className="bg-primary/20 text-primary hover:bg-primary/30"
-              disabled={!aiVideoConfig.status}
+              disabled={!aiVideoConfig.status || aiVideoConfig.loading}
               onClick={() => {
                 handleVideoUpload();
                 setAiVideoOpen(false);
-                setAiVideoConfig(prev => ({ ...prev, status: "", prompt: "" }));
+                setAiVideoConfig(prev => ({ ...prev, status: "", prompt: "", loading: false }));
               }}
             >
               Use This Video
