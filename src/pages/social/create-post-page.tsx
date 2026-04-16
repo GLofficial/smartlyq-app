@@ -26,21 +26,7 @@ export function CreatePostPage() {
   const state = (location.state as LocationState) ?? {};
   const accounts = Array.isArray(hubData?.accounts) ? hubData.accounts : [];
 
-  // Clear location state after consuming
-  useEffect(() => {
-    if (location.state) window.history.replaceState({}, document.title);
-  }, [location.state]);
-
-  // Loading
-  if (hubLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-
-  // State
+  // All hooks MUST be before any early return
   const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
   const [content, setContent] = useState(state.editPost?.content ?? "");
   const [platformContent, setPlatformContent] = useState<Record<string, string>>({});
@@ -48,6 +34,11 @@ export function CreatePostPage() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [imageCount, setImageCount] = useState(0);
   const [platformPostType, setPlatformPostType] = useState<Record<string, string>>({});
+
+  // Clear location state after consuming
+  useEffect(() => {
+    if (location.state) window.history.replaceState({}, document.title);
+  }, [location.state]);
 
   const selectedPlatforms = [...new Set(
     accounts.filter((a: any) => selectedAccountIds.includes(a.id)).map((a: any) => a.platform),
@@ -79,6 +70,15 @@ export function CreatePostPage() {
     },
     [content, selectedPlatforms, selectedAccountIds, media, createPost, navigate, wsHash],
   );
+
+  // Loading guard AFTER all hooks
+  if (hubLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">
