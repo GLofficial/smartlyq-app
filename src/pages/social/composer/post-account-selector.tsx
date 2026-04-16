@@ -65,7 +65,7 @@ export function PostAccountSelector({ accounts, selectedIds, onSelectionChange }
                       {acc.profile_pic ? (
                         <img src={acc.profile_pic} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        acc.name.charAt(0).toUpperCase()
+                        (acc.name ?? "?").charAt(0).toUpperCase()
                       )}
                     </div>
                     <div
@@ -159,7 +159,7 @@ export function PostAccountSelector({ accounts, selectedIds, onSelectionChange }
                       {acc.profile_pic ? (
                         <img src={acc.profile_pic} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        acc.name.charAt(0).toUpperCase()
+                        (acc.name ?? "?").charAt(0).toUpperCase()
                       )}
                     </div>
                     <div className={cn("absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-primary-foreground border-2 border-card", brand?.color ?? "bg-muted")}>
