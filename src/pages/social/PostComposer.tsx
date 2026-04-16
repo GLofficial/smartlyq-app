@@ -395,6 +395,10 @@ interface PostComposerProps {
   onAiGenerateText?: (topic: string, tone: string, contentType: string) => Promise<string>;
   onAiGenerateImage?: (prompt: string) => Promise<string>;
   onAiGenerateVideo?: (prompt: string, config: Record<string, string>) => Promise<string>;
+  /** Media upload callback — returns CDN URL */
+  onMediaUpload?: (file: File) => Promise<{ url: string; name: string; type: "image" | "video" }>;
+  /** Canva callback — opens Canva editor */
+  onCanvaDesign?: (width: string, height: string) => void;
 }
 
 function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
@@ -439,6 +443,8 @@ export default function PostComposer({
   onAiGenerateText,
   onAiGenerateImage,
   onAiGenerateVideo,
+  onMediaUpload,
+  onCanvaDesign,
 }: PostComposerProps) {
   // Map real accounts to the internal format used by the UI
   const useRealAccounts = Array.isArray(realAccounts) && realAccounts.length > 0;
@@ -1704,53 +1710,36 @@ export default function PostComposer({
             <p className="text-sm text-muted-foreground">You can select up to 10 images</p>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto space-y-4">
-            {/* Drop zone */}
-            <button className="w-full border-2 border-dashed border-primary/40 rounded-xl p-8 text-center text-muted-foreground hover:border-primary/60 hover:bg-primary/5 transition-colors cursor-pointer">
+            {/* Drop zone with real file input */}
+            <label className="w-full border-2 border-dashed border-primary/40 rounded-xl p-8 text-center text-muted-foreground hover:border-primary/60 hover:bg-primary/5 transition-colors cursor-pointer block">
               <Image className="w-8 h-8 mx-auto mb-2 opacity-40" />
               <p className="text-sm font-medium text-foreground">Drop or Select image file</p>
               <p className="text-xs mt-1">Drop image files here or click browse</p>
-            </button>
-
-            {/* Library grid */}
-            <div className="grid grid-cols-5 gap-2">
-              {Array.from({ length: 10 }).map((_, i) => {
-                const isSelected = selectedPickerItems.includes(i);
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedPickerItems(prev => isSelected ? prev.filter(x => x !== i) : prev.length < 10 ? [...prev, i] : prev)}
-                    className={cn(
-                      "relative aspect-square rounded-lg bg-muted overflow-hidden border-2 transition-all hover:opacity-80",
-                      isSelected ? "border-primary ring-1 ring-primary" : "border-transparent"
-                    )}
-                  >
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Image className="w-8 h-8 text-muted-foreground/30" />
-                    </div>
-                    <div className={cn(
-                      "absolute top-2 left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
-                      isSelected ? "bg-primary border-primary" : "border-muted-foreground/40 bg-card/80"
-                    )}>
-                      {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <button className="text-sm text-primary font-medium mx-auto block hover:underline">Load More</button>
+              <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+                const files = e.target.files;
+                if (!files) return;
+                for (const file of Array.from(files)) {
+                  if (onMediaUpload) {
+                    try {
+                      const result = await onMediaUpload(file);
+                      setUploadedMedia(prev => [...prev, { id: `img-${Date.now()}`, type: "image", name: result.name }]);
+                      onImageCountChange?.(uploadedMedia.length + 1);
+                    } catch { /* toast handled in parent */ }
+                  } else {
+                    setUploadedMedia(prev => [...prev, { id: `img-${Date.now()}`, type: "image", name: file.name }]);
+                    onImageCountChange?.(uploadedMedia.length + 1);
+                  }
+                }
+                setImagePickerOpen(false);
+                e.target.value = "";
+              }} />
+            </label>
           </div>
           <DialogFooter className="border-t border-border pt-4">
             <Button variant="outline" className="text-destructive border-destructive/30" onClick={() => setImagePickerOpen(false)}>Cancel</Button>
             <Button
-              disabled={selectedPickerItems.length === 0}
-              onClick={() => {
-                selectedPickerItems.forEach((_, idx) => {
-                  const newItem = { id: `img-${uploadedMedia.length + idx + 1}`, type: "image" as const, name: `image-${uploadedMedia.length + idx + 1}.jpg` };
-                  setUploadedMedia(prev => [...prev, newItem]);
-                });
-                onImageCountChange?.((uploadedMedia.length + selectedPickerItems.length));
-                setImagePickerOpen(false);
-                setSelectedPickerItems([]);
+              onClick={() => setImagePickerOpen(false)}>
+              Done
               }}
             >
               Add to Post {selectedPickerItems.length > 0 && `(${selectedPickerItems.length})`}
@@ -1767,63 +1756,33 @@ export default function PostComposer({
             <p className="text-sm text-muted-foreground">You can select up to 10 videos</p>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto space-y-4">
-            {/* Drop zone */}
-            <button className="w-full border-2 border-dashed border-primary/40 rounded-xl p-8 text-center text-muted-foreground hover:border-primary/60 hover:bg-primary/5 transition-colors cursor-pointer">
+            <label className="w-full border-2 border-dashed border-primary/40 rounded-xl p-8 text-center text-muted-foreground hover:border-primary/60 hover:bg-primary/5 transition-colors cursor-pointer block">
               <Film className="w-8 h-8 mx-auto mb-2 opacity-40" />
               <p className="text-sm font-medium text-foreground">Drop or Select video file</p>
               <p className="text-xs mt-1">Drop video files here or click browse</p>
-            </button>
-
-            {/* Library grid */}
-            <div className="grid grid-cols-5 gap-2">
-              {Array.from({ length: 10 }).map((_, i) => {
-                const isSelected = selectedPickerItems.includes(i);
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedPickerItems(prev => isSelected ? prev.filter(x => x !== i) : prev.length < 10 ? [...prev, i] : prev)}
-                    className={cn(
-                      "relative aspect-square rounded-lg bg-muted overflow-hidden border-2 transition-all hover:opacity-80",
-                      isSelected ? "border-primary ring-1 ring-primary" : "border-transparent"
-                    )}
-                  >
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Film className="w-6 h-6 text-muted-foreground/30" />
-                    </div>
-                    {/* Play icon overlay */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-8 h-8 rounded-full bg-foreground/50 flex items-center justify-center">
-                        <Play className="w-4 h-4 text-card ml-0.5" />
-                      </div>
-                    </div>
-                    <div className={cn(
-                      "absolute top-2 left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
-                      isSelected ? "bg-primary border-primary" : "border-muted-foreground/40 bg-card/80"
-                    )}>
-                      {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <button className="text-sm text-primary font-medium mx-auto block hover:underline">Load More</button>
+              <input type="file" accept="video/*" multiple className="hidden" onChange={async (e) => {
+                const files = e.target.files;
+                if (!files) return;
+                for (const file of Array.from(files)) {
+                  if (onMediaUpload) {
+                    try {
+                      const result = await onMediaUpload(file);
+                      setUploadedMedia(prev => [...prev, { id: `vid-${Date.now()}`, type: "video", name: result.name }]);
+                      onImageCountChange?.(uploadedMedia.length + 1);
+                    } catch { /* toast handled in parent */ }
+                  } else {
+                    setUploadedMedia(prev => [...prev, { id: `vid-${Date.now()}`, type: "video", name: file.name }]);
+                    onImageCountChange?.(uploadedMedia.length + 1);
+                  }
+                }
+                setVideoPickerOpen(false);
+                e.target.value = "";
+              }} />
+            </label>
           </div>
           <DialogFooter className="border-t border-border pt-4">
             <Button variant="outline" className="text-destructive border-destructive/30" onClick={() => setVideoPickerOpen(false)}>Cancel</Button>
-            <Button
-              disabled={selectedPickerItems.length === 0}
-              onClick={() => {
-                selectedPickerItems.forEach((_, idx) => {
-                  const newItem = { id: `vid-${uploadedMedia.length + idx + 1}`, type: "video" as const, name: `video-${uploadedMedia.length + idx + 1}.mp4` };
-                  setUploadedMedia(prev => [...prev, newItem]);
-                });
-                onImageCountChange?.((uploadedMedia.length + selectedPickerItems.length));
-                setVideoPickerOpen(false);
-                setSelectedPickerItems([]);
-              }}
-            >
-              Add to Post {selectedPickerItems.length > 0 && `(${selectedPickerItems.length})`}
-            </Button>
+            <Button onClick={() => setVideoPickerOpen(false)}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1841,7 +1800,7 @@ export default function PostComposer({
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold">✦</div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">Lovable AI</p>
+                    <p className="text-sm font-medium text-foreground">SmartlyQ AI</p>
                     <p className="text-xs text-muted-foreground">Uses your plan's allowed text models.</p>
                   </div>
                 </div>
@@ -1968,7 +1927,7 @@ export default function PostComposer({
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">◆</div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">Lovable AI — Image</p>
+                    <p className="text-sm font-medium text-foreground">SmartlyQ AI — Image</p>
                     <p className="text-xs text-muted-foreground">Generated images are saved into your Media Library.</p>
                   </div>
                 </div>
@@ -2063,7 +2022,7 @@ export default function PostComposer({
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-white text-[8px] font-bold">▶</div>
                     <div>
-                      <p className="text-xs font-medium text-foreground">Lovable AI — Video</p>
+                      <p className="text-xs font-medium text-foreground">SmartlyQ AI — Video</p>
                       <p className="text-[10px] text-muted-foreground">Generated videos saved to Media Library.</p>
                     </div>
                   </div>
@@ -2242,7 +2201,9 @@ export default function PostComposer({
                     className="w-24 px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
-                <Button className="bg-[hsl(230,60%,50%)] hover:bg-[hsl(230,60%,45%)] text-white">
+                <Button className="bg-[hsl(230,60%,50%)] hover:bg-[hsl(230,60%,45%)] text-white" onClick={() => {
+                  if (onCanvaDesign) { onCanvaDesign(canvaWidth, canvaHeight); setCanvaOpen(false); }
+                }}>
                   Open Canva
                 </Button>
               </div>

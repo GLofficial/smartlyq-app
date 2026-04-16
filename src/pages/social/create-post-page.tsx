@@ -4,6 +4,7 @@ import { useSocialHub } from "@/api/social";
 import { useCreatePost, type CreatePostData } from "@/api/social-posts";
 import { useAiRewrite, useAiImage } from "@/api/ai-generate";
 import { useGenerateVideo } from "@/api/video-gen";
+import { apiClient } from "@/lib/api-client";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { toast } from "sonner";
 import PostComposer from "./PostComposer";
@@ -94,6 +95,18 @@ export function CreatePostPage() {
     return `Video generation started (ID: ${result.video_id}). Check Media Library when complete.`;
   }, [aiVideo]);
 
+  const handleMediaUpload = useCallback(async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const result = await apiClient.upload<{ url: string; name: string; file_type: string }>("/my/social-media/upload", formData);
+    return { url: result.url, name: result.name || file.name, type: (result.file_type === "video" ? "video" : "image") as "image" | "video" };
+  }, []);
+
+  const handleCanvaDesign = useCallback((width: string, height: string) => {
+    // Open Canva in a new window via the Bootstrap OAuth flow
+    window.open(`/my/canva/connect?width=${width}&height=${height}`, "_blank", "width=1200,height=800");
+  }, []);
+
   if (hubLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -128,6 +141,8 @@ export function CreatePostPage() {
           onAiGenerateText={handleAiText}
           onAiGenerateImage={handleAiImage}
           onAiGenerateVideo={handleAiVideo}
+          onMediaUpload={handleMediaUpload}
+          onCanvaDesign={handleCanvaDesign}
         />
         <PostPreview
           selectedPlatforms={selectedPlatforms}
