@@ -61,11 +61,12 @@ export function AdminDashboardPage() {
 								</defs>
 								<CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
 								<XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
-								<YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} width={40} />
+								<YAxis yAxisId="words" tick={{ fontSize: 11, fill: "#6366f1" }} tickLine={false} axisLine={false} width={44} />
+								<YAxis yAxisId="media" orientation="right" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} width={36} />
 								<Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
-								<Area type="monotone" dataKey="words" stroke="#6366f1" strokeWidth={2} fill="url(#gWords)" dot={false} />
-								<Area type="monotone" dataKey="images" stroke="#22c55e" strokeWidth={2} fill="url(#gImages)" dot={false} />
-								<Area type="monotone" dataKey="videos" stroke="#f59e0b" strokeWidth={2} fill="url(#gVideos)" dot={false} />
+								<Area yAxisId="words" type="monotone" dataKey="words" stroke="#6366f1" strokeWidth={2} fill="url(#gWords)" dot={false} />
+								<Area yAxisId="media" type="monotone" dataKey="images" stroke="#22c55e" strokeWidth={2} fill="url(#gImages)" dot={false} />
+								<Area yAxisId="media" type="monotone" dataKey="videos" stroke="#f59e0b" strokeWidth={2} fill="url(#gVideos)" dot={false} />
 							</AreaChart>
 						</ResponsiveContainer>
 					)}
