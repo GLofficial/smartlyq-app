@@ -2210,7 +2210,7 @@ export default function PostComposer({
             </div>
 
             <div className="flex items-center justify-between pt-2 border-t border-border">
-              <button className="text-sm text-primary hover:underline">Disconnect Canva</button>
+              <button className="text-sm text-destructive hover:underline" onClick={() => { if (confirm("Disconnect Canva? You can reconnect later from Social Accounts.")) { fetch("/my/canva", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "disconnect" }) }).then(() => { setCanvaOpen(false); }); } }}>Disconnect Canva</button>
               <Button variant="outline" onClick={() => setCanvaOpen(false)}>Cancel</Button>
             </div>
           </div>
