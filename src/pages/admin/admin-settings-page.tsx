@@ -19,6 +19,7 @@ const TABS = [
 	{ key: "security", label: "Security" },
 	{ key: "storage", label: "Storage / R2" },
 	{ key: "app", label: "App Config" },
+	{ key: "ai_captain", label: "AI Captain" },
 	{ key: "railway", label: "Railway / Flask" },
 	{ key: "marketing", label: "Marketing" },
 	{ key: "finance", label: "Finance" },

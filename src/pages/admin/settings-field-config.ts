@@ -179,24 +179,23 @@ export const TAB_FIELDS: Record<string, FieldDef[]> = {
 		{ key: "_video", label: "Video", type: "heading" },
 		{ key: "pollo_apikey", label: "Pollo AI API Key", type: "password", half: true },
 
-		// Research & Web
-		{ key: "_research", label: "Research & Web", type: "heading" },
-		{ key: "youtube_apikey", label: "YouTube API Key", type: "password", half: true },
-		{ key: "search_engine_apikey", label: "Google Search API Key", type: "password", half: true },
-		{ key: "search_engine_id", label: "Google Search Engine ID", type: "text", half: true },
-		{ key: "scrappingbee_apikey", label: "ScrapingBee API Key", type: "password", half: true },
-		{ key: "tavily_apikey", label: "Tavily API Key", type: "password", half: true },
-		{ key: "apify_token", label: "Apify Token", type: "password", half: true },
+		// YouTube — article generator video embeds
+		{ key: "_youtube", label: "YouTube", type: "heading",
+		  description: "Used to embed YouTube videos in the Article Generator. Get your API key from",
+		  link: { label: "console.cloud.google.com", url: "https://console.cloud.google.com/apis/credentials" } },
+		{ key: "youtube_apikey", label: "YouTube Data API Key", type: "password" },
 
-		// Audio
-		{ key: "_audio", label: "Audio / Transcription", type: "heading" },
-		{ key: "deepgram_apikey", label: "Deepgram API Key", type: "password", half: true },
-		{ key: "deepgram_model", label: "Deepgram Model", type: "text", placeholder: "nova-2", half: true },
+		// Google Search — article generator image fetching
+		{ key: "_google_search", label: "Google Search", type: "heading",
+		  description: "Fetches images for the Article Generator via Custom Search JSON API." },
+		{ key: "search_engine_apikey", label: "Search API Key", type: "password", half: true },
+		{ key: "search_engine_id", label: "Search Engine ID", type: "text", half: true },
 
-		// SEO
-		{ key: "_seo", label: "SEO / Analytics", type: "heading" },
-		{ key: "dataforseo_login", label: "DataForSEO Login", type: "text", half: true },
-		{ key: "dataforseo_password", label: "DataForSEO Password", type: "password", half: true },
+		// ScrapingBee — chatbot URL training
+		{ key: "_scrappingbee", label: "ScrapingBee", type: "heading",
+		  description: "Scrapes URLs to extract content for training chatbot knowledge bases. Get your key from",
+		  link: { label: "scrapingbee.com/pricing", url: "https://www.scrapingbee.com/pricing/" } },
+		{ key: "scrappingbee_apikey", label: "API Key", type: "password" },
 
 		// Default models — options injected dynamically from models table
 		{ key: "_default_models", label: "Default Models", type: "heading",
@@ -217,7 +216,47 @@ export const TAB_FIELDS: Record<string, FieldDef[]> = {
 		{ key: "jwt_key", label: "JWT Secret Key", type: "password" },
 		{ key: "react_app_url", label: "React App URL (Captain)", type: "text" },
 		{ key: "presentations_url", label: "Presentations Editor URL", type: "text" },
-		{ key: "e2b_apikey", label: "E2B API Key", type: "password" },
+	],
+	ai_captain: [
+		{ key: "_apify", label: "Apify (AI Captain ingestion)", type: "heading",
+		  description: "Used for YouTube captions extraction and URL/PDF reader-mode extraction in AI Captain Boards. Set a token and configure actor IDs." },
+		{ key: "apify_token", label: "Apify Token", type: "password",
+		  description: "Stored encrypted in the database." },
+		{ key: "apify_youtube_transcript_actor", label: "YouTube transcript actor ID", type: "text", placeholder: "username/actor-name" },
+		{ key: "apify_youtube_audio_actor", label: "YouTube audio actor ID (fallback)", type: "text", placeholder: "username/actor-name",
+		  description: "Used only if captions are missing or too short." },
+		{ key: "apify_url_extract_actor", label: "URL extract actor ID", type: "text", placeholder: "username/actor-name" },
+		{ key: "apify_tiktok_extract_actor", label: "TikTok extract actor ID", type: "text", placeholder: "shu8hvrXbJbY3Eb9W",
+		  description: "Used for TikTok links added as Social Video sources." },
+		{ key: "apify_instagram_extract_actor", label: "Instagram extract actor ID", type: "text", placeholder: "GdWCkxBtKWOsKjdch",
+		  description: "Used for Instagram Reels links added as Social Video sources." },
+		{ key: "apify_pdf_extract_actor", label: "PDF extract actor ID (optional)", type: "text", placeholder: "username/actor-name" },
+
+		{ key: "_deepgram", label: "Deepgram (AI Captain ingestion)", type: "heading",
+		  description: "Used as YouTube transcription fallback when captions are missing/garbage (audio → text)." },
+		{ key: "deepgram_apikey", label: "API Key", type: "password", half: true },
+		{ key: "deepgram_model", label: "Model", type: "text", placeholder: "nova-2", half: true },
+
+		{ key: "_tavily", label: "Tavily (Web Search)", type: "heading",
+		  description: "AI-optimised web search for AI Captain creative workflows. 1000 free searches/month. Get your key from",
+		  link: { label: "app.tavily.com", url: "https://app.tavily.com/home" } },
+		{ key: "tavily_apikey", label: "API Key", type: "password" },
+
+		{ key: "_e2b", label: "E2B (AI Captain Code Execution)", type: "heading",
+		  description: "Secure cloud sandboxes for AI Captain to execute Python, JavaScript, R, and Bash code. Powers data analysis, chart generation, and file processing. Get your key from",
+		  link: { label: "e2b.dev", url: "https://e2b.dev" } },
+		{ key: "e2b_apikey", label: "API Key", type: "password" },
+
+		{ key: "_github_oauth", label: "GitHub OAuth (Captain App — Push to GitHub)", type: "heading",
+		  description: "Allows users of the Captain App to push AI-generated code directly to a GitHub repository. Create a GitHub OAuth App at github.com/settings/developers." },
+		{ key: "github_client_id", label: "Client ID", type: "text", half: true },
+		{ key: "github_client_secret", label: "Client Secret", type: "password", half: true },
+
+		{ key: "_dataforseo", label: "DataforSEO (SEO Tools)", type: "heading",
+		  description: "SEO audit, keyword research, and SERP checking for AI Captain. Pay-as-you-go from $0.002/request. Get credentials from",
+		  link: { label: "app.dataforseo.com", url: "https://app.dataforseo.com/register" } },
+		{ key: "dataforseo_login", label: "Login (email)", type: "text", half: true },
+		{ key: "dataforseo_password", label: "Password", type: "password", half: true },
 	],
 	railway: [
 		{ key: "chatbot_api_secret_key", label: "API Secret Key", type: "password", placeholder: "e.g. sk-sqai-...",
