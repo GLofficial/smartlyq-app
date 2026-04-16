@@ -62,6 +62,7 @@ export function useAdminSubscriptions(page = 1) {
 		queryFn: () => apiClient.get<{
 			subscriptions: { id: number; user_name: string; user_email: string; plan_name: string; status: number; created_at: string; expires_at: string | null }[];
 			total: number; page: number; pages: number;
+			chart: { date: string; count: number }[];
 		}>(`/api/spa/admin/subscriptions?page=${page}`),
 	});
 }

@@ -7,6 +7,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { queryClient } from "@/lib/query-client";
 import { toast } from "sonner";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface SubRow {
 	id: number;
@@ -26,6 +27,33 @@ export function AdminSubscriptionsPage() {
 	return (
 		<div className="space-y-6">
 			<h1 className="text-2xl font-bold">Subscriptions</h1>
+
+			{/* Summary chart */}
+			<Card>
+				<CardHeader>
+					<CardTitle className="text-lg">Summary</CardTitle>
+					<p className="text-sm text-[var(--muted-foreground)]">Below you'll find current month summary of subscriptions per day. All dates and times are UTC-based.</p>
+				</CardHeader>
+				<CardContent>
+					{isLoading ? <Spinner /> : (
+						<ResponsiveContainer width="100%" height={220}>
+							<BarChart data={data?.chart ?? []} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+								<defs>
+									<linearGradient id="gSubBar" x1="0" y1="0" x2="0" y2="1">
+										<stop offset="0%" stopColor="#6366f1" stopOpacity={0.9} />
+										<stop offset="100%" stopColor="#6366f1" stopOpacity={0.2} />
+									</linearGradient>
+								</defs>
+								<CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+								<XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
+								<YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} width={30} />
+								<Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} cursor={{ fill: "var(--accent)" }} />
+								<Bar dataKey="count" name="Subscriptions" fill="url(#gSubBar)" radius={[6, 6, 0, 0]} />
+							</BarChart>
+						</ResponsiveContainer>
+					)}
+				</CardContent>
+			</Card>
 
 			{confirmCancel && (
 				<CancelConfirm sub={confirmCancel} onClose={() => setConfirmCancel(null)} />
