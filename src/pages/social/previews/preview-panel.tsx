@@ -66,7 +66,7 @@ interface PreviewPanelProps {
 }
 
 export function PreviewPanel({
-  selectedPlatforms, content, platformContent, customizeChannel, imageCount = 0,
+  selectedPlatforms, content, platformContent, customizeChannel,
 }: PreviewPanelProps) {
   const [device, setDevice] = useState<Device>("desktop");
   const [previewMode, setPreviewMode] = useState<"feed" | "story">("feed");
