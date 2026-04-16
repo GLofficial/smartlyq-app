@@ -357,6 +357,17 @@ const PLATFORM_OPTIONS: Record<string, PlatformOptionConfig> = {
   },
 };
 
+interface RealAccount {
+  id: number;
+  platform: string;
+  account_name?: string;
+  name?: string;
+  account_username?: string;
+  profile_picture?: string;
+  profile_pic?: string;
+  token_status?: string;
+}
+
 interface PostComposerProps {
   selectedPlatforms: string[];
   onPlatformsChange: (platforms: string[]) => void;
@@ -370,6 +381,16 @@ interface PostComposerProps {
   onPostTypeChange?: (postTypes: Record<string, string>) => void;
   initialScheduledDate?: string;
   initialScheduledTime?: string;
+  /** Real accounts from API — if provided, replaces DEMO_ACCOUNTS */
+  realAccounts?: RealAccount[];
+  /** Callbacks for real posting actions */
+  onSaveDraft?: () => void;
+  onPostNow?: () => void;
+  onSchedulePost?: (date: string, time: string) => void;
+  isSubmitting?: boolean;
+  /** Selected account IDs (real) — synced with parent */
+  selectedAccountIds?: number[];
+  onSelectedAccountIdsChange?: (ids: number[]) => void;
 }
 
 function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
@@ -404,7 +425,29 @@ export default function PostComposer({
   onPostTypeChange,
   initialScheduledDate,
   initialScheduledTime,
+  realAccounts,
+  onSaveDraft,
+  onPostNow,
+  onSchedulePost,
+  isSubmitting,
+  selectedAccountIds,
+  onSelectedAccountIdsChange,
 }: PostComposerProps) {
+  // Map real accounts to the internal format used by the UI
+  const useRealAccounts = Array.isArray(realAccounts) && realAccounts.length > 0;
+  const ACCOUNTS = useMemo(() => {
+    if (!useRealAccounts) return DEMO_ACCOUNTS;
+    return realAccounts!.map(a => ({
+      id: `real-${a.id}`,
+      platformId: a.platform ?? "",
+      name: a.account_name || a.name || "Account",
+      avatar: (a.account_name || a.name || "?").charAt(0),
+      profilePic: a.profile_picture || a.profile_pic || "",
+      realId: a.id,
+      tokenStatus: a.token_status,
+    }));
+  }, [useRealAccounts, realAccounts]);
+
   const [expandedOptions, setExpandedOptions] = useState<Record<string, boolean>>({});
   const [uploadedMedia, setUploadedMedia] = useState<{ id: string; type: "image" | "video"; name: string }[]>([]);
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
@@ -412,7 +455,7 @@ export default function PostComposer({
   const [autoLike, setAutoLike] = useState<Record<string, boolean>>({});
   const [showAiDropdown, setShowAiDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedAccounts, setSelectedAccounts] = useState<string[]>(["acc-1", "acc-2", "acc-3", "acc-4"]);
+  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const [platformSettings, setPlatformSettings] = useState<Record<string, Record<string, string>>>({});
   const [activeCustomizeTab, setActiveCustomizeTab] = useState<string | null>(null);
   const [tiktokAllowOptions, setTiktokAllowOptions] = useState<Record<string, boolean>>({ Comment: true, Duet: true, Stitch: true });
@@ -539,47 +582,48 @@ export default function PostComposer({
     setEmojiOpen(false);
   }, [customizeChannel, activeCustomizeTab, platformContent, content, insertAtCursor, onPlatformContentChange, onContentChange]);
 
-  const toggleAccount = (accId: string) => {
-    const acc = DEMO_ACCOUNTS.find(a => a.id === accId);
-    if (!acc) return;
+  const derivePlatforms = (ids: string[]) => [...new Set(
+    ids.map(id => {
+      const a = ACCOUNTS.find(x => x.id === id);
+      const pid = a?.platformId ?? "";
+      return pid === "facebook-page" ? "facebook" : pid === "linkedin-page" ? "linkedin" : pid;
+    }).filter(Boolean)
+  )];
 
+  const syncRealIds = (ids: string[]) => {
+    if (useRealAccounts && onSelectedAccountIdsChange) {
+      const realIds = ids.map(id => ACCOUNTS.find(a => a.id === id)?.realId).filter(Boolean) as number[];
+      onSelectedAccountIdsChange(realIds);
+    }
+  };
+
+  const toggleAccount = (accId: string) => {
+    const acc = ACCOUNTS.find(a => a.id === accId);
+    if (!acc) return;
     const newSelected = selectedAccounts.includes(accId)
       ? selectedAccounts.filter(id => id !== accId)
       : [...selectedAccounts, accId];
-
     setSelectedAccounts(newSelected);
-
-    // Derive unique platform IDs from selected accounts
-    const platformIds = [...new Set(
-      newSelected.map(id => {
-        const a = DEMO_ACCOUNTS.find(x => x.id === id);
-        // Map sub-platforms to parent for preview
-        const pid = a?.platformId ?? "";
-        return pid === "facebook-page" ? "facebook" : pid === "linkedin-page" ? "linkedin" : pid;
-      }).filter(Boolean)
-    )];
-    onPlatformsChange(platformIds);
+    onPlatformsChange(derivePlatforms(newSelected));
+    syncRealIds(newSelected);
   };
 
   const selectAll = () => {
     const filtered = filteredAccounts.map(a => a.id);
     setSelectedAccounts(filtered);
-    const platformIds = [...new Set(filtered.map(id => {
-      const a = DEMO_ACCOUNTS.find(x => x.id === id);
-      const pid = a?.platformId ?? "";
-      return pid === "facebook-page" ? "facebook" : pid === "linkedin-page" ? "linkedin" : pid;
-    }).filter(Boolean))];
-    onPlatformsChange(platformIds);
+    onPlatformsChange(derivePlatforms(filtered));
+    syncRealIds(filtered);
   };
 
   const unselectAll = () => {
     setSelectedAccounts([]);
     onPlatformsChange([]);
+    syncRealIds([]);
   };
 
-  const filteredAccounts = DEMO_ACCOUNTS.filter(acc =>
-    acc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    acc.platformId.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredAccounts = ACCOUNTS.filter(acc =>
+    (acc.name ?? "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (acc.platformId ?? "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const toggleOptions = (id: string) => {
@@ -587,7 +631,7 @@ export default function PostComposer({
   };
 
   // Get unique raw platform IDs from selected accounts (including sub-types)
-  const rawPlatformIds = [...new Set(selectedAccounts.map(id => DEMO_ACCOUNTS.find(a => a.id === id)?.platformId).filter(Boolean))] as string[];
+  const rawPlatformIds = [...new Set(selectedAccounts.map(id => ACCOUNTS.find(a => a.id === id)?.platformId).filter(Boolean))] as string[];
 
 
   const activeCharLimit = selectedPlatforms.length > 0
@@ -649,13 +693,13 @@ export default function PostComposer({
             {selectedAccounts.length > 0 ? (
               <div className="flex -space-x-1.5 overflow-x-auto">
                 {selectedAccounts.map((accId) => {
-                  const acc = DEMO_ACCOUNTS.find(a => a.id === accId);
+                  const acc = ACCOUNTS.find(a => a.id === accId);
                   if (!acc) return null;
                   const platform = getPlatformForAccount(acc.platformId);
                   return (
                     <div key={accId} className="relative shrink-0">
-                      <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-sm font-bold border-2 border-card">
-                        {acc.name.charAt(0).toUpperCase()}
+                      <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-sm font-bold border-2 border-card overflow-hidden">
+                        {acc.profilePic ? <img src={acc.profilePic} alt="" className="w-full h-full object-cover" /> : (acc.name ?? "?").charAt(0).toUpperCase()}
                       </div>
                       <div className={cn("absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-primary-foreground border border-card", platform?.color)}>
                         {platform?.icon}
@@ -737,8 +781,8 @@ export default function PostComposer({
 
                     {/* Avatar with platform badge */}
                     <div className="relative shrink-0">
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold">
-                        {acc.name.charAt(0).toUpperCase()}
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold overflow-hidden">
+                        {acc.profilePic ? <img src={acc.profilePic} alt="" className="w-full h-full object-cover" /> : (acc.name ?? "?").charAt(0).toUpperCase()}
                       </div>
                       <div className={cn("absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-primary-foreground border-2 border-card", platform?.color)}>
                         <PlatformIcon platformId={acc.platformId} size={10} />
@@ -1639,10 +1683,10 @@ export default function PostComposer({
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2 sm:gap-3">
-        <Button variant="accent" className="flex-1 min-w-[100px] sm:min-w-[140px] text-xs sm:text-sm"><Save className="w-4 h-4" /> Save Draft</Button>
-        <Button variant="success" className="flex-1 min-w-[100px] sm:min-w-[140px] text-xs sm:text-sm" onClick={() => setScheduleOpen(true)}><CalendarDays className="w-4 h-4" /> Schedule Post</Button>
-        <Button className="flex-1 min-w-[100px] sm:min-w-[140px] text-xs sm:text-sm"><Send className="w-4 h-4" /> Post Now</Button>
-        <Button variant="outline" className="min-w-[80px] sm:min-w-[120px] text-xs sm:text-sm"><ListOrdered className="w-4 h-4" /> Queue</Button>
+        <Button variant="accent" className="flex-1 min-w-[100px] sm:min-w-[140px] text-xs sm:text-sm" disabled={isSubmitting || selectedAccounts.length === 0} onClick={onSaveDraft}><Save className="w-4 h-4" /> Save Draft</Button>
+        <Button variant="success" className="flex-1 min-w-[100px] sm:min-w-[140px] text-xs sm:text-sm" disabled={isSubmitting || selectedAccounts.length === 0} onClick={() => setScheduleOpen(true)}><CalendarDays className="w-4 h-4" /> Schedule Post</Button>
+        <Button className="flex-1 min-w-[100px] sm:min-w-[140px] text-xs sm:text-sm" disabled={isSubmitting || selectedAccounts.length === 0 || !content.trim()} onClick={onPostNow}><Send className="w-4 h-4" /> Post Now</Button>
+        <Button variant="outline" className="min-w-[80px] sm:min-w-[120px] text-xs sm:text-sm" disabled={isSubmitting || selectedAccounts.length === 0}><ListOrdered className="w-4 h-4" /> Queue</Button>
       </div>
 
       {/* Image Picker Dialog */}
@@ -2331,7 +2375,18 @@ export default function PostComposer({
 
           <Button
             className="w-full mt-2"
-            onClick={() => setScheduleOpen(false)}
+            disabled={isSubmitting}
+            onClick={() => {
+              if (onSchedulePost) {
+                // Convert DD/MM/YYYY to YYYY-MM-DD
+                const parts = scheduleDate.split('/');
+                if (parts.length === 3) {
+                  const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                  onSchedulePost(isoDate, scheduleTime);
+                }
+              }
+              setScheduleOpen(false);
+            }}
           >
             Post
           </Button>
