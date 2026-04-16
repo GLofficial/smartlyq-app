@@ -6,6 +6,7 @@ import { Save, Settings } from "lucide-react";
 import { useAdminSettings, useSaveAdminSettings, useAdminModels } from "@/api/admin-settings";
 import { useAdminPlans } from "@/api/admin";
 import { TAB_FIELDS, type FieldDef } from "./settings-field-config";
+import { ModelSelectField, type ModelOption } from "./model-select-field";
 import { toast } from "sonner";
 import { cn } from "@/lib/cn";
 import { SocialOAuthTab } from "./social-oauth/social-oauth-tab";
@@ -25,6 +26,10 @@ const TABS = [
 	{ key: "finance", label: "Finance" },
 	{ key: "theme", label: "Theme" },
 ];
+
+const GPT_MODEL_KEYS   = ["default_template_model", "default_chat_model", "default_analyst_model", "default_article_model"];
+const IMAGE_MODEL_KEYS = ["default_image_model"];
+const MODEL_SELECT_KEYS = [...GPT_MODEL_KEYS, ...IMAGE_MODEL_KEYS];
 
 export function AdminSettingsPage() {
 	const [activeTab, setActiveTab] = useState("general");
@@ -56,16 +61,12 @@ export function AdminSettingsPage() {
 		...(plansData?.plans ?? []).map((p) => ({ value: String(p.id), label: p.name })),
 	];
 
-	const modelOptions = [
-		{ value: "", label: "— select model —" },
-		...(modelsData?.models ?? []).map((m) => ({ value: m.model, label: m.name })),
-	];
-
-	const DEFAULT_MODEL_KEYS = ["default_template_model", "default_chat_model", "default_analyst_model", "default_article_model", "default_image_model"];
+	const allModels: ModelOption[] = modelsData?.models ?? [];
+	const gptModels   = allModels.filter((m) => m.type === "GPT");
+	const imageModels = allModels.filter((m) => m.type === "Image");
 
 	const fields = (TAB_FIELDS[activeTab] ?? []).map((f) => {
 		if (f.key === "free_plan") return { ...f, options: planOptions };
-		if (DEFAULT_MODEL_KEYS.includes(f.key)) return { ...f, options: modelOptions };
 		return f;
 	});
 
@@ -131,6 +132,15 @@ export function AdminSettingsPage() {
 																)}
 															</p>
 														)}
+													</div>
+												) : MODEL_SELECT_KEYS.includes(f.key) ? (
+													<div className="space-y-1.5">
+														<label className="text-sm font-medium text-[var(--foreground)]">{f.label}</label>
+														<ModelSelectField
+															value={values[f.key] ?? ""}
+															options={IMAGE_MODEL_KEYS.includes(f.key) ? imageModels : gptModels}
+															onChange={(v) => update(f.key, v)}
+														/>
 													</div>
 												) : (
 													<SettingField field={f} value={values[f.key] ?? ""} onChange={(v) => update(f.key, v)} />

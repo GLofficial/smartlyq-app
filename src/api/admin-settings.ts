@@ -16,7 +16,7 @@ export function useAdminModels() {
 	return useQuery({
 		queryKey: ["admin", "models"],
 		queryFn: () =>
-			apiClient.get<{ models: { model: string; name: string }[] }>("/api/spa/admin/models"),
+			apiClient.get<{ models: { model: string; name: string; type: string; provider: string }[] }>("/api/spa/admin/models"),
 		staleTime: 5 * 60 * 1000,
 	});
 }
