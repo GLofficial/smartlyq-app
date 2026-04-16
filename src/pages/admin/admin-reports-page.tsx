@@ -121,9 +121,9 @@ export function AdminReportsPage() {
 			{/* Top Accounts */}
 			<Section title="Top Accounts by Credit Burn" loading={top.isLoading}>
 				<DataTable
-					headers={["User", "Email", "Credits Burned", "Calls"]}
+					headers={["User ID", "Name", "Email", "Credits Burned", "Calls"]}
 					rows={top.data?.data ?? []}
-					render={(r) => [r.user_name || `#${r.user_id}`, r.user_email, fmtN(r.credits_burn_sqc), fmtN(r.success_count)]}
+					render={(r) => [r.user_id, r.user_name, r.user_email, fmtN(r.credits_burn_sqc), fmtN(r.success_count)]}
 				/>
 			</Section>
 
@@ -140,9 +140,9 @@ export function AdminReportsPage() {
 			{/* Tenant AI Usage */}
 			<Section title="Tenant AI Usage" loading={tenantsAi.isLoading}>
 				<DataTable
-					headers={["Tenant", "Calls OK", "Errors", "Credits", "Revenue", "Cost"]}
+					headers={["Tenant ID", "Tenant Name", "Calls OK", "Errors", "Credits", "Revenue", "Cost"]}
 					rows={tenantsAi.data?.data ?? []}
-					render={(r) => [r.tenant_name || `#${r.tenant_id}`, fmtN(r.success_count), fmtN(r.error_count),
+					render={(r) => [r.tenant_id, r.tenant_name, fmtN(r.success_count), fmtN(r.error_count),
 						fmtN(r.credits_net_sqc), `$${fmt2(r.revenue_usd)}`, `$${fmt2(r.vendor_cost_usd)}`]}
 				/>
 			</Section>
