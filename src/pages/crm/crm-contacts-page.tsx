@@ -15,12 +15,14 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Trash2, ArrowUpDown, Loader2, Upload, Download, RotateCcw, ChevronLeft, ChevronRight, Mail, Phone, Tag, Building2 } from "lucide-react";
+import { Search, Plus, Trash2, ArrowUpDown, Loader2, Upload, Download, RotateCcw, ChevronLeft, ChevronRight, Tag, SlidersHorizontal, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { ContactDetailSheet } from "./components/contact-detail-sheet";
 import { ContactCreateDialog } from "./components/contact-create-dialog";
 import { ContactImportDialog } from "./components/contact-import-dialog";
 import { DeletedContactsDialog } from "./components/deleted-contacts-dialog";
+import { ManageFieldsPanel, getDefaultFields, type FieldConfig } from "./components/manage-fields-panel";
+import { AdvancedFiltersPanel, type FilterRule } from "./components/advanced-filters-panel";
 
 const STATUS_STYLE: Record<string, string> = {
   active: "bg-green-50 text-green-700 border-green-200",
@@ -42,6 +44,10 @@ export function CrmContactsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [tagFilter, setTagFilter] = useState<string>("");
   const [sortKey, setSortKey] = useState<string>("name");
+  const [fields, setFields] = useState<FieldConfig[]>(getDefaultFields);
+  const [manageFieldsOpen, setManageFieldsOpen] = useState(false);
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
+  const [filterRules, setFilterRules] = useState<FilterRule[]>([]);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   // Debounce search to avoid API call per keystroke
@@ -64,7 +70,8 @@ export function CrmContactsPage() {
 
   const contacts = data?.contacts ?? [];
   const pagination = data?.pagination ?? { page: 1, limit: 50, total: 0, pages: 1 };
-  const availableTags = (data as any)?.available_tags ?? [];
+  const availableTags: string[] = (data as any)?.available_tags ?? [];
+  const visibleFields = fields.filter((f: FieldConfig) => f.visible);
 
   // Client-side sort (server returns page, we sort within page for instant feedback)
   const sorted = [...contacts].sort((a, b) => {
@@ -106,6 +113,48 @@ export function CrmContactsPage() {
     setPage(1);
   }
 
+  function handleApplyFilters() {
+    // Build tag filter from advanced filter rules
+    const tagRule = filterRules.find((r) => r.field === "tags" && r.value);
+    setTagFilter(tagRule?.value ?? "");
+    // Build status from advanced filter rules
+    const statusRule = filterRules.find((r) => r.field === "status" && r.value);
+    if (statusRule) setStatusFilter(statusRule.value);
+    setPage(1);
+  }
+
+  function renderCell(key: string, c: ApiContact): React.ReactNode {
+    switch (key) {
+      case "name": return (
+        <div className="flex items-center gap-3">
+          {c.avatar ? <img src={c.avatar} alt={c.name} className="h-8 w-8 rounded-full object-cover shrink-0" />
+            : <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--sq-primary)]/10 text-[var(--sq-primary)] text-xs font-bold shrink-0">{c.initials || c.name.slice(0, 2).toUpperCase()}</div>}
+          <p className="text-sm font-medium truncate">{c.name}</p>
+        </div>
+      );
+      case "email": return <span className="text-xs text-[var(--muted-foreground)]">{c.email || "—"}</span>;
+      case "phone": return <span className="text-xs text-[var(--muted-foreground)]">{c.phone || "—"}</span>;
+      case "company": return <span className="text-xs">{c.company || "—"}</span>;
+      case "role": return <span className="text-xs text-[var(--muted-foreground)]">{c.role || "—"}</span>;
+      case "status": return <Badge variant="outline" className={STATUS_STYLE[c.status] ?? ""}>{STATUS_LABEL[c.status] ?? c.status}</Badge>;
+      case "contact_type": return <span className="text-xs text-[var(--muted-foreground)]">{(c as any).contact_type || "—"}</span>;
+      case "timezone": return <span className="text-xs text-[var(--muted-foreground)]">{(c as any).timezone || "—"}</span>;
+      case "created_at": return <span className="text-xs text-[var(--muted-foreground)]">{formatDate(c.created_at)}</span>;
+      case "last_contacted_at": return <span className="text-xs text-[var(--muted-foreground)]">{c.last_contacted_at ? timeAgo(c.last_contacted_at) : "—"}</span>;
+      case "tags": return (
+        <div className="flex flex-wrap gap-1">
+          {c.tags.slice(0, 2).map((t) => <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0 bg-[var(--muted)]"><Tag className="w-2.5 h-2.5 mr-0.5" />{t}</Badge>)}
+          {c.tags.length > 2 && <span className="text-[10px] text-[var(--muted-foreground)]">+{c.tags.length - 2}</span>}
+        </div>
+      );
+      case "deals": return <span className="text-xs">{c.deal_count > 0 ? `${c.deal_count} deal${c.deal_count > 1 ? "s" : ""}` : "None"}</span>;
+      case "secondary_email": return <span className="text-xs text-[var(--muted-foreground)]">{(c as any).secondary_email || "—"}</span>;
+      case "secondary_phone": return <span className="text-xs text-[var(--muted-foreground)]">{(c as any).secondary_phone || "—"}</span>;
+      case "phone_country_code": return <span className="text-xs text-[var(--muted-foreground)]">{(c as any).phone_country_code || "—"}</span>;
+      default: return "—";
+    }
+  }
+
   const selectedContact = selectedContactId ? contacts.find((c) => c.id === selectedContactId) ?? null : null;
   const startRow = (pagination.page - 1) * pagination.limit + 1;
   const endRow = Math.min(pagination.page * pagination.limit, pagination.total);
@@ -142,15 +191,13 @@ export function CrmContactsPage() {
             <SelectItem value="lost">Lost</SelectItem>
           </SelectContent>
         </Select>
-        {availableTags.length > 0 && (
-          <Select value={tagFilter || "all"} onValueChange={(v) => { setTagFilter(v === "all" ? "" : v); setPage(1); }}>
-            <SelectTrigger className="w-[170px]"><SelectValue placeholder="All tags" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All tags</SelectItem>
-              {availableTags.map((t: string) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        )}
+        <Button variant="outline" size="sm" onClick={() => setAdvancedFiltersOpen(true)} className="gap-1.5">
+          <SlidersHorizontal size={14} /> Advanced Filters
+          {filterRules.length > 0 && <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--sq-primary)] text-[9px] text-white">{filterRules.length}</span>}
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setManageFieldsOpen(true)} className="gap-1.5">
+          <Settings2 size={14} /> Manage Fields
+        </Button>
       </div>
 
       {/* Table */}
@@ -162,55 +209,27 @@ export function CrmContactsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead><button onClick={() => toggleSort("name")} className="flex items-center gap-1 hover:text-[var(--foreground)]">Contact <ArrowUpDown className="w-3.5 h-3.5" /></button></TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead><button onClick={() => toggleSort("company")} className="flex items-center gap-1 hover:text-[var(--foreground)]">Company <ArrowUpDown className="w-3.5 h-3.5" /></button></TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead><button onClick={() => toggleSort("status")} className="flex items-center gap-1 hover:text-[var(--foreground)]">Status <ArrowUpDown className="w-3.5 h-3.5" /></button></TableHead>
-                  <TableHead><button onClick={() => toggleSort("created")} className="flex items-center gap-1 hover:text-[var(--foreground)]">Created <ArrowUpDown className="w-3.5 h-3.5" /></button></TableHead>
-                  <TableHead>Last Activity</TableHead>
-                  <TableHead>Tags</TableHead>
-                  <TableHead>Deals</TableHead>
+                  {visibleFields.map((f) => (
+                    <TableHead key={f.key}>
+                      {["name", "company", "status", "created_at"].includes(f.key) ? (
+                        <button onClick={() => toggleSort(f.key === "created_at" ? "created" : f.key)} className="flex items-center gap-1 hover:text-[var(--foreground)]">
+                          {f.label} <ArrowUpDown className="w-3.5 h-3.5" />
+                        </button>
+                      ) : f.label}
+                    </TableHead>
+                  ))}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sorted.length === 0 && (
-                  <TableRow><TableCell colSpan={11} className="text-center py-8 text-[var(--muted-foreground)]">No contacts found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={visibleFields.length + 1} className="text-center py-8 text-[var(--muted-foreground)]">No contacts found.</TableCell></TableRow>
                 )}
                 {sorted.map((c) => (
                   <TableRow key={c.id} className="cursor-pointer hover:bg-[var(--muted)]/30" onClick={() => setSelectedContactId(c.id)}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        {c.avatar ? (
-                          <img src={c.avatar} alt={c.name} className="h-8 w-8 rounded-full object-cover shrink-0" />
-                        ) : (
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--sq-primary)]/10 text-[var(--sq-primary)] text-xs font-bold shrink-0">
-                            {c.initials || c.name.slice(0, 2).toUpperCase()}
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{c.name}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{c.email && <span className="flex items-center gap-1 text-xs text-[var(--muted-foreground)]"><Mail className="w-3 h-3" />{c.email}</span>}</TableCell>
-                    <TableCell>{c.phone && <span className="flex items-center gap-1 text-xs text-[var(--muted-foreground)]"><Phone className="w-3 h-3" />{c.phone}</span>}</TableCell>
-                    <TableCell>{c.company && <span className="flex items-center gap-1 text-xs"><Building2 className="w-3 h-3 text-[var(--muted-foreground)]" />{c.company}</span>}</TableCell>
-                    <TableCell><span className="text-xs text-[var(--muted-foreground)]">{c.role || "—"}</span></TableCell>
-                    <TableCell><Badge variant="outline" className={STATUS_STYLE[c.status] ?? ""}>{STATUS_LABEL[c.status] ?? c.status}</Badge></TableCell>
-                    <TableCell><span className="text-xs text-[var(--muted-foreground)]">{formatDate(c.created_at)}</span></TableCell>
-                    <TableCell><span className="text-xs text-[var(--muted-foreground)]">{c.last_contacted_at ? timeAgo(c.last_contacted_at) : "—"}</span></TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {c.tags.slice(0, 2).map((t) => (
-                          <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0 bg-[var(--muted)]"><Tag className="w-2.5 h-2.5 mr-0.5" />{t}</Badge>
-                        ))}
-                        {c.tags.length > 2 && <span className="text-[10px] text-[var(--muted-foreground)]">+{c.tags.length - 2}</span>}
-                      </div>
-                    </TableCell>
-                    <TableCell><span className="text-xs">{c.deal_count > 0 ? `${c.deal_count} deal${c.deal_count > 1 ? "s" : ""}` : "None"}</span></TableCell>
+                    {visibleFields.map((f: FieldConfig) => (
+                      <TableCell key={f.key}>{renderCell(f.key, c)}</TableCell>
+                    ))}
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setDeleteTarget(c); }}>
                         <Trash2 className="w-3.5 h-3.5" />
@@ -285,6 +304,8 @@ export function CrmContactsPage() {
       </AlertDialog>
       <ContactImportDialog open={importOpen} onOpenChange={setImportOpen} />
       <DeletedContactsDialog open={deletedOpen} onOpenChange={setDeletedOpen} />
+      <ManageFieldsPanel open={manageFieldsOpen} onClose={() => setManageFieldsOpen(false)} fields={fields} onFieldsChange={setFields} />
+      <AdvancedFiltersPanel open={advancedFiltersOpen} onClose={() => setAdvancedFiltersOpen(false)} filters={filterRules} onFiltersChange={setFilterRules} onApply={handleApplyFilters} availableTags={availableTags} />
     </div>
   );
 }
