@@ -7,6 +7,7 @@ import { useWorkspaceStore } from "@/stores/workspace-store";
 import { apiClient } from "@/lib/api-client";
 import { STORAGE_KEYS } from "@/lib/constants";
 import { toast } from "sonner";
+import { queryClient } from "@/lib/query-client";
 import type { Workspace } from "@/lib/types";
 
 export function WorkspaceSwitcher() {
@@ -88,12 +89,13 @@ export function WorkspaceSwitcher() {
 				{ workspace_id: wsId },
 			);
 			localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, res.access_token);
+
+			// Clear all cached data BEFORE updating state — prevents components
+			// from re-rendering and reading stale cache from the old workspace
+			queryClient.clear();
+
 			setActiveWorkspace(wsId, res.active_workspace_hash);
 			setOpen(false);
-
-			// Clear all cached data from the previous workspace to prevent data leaks
-			const { queryClient } = await import("@/lib/query-client");
-			queryClient.clear();
 
 			// Navigate to same subpath under new workspace hash (no full reload)
 			const currentSubpath = location.pathname.replace(/^\/w\/[A-Za-z0-9_-]{22}\/?/, "");

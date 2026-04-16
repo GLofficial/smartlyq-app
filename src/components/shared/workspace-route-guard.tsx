@@ -3,6 +3,7 @@ import { Outlet, useParams } from "react-router-dom";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { apiClient } from "@/lib/api-client";
+import { queryClient } from "@/lib/query-client";
 import { STORAGE_KEYS } from "@/lib/constants";
 
 /**
@@ -44,13 +45,13 @@ export function WorkspaceRouteGuard() {
 				"/api/spa/workspace/switch-by-hash",
 				{ hash_id: hashId },
 			)
-			.then(async (res) => {
+			.then((res) => {
 				if (inflightRef.current !== hashId) return; // Stale response
 				localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, res.access_token);
-				setActiveWorkspace(res.active_workspace_id, res.active_workspace_hash);
-				// Clear all cached data from the previous workspace to prevent data leaks
-				const { queryClient } = await import("@/lib/query-client");
+				// Clear all cached data BEFORE updating state — prevents components
+				// from re-rendering and reading stale cache from the old workspace
 				queryClient.clear();
+				setActiveWorkspace(res.active_workspace_id, res.active_workspace_hash);
 			})
 			.catch(() => {
 				if (inflightRef.current !== hashId) return;
