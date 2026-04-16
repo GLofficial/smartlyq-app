@@ -144,23 +144,42 @@ export const TAB_FIELDS: Record<string, FieldDef[]> = {
 		], half: true },
 	],
 	openai: [
-		{ key: "_ai_providers", label: "AI Providers", type: "heading" },
-		{ key: "openai_apikey", label: "OpenAI API Key", type: "password", half: true },
-		{ key: "anthropic_apikey", label: "Anthropic API Key", type: "password", half: true },
-		{ key: "anthropic_api_version", label: "Anthropic API Version (header)", type: "text", placeholder: "2023-06-01", half: true },
-		{ key: "gemini_apikey", label: "Google Gemini API Key", type: "password", half: true },
-		{ key: "deepseek_apikey", label: "DeepSeek API Key", type: "password", half: true },
-		{ key: "xai_apikey", label: "xAI (Grok) API Key", type: "password", half: true },
+		// Per-provider sections with console links
+		{ key: "_openai", label: "OpenAI", type: "heading",
+		  description: "Get your API key from", link: { label: "platform.openai.com", url: "https://platform.openai.com/api-keys" } },
+		{ key: "openai_apikey", label: "API Key", type: "password" },
 
+		{ key: "_anthropic", label: "Anthropic", type: "heading",
+		  description: "Get your API key from", link: { label: "console.anthropic.com", url: "https://console.anthropic.com/" } },
+		{ key: "anthropic_apikey", label: "API Key", type: "password", half: true },
+		{ key: "anthropic_api_version", label: "API Version (header)", type: "text", placeholder: "2023-06-01", half: true },
+
+		{ key: "_gemini", label: "Google Gemini", type: "heading",
+		  description: "Get your API key from", link: { label: "aistudio.google.com", url: "https://aistudio.google.com/app/apikey" } },
+		{ key: "gemini_apikey", label: "API Key", type: "password" },
+
+		{ key: "_deepseek", label: "DeepSeek", type: "heading",
+		  description: "Get your API key from", link: { label: "platform.deepseek.com", url: "https://platform.deepseek.com/api_keys" } },
+		{ key: "deepseek_apikey", label: "API Key", type: "password", half: true },
+
+		{ key: "_xai", label: "xAI / Grok", type: "heading",
+		  description: "Get your API key from", link: { label: "console.x.ai", url: "https://console.x.ai/" } },
+		{ key: "xai_apikey", label: "API Key", type: "password", half: true },
+
+		// Image generation
 		{ key: "_image_gen", label: "Image Generation", type: "heading" },
 		{ key: "bfl_apikey", label: "BFL (Flux) API Key", type: "password", half: true },
 		{ key: "recraft_apikey", label: "Recraft API Key", type: "password", half: true },
-		{ key: "unsplash_apikey", label: "Unsplash API Key", type: "password", half: true },
-		{ key: "pixabay_apikey", label: "Pixabay API Key", type: "password", half: true },
+		{ key: "unsplash_apikey", label: "Unsplash API Key", type: "password", half: true,
+		  description: "Stock photo integration for image search." },
+		{ key: "pixabay_apikey", label: "Pixabay API Key", type: "password", half: true,
+		  description: "Stock photo integration for image search." },
 
+		// Video
 		{ key: "_video", label: "Video", type: "heading" },
 		{ key: "pollo_apikey", label: "Pollo AI API Key", type: "password", half: true },
 
+		// Research & Web
 		{ key: "_research", label: "Research & Web", type: "heading" },
 		{ key: "youtube_apikey", label: "YouTube API Key", type: "password", half: true },
 		{ key: "search_engine_apikey", label: "Google Search API Key", type: "password", half: true },
@@ -169,21 +188,24 @@ export const TAB_FIELDS: Record<string, FieldDef[]> = {
 		{ key: "tavily_apikey", label: "Tavily API Key", type: "password", half: true },
 		{ key: "apify_token", label: "Apify Token", type: "password", half: true },
 
+		// Audio
 		{ key: "_audio", label: "Audio / Transcription", type: "heading" },
 		{ key: "deepgram_apikey", label: "Deepgram API Key", type: "password", half: true },
 		{ key: "deepgram_model", label: "Deepgram Model", type: "text", placeholder: "nova-2", half: true },
 
+		// SEO
 		{ key: "_seo", label: "SEO / Analytics", type: "heading" },
 		{ key: "dataforseo_login", label: "DataForSEO Login", type: "text", half: true },
 		{ key: "dataforseo_password", label: "DataForSEO Password", type: "password", half: true },
 
+		// Default models — options injected dynamically from models table
 		{ key: "_default_models", label: "Default Models", type: "heading",
-		  description: "Set which AI model is used by default for each feature. Enter the model ID (e.g. gpt-4o, claude-3-5-sonnet-20241022)." },
-		{ key: "default_template_model", label: "Templates", type: "text", placeholder: "gpt-4o-mini", half: true },
-		{ key: "default_chat_model", label: "Assistant (Chat)", type: "text", placeholder: "gpt-4o", half: true },
-		{ key: "default_analyst_model", label: "Data Analyst", type: "text", placeholder: "gpt-4o", half: true },
-		{ key: "default_article_model", label: "Article Generator", type: "text", placeholder: "gpt-4o-mini", half: true },
-		{ key: "default_image_model", label: "Image Generator", type: "text", placeholder: "dall-e-3", half: true },
+		  description: "Select which model is used by default for each feature." },
+		{ key: "default_template_model", label: "Templates", type: "select", options: [], half: true },
+		{ key: "default_chat_model", label: "Assistant (Chat)", type: "select", options: [], half: true },
+		{ key: "default_analyst_model", label: "Data Analyst", type: "select", options: [], half: true },
+		{ key: "default_article_model", label: "Article Generator", type: "select", options: [], half: true },
+		{ key: "default_image_model", label: "Image Generator", type: "select", options: [], half: true },
 	],
 	// social_oauth: handled by SocialOAuthTab component (reads social_oauth_providers table)
 	storage: [

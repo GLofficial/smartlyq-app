@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Save, Settings } from "lucide-react";
-import { useAdminSettings, useSaveAdminSettings } from "@/api/admin-settings";
+import { useAdminSettings, useSaveAdminSettings, useAdminModels } from "@/api/admin-settings";
 import { useAdminPlans } from "@/api/admin";
 import { TAB_FIELDS, type FieldDef } from "./settings-field-config";
 import { toast } from "sonner";
@@ -31,6 +31,7 @@ export function AdminSettingsPage() {
 	const saveMutation = useSaveAdminSettings();
 	const [values, setValues] = useState<Record<string, string>>({});
 	const { data: plansData } = useAdminPlans();
+	const { data: modelsData } = useAdminModels();
 
 	useEffect(() => {
 		if (data?.settings) setValues(data.settings);
@@ -54,9 +55,18 @@ export function AdminSettingsPage() {
 		...(plansData?.plans ?? []).map((p) => ({ value: String(p.id), label: p.name })),
 	];
 
-	const fields = (TAB_FIELDS[activeTab] ?? []).map((f) =>
-		f.key === "free_plan" ? { ...f, options: planOptions } : f
-	);
+	const modelOptions = [
+		{ value: "", label: "— select model —" },
+		...(modelsData?.models ?? []).map((m) => ({ value: m.model, label: m.name })),
+	];
+
+	const DEFAULT_MODEL_KEYS = ["default_template_model", "default_chat_model", "default_analyst_model", "default_article_model", "default_image_model"];
+
+	const fields = (TAB_FIELDS[activeTab] ?? []).map((f) => {
+		if (f.key === "free_plan") return { ...f, options: planOptions };
+		if (DEFAULT_MODEL_KEYS.includes(f.key)) return { ...f, options: modelOptions };
+		return f;
+	});
 
 	return (
 		<div className="space-y-6">
