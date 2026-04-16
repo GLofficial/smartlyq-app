@@ -497,7 +497,7 @@ export default function PostComposer({
   const [selectedVideoIdx, setSelectedVideoIdx] = useState<number | null>(null);
   const [imagePickerOpen, setImagePickerOpen] = useState(false);
   const [videoPickerOpen, setVideoPickerOpen] = useState(false);
-  const [selectedPickerItems, setSelectedPickerItems] = useState<number[]>([]);
+  const [selectedPickerItems, setSelectedPickerItems] = useState<string[]>([]);
   const [aiTextOpen, setAiTextOpen] = useState(false);
   const [aiImageOpen, setAiImageOpen] = useState(false);
   const [aiVideoOpen, setAiVideoOpen] = useState(false);
@@ -1763,11 +1763,11 @@ export default function PostComposer({
               <>
                 <div className="grid grid-cols-5 gap-2">
                   {mediaLibraryImages.map((item) => {
-                    const isSelected = selectedPickerItems.includes(Number(item.id));
+                    const isSelected = selectedPickerItems.includes(String(item.id));
                     return (
                       <button
                         key={item.id}
-                        onClick={() => setSelectedPickerItems(prev => isSelected ? prev.filter(x => x !== Number(item.id)) : prev.length < 10 ? [...prev, Number(item.id)] : prev)}
+                        onClick={() => setSelectedPickerItems(prev => prev.includes(String(item.id)) ? prev.filter(x => x !== String(item.id)) : prev.length < 10 ? [...prev, String(item.id)] : prev)}
                         className={cn("relative aspect-square rounded-lg bg-muted overflow-hidden border-2 transition-all hover:opacity-80", isSelected ? "border-primary ring-1 ring-primary" : "border-transparent")}
                       >
                         <img src={item.preview_url || item.url} alt={item.name} className="w-full h-full object-cover" />
@@ -1788,7 +1788,7 @@ export default function PostComposer({
               disabled={selectedPickerItems.length === 0}
               onClick={() => {
                 selectedPickerItems.forEach(itemId => {
-                  const item = mediaLibraryImages?.find(m => Number(m.id) === itemId);
+                  const item = mediaLibraryImages?.find(m => String(m.id) === itemId);
                   if (item) {
                     setUploadedMedia(prev => [...prev, { id: `lib-${item.id}`, type: "image", name: item.name, url: item.url }]);
                   }
@@ -1841,11 +1841,11 @@ export default function PostComposer({
               <>
                 <div className="grid grid-cols-5 gap-2">
                   {mediaLibraryVideos.map((item) => {
-                    const isSelected = selectedPickerItems.includes(Number(item.id));
+                    const isSelected = selectedPickerItems.includes(String(item.id));
                     return (
                       <button
                         key={item.id}
-                        onClick={() => setSelectedPickerItems(prev => isSelected ? prev.filter(x => x !== Number(item.id)) : prev.length < 10 ? [...prev, Number(item.id)] : prev)}
+                        onClick={() => setSelectedPickerItems(prev => prev.includes(String(item.id)) ? prev.filter(x => x !== String(item.id)) : prev.length < 10 ? [...prev, String(item.id)] : prev)}
                         className={cn("relative aspect-square rounded-lg bg-muted overflow-hidden border-2 transition-all hover:opacity-80", isSelected ? "border-primary ring-1 ring-primary" : "border-transparent")}
                       >
                         {item.preview_url ? <img src={item.preview_url} alt={item.name} className="w-full h-full object-cover" /> : <Film className="w-6 h-6 text-muted-foreground/30 m-auto" />}
@@ -1867,7 +1867,7 @@ export default function PostComposer({
               disabled={selectedPickerItems.length === 0}
               onClick={() => {
                 selectedPickerItems.forEach(itemId => {
-                  const item = mediaLibraryVideos?.find(m => Number(m.id) === itemId);
+                  const item = mediaLibraryVideos?.find(m => String(m.id) === itemId);
                   if (item) {
                     setUploadedMedia(prev => [...prev, { id: `lib-${item.id}`, type: "video", name: item.name, url: item.url }]);
                   }
@@ -1892,15 +1892,12 @@ export default function PostComposer({
           <div className="space-y-5">
             <div>
               <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Model</label>
-              <div className="border border-border rounded-lg px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-muted/30 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold">✦</div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">GPT-4o Mini</p>
-                    <p className="text-xs text-muted-foreground">OpenAI text generation · 0.01 credits</p>
-                  </div>
+              <div className="border border-border rounded-lg px-4 py-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold">✦</div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">GPT-4o Mini</p>
+                  <p className="text-xs text-muted-foreground">OpenAI text generation · 0.01 credits</p>
                 </div>
-                <ChevronDown className="w-4 h-4 text-muted-foreground" />
               </div>
             </div>
 
@@ -2019,15 +2016,12 @@ export default function PostComposer({
           <div className="space-y-5">
             <div>
               <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Model</label>
-              <div className="border border-border rounded-lg px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-muted/30 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">◆</div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">DALL-E 3</p>
-                    <p className="text-xs text-muted-foreground">OpenAI image generation · 0.02 credits</p>
-                  </div>
+              <div className="border border-border rounded-lg px-4 py-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">◆</div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">DALL-E 3</p>
+                  <p className="text-xs text-muted-foreground">OpenAI image generation · 0.02 credits</p>
                 </div>
-                <ChevronDown className="w-4 h-4 text-muted-foreground" />
               </div>
             </div>
 
@@ -2114,15 +2108,12 @@ export default function PostComposer({
               </div>
               <div>
                 <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Model</label>
-                <div className="border border-border rounded-lg px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-muted/30 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-white text-[8px] font-bold">▶</div>
-                    <div>
-                      <p className="text-xs font-medium text-foreground">Pollo.ai</p>
-                      <p className="text-[10px] text-muted-foreground">AI video generation · 0.10 credits</p>
-                    </div>
+                <div className="border border-border rounded-lg px-3 py-2 flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-white text-[8px] font-bold">▶</div>
+                  <div>
+                    <p className="text-xs font-medium text-foreground">Pollo.ai</p>
+                    <p className="text-[10px] text-muted-foreground">AI video generation · 0.10 credits</p>
                   </div>
-                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
                 </div>
               </div>
             </div>

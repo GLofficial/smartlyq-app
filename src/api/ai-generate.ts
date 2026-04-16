@@ -12,7 +12,7 @@ export function useAiImage() {
 
 export function useAiRewrite() {
 	return useMutation({
-		mutationFn: (data: { content: string; tone?: string }) =>
+		mutationFn: (data: { content: string; tone?: string; brand_voice?: boolean; brand_id?: number; content_type?: string }) =>
 			apiClient.post<{ rewritten: string }>("/api/spa/ai/rewrite", data),
 	});
 }

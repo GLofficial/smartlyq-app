@@ -125,8 +125,8 @@ export function CreatePostPage() {
     [content, selectedPlatforms, selectedAccountIds, createPost, navigate, wsHash, validatePost],
   );
 
-  const handleAiText = useCallback(async (topic: string, tone: string) => {
-    const result = await aiRewrite.mutateAsync({ content: topic, tone });
+  const handleAiText = useCallback(async (topic: string, tone: string, contentType: string) => {
+    const result = await aiRewrite.mutateAsync({ content: topic, tone, content_type: contentType });
     return result.rewritten;
   }, [aiRewrite]);
 
