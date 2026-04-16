@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Workspace } from "@/lib/types";
+import { queryClient } from "@/lib/query-client";
 
 interface WorkspaceState {
 	workspaces: Workspace[];
@@ -17,6 +18,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
 		const activeWs = workspaces.find((w) => w.id === activeWorkspaceId);
 		set({ workspaces, activeWorkspaceId, activeWorkspaceHash: activeWs?.hash_id ?? null });
 	},
-	setActiveWorkspace: (activeWorkspaceId, activeWorkspaceHash) =>
-		set({ activeWorkspaceId, activeWorkspaceHash }),
+	setActiveWorkspace: (activeWorkspaceId, activeWorkspaceHash) => {
+		set({ activeWorkspaceId, activeWorkspaceHash });
+		// SECURITY: Clear ALL cached data when switching workspaces to prevent cross-workspace data leak
+		queryClient.clear();
+	},
 }));

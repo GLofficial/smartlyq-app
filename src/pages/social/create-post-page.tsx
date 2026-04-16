@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSocialHub, usePostingLimits } from "@/api/social";
+import { useMediaList } from "@/api/media-library";
 import { useCreatePost, type CreatePostData } from "@/api/social-posts";
 import { useAiRewrite, useAiImage } from "@/api/ai-generate";
 import { useGenerateVideo } from "@/api/video-gen";
@@ -29,6 +30,8 @@ export function CreatePostPage() {
   const { data: hubData, isLoading: hubLoading } = useSocialHub();
   const { data: limits } = usePostingLimits();
   const createPost = useCreatePost();
+  const { data: imageLib } = useMediaList(0, "image", "", 1);
+  const { data: videoLib } = useMediaList(0, "video", "", 1);
   const aiRewrite = useAiRewrite();
   const aiImage = useAiImage();
   const aiVideo = useGenerateVideo();
@@ -243,6 +246,8 @@ export function CreatePostPage() {
             onAiGenerateVideo={handleAiVideo}
             onMediaUpload={handleMediaUpload}
             onCanvaDesign={handleCanvaDesign}
+            mediaLibraryImages={imageLib?.files?.map(f => ({ id: f.id, url: f.url, preview_url: f.preview_url, name: f.name })) ?? []}
+            mediaLibraryVideos={videoLib?.files?.map(f => ({ id: f.id, url: f.url, preview_url: f.preview_url, name: f.name })) ?? []}
           />
           <PostPreview
             selectedPlatforms={selectedPlatforms}

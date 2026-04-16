@@ -399,6 +399,10 @@ interface PostComposerProps {
   onMediaUpload?: (file: File) => Promise<{ url: string; name: string; type: "image" | "video" }>;
   /** Canva callback — opens Canva editor */
   onCanvaDesign?: (width: string, height: string) => void;
+  /** Media library items for the picker grid */
+  mediaLibraryImages?: { id: string; url: string; preview_url: string; name: string }[];
+  mediaLibraryVideos?: { id: string; url: string; preview_url: string; name: string }[];
+  onLoadMoreMedia?: () => void;
 }
 
 function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
@@ -445,6 +449,9 @@ export default function PostComposer({
   onAiGenerateVideo,
   onMediaUpload,
   onCanvaDesign,
+  mediaLibraryImages,
+  mediaLibraryVideos,
+  onLoadMoreMedia,
 }: PostComposerProps) {
   // Map real accounts to the internal format used by the UI
   const useRealAccounts = Array.isArray(realAccounts) && realAccounts.length > 0;
@@ -1740,10 +1747,49 @@ export default function PostComposer({
                 e.target.value = "";
               }} />
             </label>
+
+            {/* Media Library Grid */}
+            {mediaLibraryImages && mediaLibraryImages.length > 0 && (
+              <>
+                <div className="grid grid-cols-5 gap-2">
+                  {mediaLibraryImages.map((item) => {
+                    const isSelected = selectedPickerItems.includes(Number(item.id));
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setSelectedPickerItems(prev => isSelected ? prev.filter(x => x !== Number(item.id)) : prev.length < 10 ? [...prev, Number(item.id)] : prev)}
+                        className={cn("relative aspect-square rounded-lg bg-muted overflow-hidden border-2 transition-all hover:opacity-80", isSelected ? "border-primary ring-1 ring-primary" : "border-transparent")}
+                      >
+                        <img src={item.preview_url || item.url} alt={item.name} className="w-full h-full object-cover" />
+                        <div className={cn("absolute top-2 left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors", isSelected ? "bg-primary border-primary" : "border-muted-foreground/40 bg-card/80")}>
+                          {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                {onLoadMoreMedia && <button className="text-sm text-primary font-medium mx-auto block hover:underline" onClick={onLoadMoreMedia}>Load More</button>}
+              </>
+            )}
           </div>
           <DialogFooter className="border-t border-border pt-4">
-            <Button variant="outline" className="text-destructive border-destructive/30" onClick={() => setImagePickerOpen(false)}>Cancel</Button>
-            <Button onClick={() => setImagePickerOpen(false)}>Done</Button>
+            <Button variant="outline" className="text-destructive border-destructive/30" onClick={() => { setImagePickerOpen(false); setSelectedPickerItems([]); }}>Cancel</Button>
+            <Button
+              disabled={selectedPickerItems.length === 0}
+              onClick={() => {
+                selectedPickerItems.forEach(itemId => {
+                  const item = mediaLibraryImages?.find(m => Number(m.id) === itemId);
+                  if (item) {
+                    setUploadedMedia(prev => [...prev, { id: `lib-${item.id}`, type: "image", name: item.name, url: item.url }]);
+                  }
+                });
+                onImageCountChange?.(uploadedMedia.length + selectedPickerItems.length);
+                setImagePickerOpen(false);
+                setSelectedPickerItems([]);
+              }}
+            >
+              Add to Post {selectedPickerItems.length > 0 && `(${selectedPickerItems.length})`}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1779,10 +1825,50 @@ export default function PostComposer({
                 e.target.value = "";
               }} />
             </label>
+
+            {/* Media Library Videos */}
+            {mediaLibraryVideos && mediaLibraryVideos.length > 0 && (
+              <>
+                <div className="grid grid-cols-5 gap-2">
+                  {mediaLibraryVideos.map((item) => {
+                    const isSelected = selectedPickerItems.includes(Number(item.id));
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setSelectedPickerItems(prev => isSelected ? prev.filter(x => x !== Number(item.id)) : prev.length < 10 ? [...prev, Number(item.id)] : prev)}
+                        className={cn("relative aspect-square rounded-lg bg-muted overflow-hidden border-2 transition-all hover:opacity-80", isSelected ? "border-primary ring-1 ring-primary" : "border-transparent")}
+                      >
+                        {item.preview_url ? <img src={item.preview_url} alt={item.name} className="w-full h-full object-cover" /> : <Film className="w-6 h-6 text-muted-foreground/30 m-auto" />}
+                        <div className="absolute inset-0 flex items-center justify-center"><div className="w-8 h-8 rounded-full bg-foreground/50 flex items-center justify-center"><Play className="w-4 h-4 text-card ml-0.5" /></div></div>
+                        <div className={cn("absolute top-2 left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors", isSelected ? "bg-primary border-primary" : "border-muted-foreground/40 bg-card/80")}>
+                          {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                {onLoadMoreMedia && <button className="text-sm text-primary font-medium mx-auto block hover:underline" onClick={onLoadMoreMedia}>Load More</button>}
+              </>
+            )}
           </div>
           <DialogFooter className="border-t border-border pt-4">
-            <Button variant="outline" className="text-destructive border-destructive/30" onClick={() => setVideoPickerOpen(false)}>Cancel</Button>
-            <Button onClick={() => setVideoPickerOpen(false)}>Done</Button>
+            <Button variant="outline" className="text-destructive border-destructive/30" onClick={() => { setVideoPickerOpen(false); setSelectedPickerItems([]); }}>Cancel</Button>
+            <Button
+              disabled={selectedPickerItems.length === 0}
+              onClick={() => {
+                selectedPickerItems.forEach(itemId => {
+                  const item = mediaLibraryVideos?.find(m => Number(m.id) === itemId);
+                  if (item) {
+                    setUploadedMedia(prev => [...prev, { id: `lib-${item.id}`, type: "video", name: item.name, url: item.url }]);
+                  }
+                });
+                onImageCountChange?.(uploadedMedia.length + selectedPickerItems.length);
+                setVideoPickerOpen(false);
+                setSelectedPickerItems([]);
+              }}
+            >
+              Add to Post {selectedPickerItems.length > 0 && `(${selectedPickerItems.length})`}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
