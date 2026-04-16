@@ -50,5 +50,21 @@ export function PlatformIcon({ platformId, size = 16, className }: { platformId:
   const brand = PLATFORM_BRANDS[platformId];
   if (!brand) return null;
   const IconComp = brand.Icon;
-  return <IconComp size={size} className={className} />;
+  return <IconComp size={size} className={className} style={{ display: "block" }} />;
+}
+
+/** Colored circle badge with platform icon inside — use for small badges on calendar cards, account strips, etc. */
+export function PlatformBadge({ platformId, size = 18 }: { platformId: string; size?: number }) {
+  const brand = PLATFORM_BRANDS[platformId];
+  if (!brand) return null;
+  const IconComp = brand.Icon;
+  const iconSize = Math.max(Math.round(size * 0.55), 8);
+  return (
+    <span
+      className="inline-flex items-center justify-center rounded-full shrink-0 text-white"
+      style={{ width: size, height: size, backgroundColor: brand.brandColor }}
+    >
+      <IconComp size={iconSize} style={{ display: "block" }} />
+    </span>
+  );
 }

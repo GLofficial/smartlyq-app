@@ -10,7 +10,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import type { EventInput, EventClickArg } from "@fullcalendar/core";
 import type { DateClickArg } from "@fullcalendar/interaction";
 // AppSidebar removed — we already have our own sidebar
-import { PLATFORM_BRANDS, PlatformIcon } from "./PlatformIcons";
+import { PLATFORM_BRANDS, PlatformIcon, PlatformBadge } from "./PlatformIcons";
 import { Bell, HelpCircle, Settings, Users, Search, ChevronLeft, ChevronRight, CalendarDays, Share2, Plus, X, ExternalLink, RotateCw, MinusCircle, Trash2, PenLine, AlertTriangle, Clock, CheckCircle2, FileEdit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -197,15 +197,9 @@ function StatusBadge({ status }: { status: string }) {
 function PlatformIcons({ platforms }: { platforms: { id: string }[] }) {
   return (
     <div className="flex items-center gap-0.5">
-      {platforms.map((p, i) => {
-        const brand = PLATFORM_BRANDS[p.id];
-        if (!brand) return null;
-        return (
-          <span key={i} className={cn("w-4 h-4 rounded-full flex items-center justify-center text-primary-foreground", brand.color)}>
-            <PlatformIcon platformId={p.id} size={9} />
-          </span>
-        );
-      })}
+      {platforms.map((p, i) => (
+        <PlatformBadge key={i} platformId={p.id} size={18} />
+      ))}
     </div>
   );
 }
@@ -487,7 +481,7 @@ export default function ContentCalendar() {
                         i === 0 ? "bg-[hsl(var(--facebook))]/10 border-[hsl(var(--facebook))]/30 text-foreground" : "border-border text-muted-foreground"
                       )}
                     >
-                      {brand && <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-primary-foreground", brand.color)}><PlatformIcon platformId={p.id} size={11} /></span>}
+                      <PlatformBadge platformId={p.id} size={20} />
                       {p.name}
                       {p.status === "published" && <CheckCircle2 className="w-4 h-4 text-success" />}
                       {p.status === "failed" && <X className="w-4 h-4 text-destructive" />}
@@ -501,11 +495,7 @@ export default function ContentCalendar() {
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    {PLATFORM_BRANDS[selectedPost.platforms[0]?.id] && (
-                      <span className={cn("w-6 h-6 rounded-full flex items-center justify-center text-primary-foreground", PLATFORM_BRANDS[selectedPost.platforms[0].id].color)}>
-                        <PlatformIcon platformId={selectedPost.platforms[0].id} size={12} />
-                      </span>
-                    )}
+                    {selectedPost.platforms[0]?.id && <PlatformBadge platformId={selectedPost.platforms[0].id} size={24} />}
                     <span className="text-sm font-semibold text-foreground">{selectedPost.platforms[0]?.name}</span>
                   </div>
                   <Button variant="outline" size="sm" className="gap-1.5 text-primary">
