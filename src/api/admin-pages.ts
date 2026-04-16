@@ -135,3 +135,20 @@ export function useAdminReports() {
 		queryFn: () => apiClient.get<{ total_users: number; total_posts: number; total_revenue: number; new_users_30d: number }>("/api/spa/admin/reports"),
 	});
 }
+
+export function useAdminReportFeed(feed: string, from: string, to: string) {
+	return useQuery({
+		queryKey: ["admin", "reports", "feed", feed, from, to],
+		queryFn: () => apiClient.get<{ feed: string; from: string; to: string; data: Record<string, unknown>[] }>(
+			`/api/spa/admin/reports/feed?feed=${feed}&from=${from}&to=${to}`
+		),
+		enabled: !!from && !!to,
+	});
+}
+
+export function useAdminReportsBackfill() {
+	return useMutation({
+		mutationFn: (body: { from: string; to: string }) =>
+			apiClient.post<{ ok: boolean; days: number; updated: number; failed: number }>("/api/spa/admin/reports/backfill", body),
+	});
+}
