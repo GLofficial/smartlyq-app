@@ -48,6 +48,7 @@ export function CreatePostPage() {
   const [imageCount, setImageCount] = useState(0);
   const [platformPostType, setPlatformPostType] = useState<Record<string, string>>({});
   const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
 
   useEffect(() => {
     if (state) window.history.replaceState({}, document.title);
@@ -106,7 +107,7 @@ export function CreatePostPage() {
           selected_accounts: selectedAccountIds,
           action,
           scheduled_time: scheduledTime ?? null,
-          media_urls: [],
+          media_urls: mediaUrls,
         },
         {
           onSuccess: () => {
@@ -150,11 +151,12 @@ export function CreatePostPage() {
         throw new Error("File too large");
       }
     }
+    // Use the SPA media upload endpoint (JWT-authenticated)
     const formData = new FormData();
     formData.append("file", file);
-    const result = await apiClient.upload<{ url: string; name: string; file_type: string }>("/my/social-media/upload", formData);
+    const result = await apiClient.upload<{ message: string; id: number; url: string; type: string }>("/api/spa/media/upload", formData);
     toast.success("Media uploaded");
-    return { url: result.url, name: result.name || file.name, type: (result.file_type === "video" ? "video" : "image") as "image" | "video" };
+    return { url: result.url, name: file.name, type: (result.type === "video" ? "video" : "image") as "image" | "video" };
   }, [limits]);
 
   const handleCanvaDesign = useCallback((width: string, height: string) => {
@@ -248,6 +250,7 @@ export function CreatePostPage() {
             onCanvaDesign={handleCanvaDesign}
             mediaLibraryImages={imageLib?.files?.map(f => ({ id: f.id, url: f.url, preview_url: f.preview_url, name: f.name })) ?? []}
             mediaLibraryVideos={videoLib?.files?.map(f => ({ id: f.id, url: f.url, preview_url: f.preview_url, name: f.name })) ?? []}
+            onUploadedMediaChange={(media) => setMediaUrls(media.filter(m => m.url).map(m => m.url!))}
           />
           <PostPreview
             selectedPlatforms={selectedPlatforms}

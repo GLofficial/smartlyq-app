@@ -403,6 +403,8 @@ interface PostComposerProps {
   mediaLibraryImages?: { id: string; url: string; preview_url: string; name: string }[];
   mediaLibraryVideos?: { id: string; url: string; preview_url: string; name: string }[];
   onLoadMoreMedia?: () => void;
+  /** Callback when uploaded media list changes — parent can track URLs for posting */
+  onUploadedMediaChange?: (media: { id: string; type: "image" | "video"; name: string; url?: string }[]) => void;
 }
 
 function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
@@ -452,6 +454,7 @@ export default function PostComposer({
   mediaLibraryImages,
   mediaLibraryVideos,
   onLoadMoreMedia,
+  onUploadedMediaChange,
 }: PostComposerProps) {
   // Map real accounts to the internal format used by the UI
   const useRealAccounts = Array.isArray(realAccounts) && realAccounts.length > 0;
@@ -469,7 +472,14 @@ export default function PostComposer({
   }, [useRealAccounts, realAccounts]);
 
   const [expandedOptions, setExpandedOptions] = useState<Record<string, boolean>>({});
-  const [uploadedMedia, setUploadedMedia] = useState<{ id: string; type: "image" | "video"; name: string }[]>([]);
+  const [uploadedMedia, setUploadedMediaRaw] = useState<{ id: string; type: "image" | "video"; name: string; url?: string }[]>([]);
+  const setUploadedMedia = useCallback((updater) => {
+    setUploadedMediaRaw(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      onUploadedMediaChange?.(next);
+      return next;
+    });
+  }, [onUploadedMediaChange]);
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const [platformPostType, setPlatformPostType] = useState<Record<string, string>>({});
   const [autoLike, setAutoLike] = useState<Record<string, boolean>>({});
