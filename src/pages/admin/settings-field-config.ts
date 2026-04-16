@@ -1,4 +1,4 @@
-export type FieldType = "text" | "textarea" | "password" | "select" | "toggle";
+export type FieldType = "text" | "textarea" | "password" | "select" | "toggle" | "heading";
 
 export interface FieldDef {
 	key: string;
@@ -149,6 +149,15 @@ export const TAB_FIELDS: Record<string, FieldDef[]> = {
 		  description: "This must match the API_SECRET_KEY environment variable set in Railway." },
 		{ key: "chatbot_railway_url", label: "Railway Service URL", type: "text", placeholder: "https://smartlyq-ai-production.up.railway.app",
 		  description: "The base URL of the AI chatbot service on Railway. Leave empty to use the default." },
+		{ key: "_managed_section", label: "Managed API Keys", type: "heading",
+		  description: "Provide platform-level AI keys so users can select \"Use SmartlyQ AI\" instead of bringing their own key. Usage is tracked per chatbot." },
+		{ key: "managed_key_enabled", label: "Enable Managed AI Keys", type: "select", options: [
+			{ value: "1", label: "Enabled" }, { value: "0", label: "Disabled" },
+		] },
+		{ key: "managed_openai_key", label: "Managed OpenAI API Key", type: "password", placeholder: "sk-...",
+		  description: "Platform OpenAI key used when users select \"Use SmartlyQ AI\"." },
+		{ key: "managed_anthropic_key", label: "Managed Anthropic API Key", type: "password", placeholder: "sk-ant-...",
+		  description: "Platform Anthropic key used when users select \"Use SmartlyQ AI\"." },
 	],
 	marketing: [
 		{ key: "google_analytics", label: "Google Analytics ID", type: "text", placeholder: "G-XXXXXXXXXX" },

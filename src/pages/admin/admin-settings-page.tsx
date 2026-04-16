@@ -96,8 +96,15 @@ export function AdminSettingsPage() {
 								<div className="space-y-5">
 									<div className="grid grid-cols-2 gap-x-4 gap-y-5">
 										{fields.map((f) => (
-											<div key={f.key} className={f.half ? "col-span-1" : "col-span-2"}>
-												<SettingField field={f} value={values[f.key] ?? ""} onChange={(v) => update(f.key, v)} />
+											<div key={f.key} className={f.type === "heading" || !f.half ? "col-span-2" : "col-span-1"}>
+												{f.type === "heading" ? (
+													<div className="border-t border-[var(--border)] pt-4 mt-1">
+														<p className="text-sm font-semibold text-[var(--foreground)]">{f.label}</p>
+														{f.description && <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">{f.description}</p>}
+													</div>
+												) : (
+													<SettingField field={f} value={values[f.key] ?? ""} onChange={(v) => update(f.key, v)} />
+												)}
 											</div>
 										))}
 									</div>
