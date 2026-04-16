@@ -47,10 +47,11 @@ export function CalendarEventCard({ eventInfo }: { eventInfo: EventContentArg })
 	if (isMonth) {
 		return (
 			<div className={`rounded-lg border ${borderColor} bg-[var(--card)] p-1.5 hover:shadow-md transition-shadow overflow-hidden`}>
-				{/* Thumbnail */}
+				{/* Thumbnail — hide on load error */}
 				{thumbnail && (
-					<div className="w-full aspect-video rounded overflow-hidden mb-1">
-						<img src={thumbnail} alt="" className="w-full h-full object-cover" loading="lazy" />
+					<div className="w-full aspect-video rounded overflow-hidden mb-1 bg-[var(--muted)]">
+						<img src={thumbnail} alt="" className="w-full h-full object-cover" loading="lazy"
+							onError={(e) => { (e.currentTarget as HTMLImageElement).parentElement!.style.display = "none"; }} />
 					</div>
 				)}
 				{/* Account name */}
@@ -80,7 +81,7 @@ export function CalendarEventCard({ eventInfo }: { eventInfo: EventContentArg })
 	// Week/Day/List view — horizontal compact card
 	return (
 		<div className={`flex items-center gap-2 rounded-md border ${borderColor} bg-[var(--card)] px-2 py-1 hover:shadow transition-shadow overflow-hidden`}>
-			{thumbnail && <img src={thumbnail} alt="" className="h-8 w-8 rounded object-cover shrink-0" loading="lazy" />}
+			{thumbnail && <img src={thumbnail} alt="" className="h-8 w-8 rounded object-cover shrink-0" loading="lazy" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
 			<div className="flex-1 min-w-0">
 				<div className="flex items-center gap-1">
 					{timeDisplay && <span className="text-[10px] text-[var(--muted-foreground)] shrink-0">{timeDisplay}</span>}
