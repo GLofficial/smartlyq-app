@@ -155,7 +155,7 @@ export function PreviewPanel({
         {/* Preview card */}
         <div className={cn("overflow-y-auto xl:max-h-[calc(100vh-240px)] pr-1", effectiveMode === "feed" && device === "mobile" && "max-w-[320px] mx-auto")}>
           {FeedComp ? (
-            <FeedComp content={displayContent} imageCount={imageCount} />
+            <FeedComp content={displayContent} media={[]} account={null} />
           ) : (
             <div className="bg-card rounded-lg border border-border p-4 text-center">
               <p className="text-sm text-muted-foreground">Preview not available for {currentPreview}</p>
