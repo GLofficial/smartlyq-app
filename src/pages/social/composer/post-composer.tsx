@@ -34,8 +34,9 @@ export function PostComposer(props: PostComposerProps) {
 	} = props;
 
 	// Derive selected platforms from selected accounts
+	const safeAccounts = Array.isArray(accounts) ? accounts : [];
 	const selectedPlatforms = [...new Set(
-		accounts.filter((a) => selectedAccountIds.includes(a.id)).map((a) => a.platform)
+		safeAccounts.filter((a) => a && selectedAccountIds.includes(a.id)).map((a) => a.platform).filter(Boolean)
 	)];
 
 	// Platform settings state

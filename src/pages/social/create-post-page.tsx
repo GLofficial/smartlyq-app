@@ -42,7 +42,7 @@ export function CreatePostPage() {
 	const createPost = useCreatePost();
 
 	const state = (location.state as LocationState) ?? {};
-	const accounts = hubData?.accounts ?? [];
+	const accounts = Array.isArray(hubData?.accounts) ? hubData.accounts : [];
 
 	const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
 	const [content, setContent] = useState(state.editPost?.content ?? "");
