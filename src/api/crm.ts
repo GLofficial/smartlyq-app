@@ -180,12 +180,16 @@ export function useCrmStagesSave() {
 
 // Deals
 
-export function useCrmDeals(stage?: string) {
+export function useCrmDeals(params?: { stage?: string; page?: number; limit?: number }) {
   return useQuery({
-    queryKey: ["crm", "deals", stage ?? "all"],
+    queryKey: ["crm", "deals", params ?? {}],
     queryFn: () => {
-      const url = stage ? `/api/spa/crm/deals?stage=${encodeURIComponent(stage)}` : "/api/spa/crm/deals";
-      return apiClient.get<{ deals: ApiDeal[] }>(url);
+      const sp = new URLSearchParams();
+      if (params?.stage) sp.set("stage", params.stage);
+      if (params?.page) sp.set("page", String(params.page));
+      if (params?.limit) sp.set("limit", String(params.limit));
+      const qs = sp.toString();
+      return apiClient.get<{ deals: ApiDeal[]; pagination: { page: number; limit: number; total: number; pages: number } }>(`/api/spa/crm/deals${qs ? `?${qs}` : ""}`);
     },
   });
 }
@@ -324,10 +328,16 @@ export function useCrmCommunicationDelete() {
 
 // Projects
 
-export function useCrmProjects() {
+export function useCrmProjects(params?: { page?: number; limit?: number }) {
   return useQuery({
-    queryKey: ["crm", "projects"],
-    queryFn: () => apiClient.get<{ projects: ApiProject[] }>("/api/spa/crm/projects"),
+    queryKey: ["crm", "projects", params ?? {}],
+    queryFn: () => {
+      const sp = new URLSearchParams();
+      if (params?.page) sp.set("page", String(params.page));
+      if (params?.limit) sp.set("limit", String(params.limit));
+      const qs = sp.toString();
+      return apiClient.get<{ projects: ApiProject[]; pagination: { page: number; limit: number; total: number; pages: number } }>(`/api/spa/crm/projects${qs ? `?${qs}` : ""}`);
+    },
   });
 }
 
@@ -394,12 +404,16 @@ export function useCrmContentItemStatus() {
 
 // Tasks
 
-export function useCrmTasks(status?: string) {
+export function useCrmTasks(params?: { status?: string; page?: number; limit?: number }) {
   return useQuery({
-    queryKey: ["crm", "tasks", status ?? "all"],
+    queryKey: ["crm", "tasks", params ?? {}],
     queryFn: () => {
-      const url = status ? `/api/spa/crm/tasks?status=${encodeURIComponent(status)}` : "/api/spa/crm/tasks";
-      return apiClient.get<{ tasks: ApiTask[] }>(url);
+      const sp = new URLSearchParams();
+      if (params?.status) sp.set("status", params.status);
+      if (params?.page) sp.set("page", String(params.page));
+      if (params?.limit) sp.set("limit", String(params.limit));
+      const qs = sp.toString();
+      return apiClient.get<{ tasks: ApiTask[]; pagination: { page: number; limit: number; total: number; pages: number } }>(`/api/spa/crm/tasks${qs ? `?${qs}` : ""}`);
     },
   });
 }
