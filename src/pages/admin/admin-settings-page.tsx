@@ -145,6 +145,9 @@ function SettingField({ field, value, onChange }: { field: FieldDef; value: stri
 					placeholder={field.placeholder}
 				/>
 			)}
+			{field.description && (
+				<p className="text-xs text-[var(--muted-foreground)]">{field.description}</p>
+			)}
 		</div>
 	);
 }

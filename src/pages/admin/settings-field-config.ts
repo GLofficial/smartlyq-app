@@ -7,6 +7,7 @@ export interface FieldDef {
 	options?: { value: string; label: string }[];
 	placeholder?: string;
 	half?: boolean;
+	description?: string;
 }
 
 const LANGUAGE_OPTIONS = [
@@ -144,8 +145,10 @@ export const TAB_FIELDS: Record<string, FieldDef[]> = {
 		{ key: "e2b_apikey", label: "E2B API Key", type: "password" },
 	],
 	railway: [
-		{ key: "railway_flask_url", label: "Railway Flask URL", type: "text", placeholder: "https://smartlyq-ai-production.up.railway.app" },
-		{ key: "railway_flask_api_key", label: "Railway Flask API Key", type: "password" },
+		{ key: "chatbot_api_secret_key", label: "API Secret Key", type: "password", placeholder: "e.g. sk-sqai-...",
+		  description: "This must match the API_SECRET_KEY environment variable set in Railway." },
+		{ key: "chatbot_railway_url", label: "Railway Service URL", type: "text", placeholder: "https://smartlyq-ai-production.up.railway.app",
+		  description: "The base URL of the AI chatbot service on Railway. Leave empty to use the default." },
 	],
 	marketing: [
 		{ key: "google_analytics", label: "Google Analytics ID", type: "text", placeholder: "G-XXXXXXXXXX" },
