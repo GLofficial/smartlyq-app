@@ -171,9 +171,13 @@ export function CrmContactsPage() {
                   <TableRow key={c.id} className="cursor-pointer hover:bg-[var(--muted)]/30" onClick={() => setSelectedContactId(c.id)}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--sq-primary)]/10 text-[var(--sq-primary)] text-xs font-bold shrink-0">
-                          {c.initials || c.name.slice(0, 2).toUpperCase()}
-                        </div>
+                        {c.avatar ? (
+                          <img src={c.avatar} alt={c.name} className="h-8 w-8 rounded-full object-cover shrink-0" />
+                        ) : (
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--sq-primary)]/10 text-[var(--sq-primary)] text-xs font-bold shrink-0">
+                            {c.initials || c.name.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate">{c.name}</p>
                         </div>
