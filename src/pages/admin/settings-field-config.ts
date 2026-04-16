@@ -67,11 +67,25 @@ export const TAB_FIELDS: Record<string, FieldDef[]> = {
 	finance: [
 		{ key: "currency", label: "Currency code", type: "text", placeholder: "USD", half: true },
 		{ key: "currency_symbol", label: "Currency symbol", type: "text", placeholder: "$", half: true },
+		{ key: "decimal_places", label: "Decimal places", type: "select", options: [
+			{ value: "0", label: "0" }, { value: "1", label: "1" }, { value: "2", label: "2" },
+		], half: true },
 		{ key: "currency_position", label: "Symbol position", type: "select", options: [
-			{ value: "left", label: "Left ($100)" }, { value: "right", label: "Right (100$)" },
+			{ value: "left", label: "Left side of price" }, { value: "right", label: "Right side of price" },
 		], half: true },
 		{ key: "tax", label: "Tax rate (%)", type: "text", placeholder: "0", half: true },
-		{ key: "tax_label", label: "Tax label", type: "text", placeholder: "VAT" },
+		{ key: "welcome_credits", label: "Welcome credits", type: "text", placeholder: "0", half: true },
+		{ key: "free_plan", label: "Free plan", type: "select", options: [] },
+		{ key: "_credits_section", label: "Credit Behaviour", type: "heading" },
+		{ key: "credits_extended", label: "Carry forward unused credits on plan renewal (excludes free plans)", type: "select", options: [
+			{ value: "1", label: "Enabled" }, { value: "0", label: "Disabled" },
+		] },
+		{ key: "credits_reset", label: "Unused credits reset when the subscription expires", type: "select", options: [
+			{ value: "1", label: "Enabled" }, { value: "0", label: "Disabled" },
+		] },
+		{ key: "extended_status", label: "Prepaid plans are available for paid subscribers only", type: "select", options: [
+			{ value: "1", label: "Enabled" }, { value: "0", label: "Disabled" },
+		] },
 	],
 	security: [
 		{ key: "signup", label: "Allow registration", type: "select", options: [

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Save, Settings } from "lucide-react";
 import { useAdminSettings, useSaveAdminSettings } from "@/api/admin-settings";
+import { useAdminPlans } from "@/api/admin";
 import { TAB_FIELDS, type FieldDef } from "./settings-field-config";
 import { toast } from "sonner";
 import { cn } from "@/lib/cn";
@@ -29,6 +30,7 @@ export function AdminSettingsPage() {
 	const { data, isLoading } = useAdminSettings(activeTab);
 	const saveMutation = useSaveAdminSettings();
 	const [values, setValues] = useState<Record<string, string>>({});
+	const { data: plansData } = useAdminPlans();
 
 	useEffect(() => {
 		if (data?.settings) setValues(data.settings);
@@ -47,7 +49,14 @@ export function AdminSettingsPage() {
 		);
 	};
 
-	const fields = TAB_FIELDS[activeTab] ?? [];
+	const planOptions = [
+		{ value: "0", label: "None" },
+		...(plansData?.plans ?? []).map((p) => ({ value: String(p.id), label: p.name })),
+	];
+
+	const fields = (TAB_FIELDS[activeTab] ?? []).map((f) =>
+		f.key === "free_plan" ? { ...f, options: planOptions } : f
+	);
 
 	return (
 		<div className="space-y-6">
