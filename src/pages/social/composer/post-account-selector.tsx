@@ -27,11 +27,11 @@ export function PostAccountSelector({ accounts, selectedIds, onSelectionChange }
 
   const filteredAccounts = safeAccounts.filter(
     (acc) =>
-      acc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      acc.platform.toLowerCase().includes(searchQuery.toLowerCase()),
+      (acc.name ?? "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (acc.platform ?? "").toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const needsReconnect = safeAccounts.filter((a) => a.status === "expired" || a.status === "revoked");
+  const needsReconnect = safeAccounts.filter((a) => a.status === "expired" || a.status === "revoked" || a.status === "disconnected");
 
   const toggleAccount = (accId: number) => {
     const newSelected = selectedIds.includes(accId)

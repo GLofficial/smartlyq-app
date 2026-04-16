@@ -40,7 +40,7 @@ export function PostComposer(props: PostComposerProps) {
 
   const safeAccounts = Array.isArray(accounts) ? accounts : [];
   const selectedPlatforms = [...new Set(
-    safeAccounts.filter((a) => a && selectedAccountIds.includes(a.id)).map((a) => a.platform).filter(Boolean),
+    safeAccounts.filter((a) => a && a.platform && selectedAccountIds.includes(a.id)).map((a) => a.platform).filter(Boolean),
   )];
 
   const [platformSettings, setPlatformSettings] = useState<Record<string, Record<string, any>>>({});

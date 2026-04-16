@@ -41,7 +41,7 @@ export function CreatePostPage() {
   }, [location.state]);
 
   const selectedPlatforms = [...new Set(
-    accounts.filter((a: any) => selectedAccountIds.includes(a.id)).map((a: any) => a.platform),
+    accounts.filter((a: any) => a?.platform && selectedAccountIds.includes(a.id)).map((a: any) => a.platform),
   )];
 
   const handleSubmit = useCallback(
