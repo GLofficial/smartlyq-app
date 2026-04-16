@@ -1737,13 +1737,7 @@ export default function PostComposer({
           </div>
           <DialogFooter className="border-t border-border pt-4">
             <Button variant="outline" className="text-destructive border-destructive/30" onClick={() => setImagePickerOpen(false)}>Cancel</Button>
-            <Button
-              onClick={() => setImagePickerOpen(false)}>
-              Done
-              }}
-            >
-              Add to Post {selectedPickerItems.length > 0 && `(${selectedPickerItems.length})`}
-            </Button>
+            <Button onClick={() => setImagePickerOpen(false)}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
