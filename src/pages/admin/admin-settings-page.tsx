@@ -100,7 +100,17 @@ export function AdminSettingsPage() {
 												{f.type === "heading" ? (
 													<div className="border-t border-[var(--border)] pt-4 mt-1">
 														<p className="text-sm font-semibold text-[var(--foreground)]">{f.label}</p>
-														{f.description && <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">{f.description}</p>}
+														{(f.description || f.link) && (
+															<p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+																{f.description}
+																{f.link && (
+																	<a href={f.link.url} target="_blank" rel="noopener noreferrer"
+																		className="ml-1 text-red-500 hover:underline">
+																		{f.link.label} ↗
+																	</a>
+																)}
+															</p>
+														)}
 													</div>
 												) : (
 													<SettingField field={f} value={values[f.key] ?? ""} onChange={(v) => update(f.key, v)} />

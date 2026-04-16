@@ -8,6 +8,7 @@ export interface FieldDef {
 	placeholder?: string;
 	half?: boolean;
 	description?: string;
+	link?: { label: string; url: string };
 }
 
 const LANGUAGE_OPTIONS = [
@@ -85,10 +86,15 @@ export const TAB_FIELDS: Record<string, FieldDef[]> = {
 		{ key: "login_captcha", label: "Login CAPTCHA", type: "select", options: [
 			{ value: "1", label: "Enabled" }, { value: "0", label: "Disabled" },
 		], half: true },
-		{ key: "cf_turnstile_site_key", label: "Cloudflare Turnstile Site Key", type: "text" },
-		{ key: "cf_turnstile_secret_key", label: "Cloudflare Turnstile Secret Key", type: "password" },
-		{ key: "allowed_file_extensions", label: "Allowed file extensions", type: "text", placeholder: "jpg,png,gif,pdf,doc" },
-		{ key: "max_file_size", label: "Max file size (MB)", type: "text", placeholder: "10", half: true },
+		{ key: "_turnstile_section", label: "Cloudflare Turnstile (Bot Protection)", type: "heading",
+		  description: "Protects login, signup, and password reset forms from bots and abuse.",
+		  link: { label: "Documentation", url: "https://developers.cloudflare.com/turnstile/" } },
+		{ key: "turnstile_status", label: "Turnstile bot protection", type: "select", options: [
+			{ value: "1", label: "Enabled" }, { value: "0", label: "Disabled" },
+		], half: true },
+		{ key: "turnstile_site_key", label: "Site Key", type: "text", half: true },
+		{ key: "turnstile_secret_key", label: "Secret Key", type: "password",
+		  description: "Stored encrypted. Leave unchanged to keep current key." },
 	],
 	mail: [
 		{ key: "smtp_connection", label: "Mail driver", type: "select", options: [
