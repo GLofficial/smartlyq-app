@@ -13,8 +13,8 @@ export function useFbAdsInsights(params: FbAdsQueryParams, enabled = true) {
 		queryKey: ["fb-ads-insights", qs],
 		queryFn: () => apiClient.get<FbAdsResponse>(`/api/spa/integrations/facebook-ads/insights?${qs}`),
 		enabled,
-		staleTime: 60_000,
-		refetchInterval: 120_000,
+		staleTime: 120_000,
+		refetchInterval: 300_000, // 5 min auto-refresh (was 2 min — reduced FB API calls by 60%)
 	});
 }
 

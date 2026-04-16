@@ -31,11 +31,16 @@ export function FbAdsInsightsPage() {
 	const [conversionType, setConversionType] = useState("purchases");
 	const [compare, setCompare] = useState(false);
 	const [previewAdId, setPreviewAdId] = useState<string | null>(null);
+	const [cachedAccounts, setCachedAccounts] = useState<FbAdsAccount[]>([]);
+
+	const [accountsLoaded, setAccountsLoaded] = useState(false);
 
 	const params: FbAdsQueryParams = {
 		tab, start: dateRange.start, end: dateRange.end,
 		...(accountId ? { ad_account_id: accountId } : {}),
-		need_accounts: "1",
+		// Only request accounts list on first load — saves 1 FB API call per subsequent request.
+		// listAdAccounts is also cached 10min server-side to prevent redundant calls.
+		...(!accountsLoaded ? { need_accounts: "1" } : {}),
 		...(cursor ? { after: cursor } : {}),
 		conversion_type: conversionType,
 		...(compare ? { compare: "1" } : {}),
@@ -45,7 +50,13 @@ export function FbAdsInsightsPage() {
 	const actionMutation = useFbAdsAction();
 	const fetchError = error ? (error as unknown as Record<string, string>)?.error || (error as unknown as Record<string, string>)?.message || "Failed to load data" : null;
 
-	useEffect(() => { if (data?.account?.id && !accountId) setAccountId(data.account.id); }, [data?.account?.id, accountId]);
+	useEffect(() => {
+		if (data?.account?.id && !accountId) setAccountId(data.account.id);
+		if (data?.accounts && data.accounts.length > 0) {
+			if (!accountsLoaded) setAccountsLoaded(true);
+			setCachedAccounts(data.accounts);
+		}
+	}, [data?.account?.id, data?.accounts, accountId, accountsLoaded]);
 	useEffect(() => { setAccumulated([]); setCursor(""); }, [tab, dateRange.start, dateRange.end, accountId, conversionType, compare]);
 	useEffect(() => { if (data?.rows && cursor) setAccumulated((prev) => [...prev, ...data.rows]); }, [data?.rows, cursor]);
 
@@ -72,7 +83,8 @@ export function FbAdsInsightsPage() {
 
 	if (data && !isLoading && data.error === "Facebook Ads is not connected") return <NotConnected />;
 	if (data && !isLoading && data.error?.includes("token missing")) return <TokenExpired />;
-	const needsAccountSelection = data && !isLoading && data.error?.includes("Select an ad account") && (data.accounts?.length ?? 0) > 0;
+	const availableAccounts = cachedAccounts.length > 0 ? cachedAccounts : (data?.accounts ?? []);
+	const needsAccountSelection = data && !isLoading && data.error?.includes("Select an ad account") && availableAccounts.length > 0;
 
 	const insights = data?.verdicts?.insights ?? [];
 	const displayError = data?.error || fetchError;
@@ -82,7 +94,7 @@ export function FbAdsInsightsPage() {
 		<div className="space-y-5">
 			<FbAdsHeader
 				tab={tab} onTabChange={setTab} dateRange={dateRange} onDateRangeChange={setDateRange}
-				accounts={data?.accounts ?? []} selectedAccountId={accountId} onAccountChange={handleAccountChange}
+				accounts={cachedAccounts.length > 0 ? cachedAccounts : (data?.accounts ?? [])} selectedAccountId={accountId} onAccountChange={handleAccountChange}
 				onRefresh={() => refetch()} onExport={handleExport} isLoading={isLoading} currency={currency}
 				conversionType={conversionType} onConversionTypeChange={setConversionType}
 				compare={compare} onCompareChange={setCompare} attribution={attribution}
@@ -97,7 +109,7 @@ export function FbAdsInsightsPage() {
 							Choose a Facebook Ad account to view reporting and insights.
 						</p>
 						<div className="flex flex-col gap-2 w-full max-w-sm">
-							{(data?.accounts ?? []).map((acc) => (
+							{(cachedAccounts.length > 0 ? cachedAccounts : (data?.accounts ?? [])).map((acc) => (
 								<button key={acc.id || acc.account_id} onClick={() => handleAccountChange(acc)}
 									className="flex items-center gap-3 rounded-lg border border-[var(--border)] px-4 py-3 text-left hover:bg-[var(--muted)] transition-colors">
 									<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
