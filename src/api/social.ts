@@ -22,7 +22,10 @@ export interface SocialPost {
 	published_at: string | null;
 	created_at: string | null;
 	has_media: boolean;
+	thumbnail: string;
+	post_urls: Record<string, string>;
 	account_name: string;
+	error_message: string;
 }
 
 export interface SocialHubData {
