@@ -1,0 +1,54 @@
+import {
+  SiFacebook,
+  SiInstagram,
+  SiTiktok,
+  SiYoutube,
+  SiPinterest,
+  SiReddit,
+  SiBluesky,
+  SiThreads,
+  SiMastodon,
+  SiTelegram,
+  SiWordpress,
+  SiWhatsapp,
+  SiTumblr,
+  SiSnapchat,
+} from "react-icons/si";
+import { FaXTwitter, FaLinkedinIn, FaGoogle } from "react-icons/fa6";
+import type { IconType } from "react-icons";
+
+export interface PlatformBrand {
+  label: string;
+  color: string;
+  brandColor: string;
+  Icon: IconType;
+}
+
+export const PLATFORM_BRANDS: Record<string, PlatformBrand> = {
+  facebook: { label: "Facebook", color: "bg-[hsl(var(--facebook))]", brandColor: "#1877F2", Icon: SiFacebook },
+  facebook_page: { label: "Facebook Page", color: "bg-[hsl(var(--facebook))]", brandColor: "#1877F2", Icon: SiFacebook },
+  instagram: { label: "Instagram", color: "bg-[hsl(var(--instagram))]", brandColor: "#E4405F", Icon: SiInstagram },
+  twitter: { label: "X", color: "bg-[hsl(var(--twitter))]", brandColor: "#000000", Icon: FaXTwitter },
+  linkedin: { label: "LinkedIn", color: "bg-[hsl(var(--linkedin))]", brandColor: "#0A66C2", Icon: FaLinkedinIn },
+  linkedin_page: { label: "LinkedIn Page", color: "bg-[hsl(var(--linkedin))]", brandColor: "#0A66C2", Icon: FaLinkedinIn },
+  youtube: { label: "YouTube", color: "bg-[hsl(var(--youtube))]", brandColor: "#FF0000", Icon: SiYoutube },
+  tiktok: { label: "TikTok", color: "bg-[hsl(var(--tiktok))]", brandColor: "#000000", Icon: SiTiktok },
+  pinterest: { label: "Pinterest", color: "bg-[hsl(var(--pinterest))]", brandColor: "#BD081C", Icon: SiPinterest },
+  reddit: { label: "Reddit", color: "bg-[hsl(var(--reddit))]", brandColor: "#FF4500", Icon: SiReddit },
+  threads: { label: "Threads", color: "bg-[hsl(var(--threads))]", brandColor: "#000000", Icon: SiThreads },
+  bluesky: { label: "Bluesky", color: "bg-primary", brandColor: "#0085FF", Icon: SiBluesky },
+  mastodon: { label: "Mastodon", color: "bg-[hsl(265,55%,52%)]", brandColor: "#6364FF", Icon: SiMastodon },
+  telegram: { label: "Telegram", color: "bg-[hsl(200,80%,50%)]", brandColor: "#26A5E4", Icon: SiTelegram },
+  google: { label: "Google Business", color: "bg-[hsl(217,89%,61%)]", brandColor: "#4285F4", Icon: FaGoogle },
+  tumblr: { label: "Tumblr", color: "bg-[hsl(210,25%,25%)]", brandColor: "#36465D", Icon: SiTumblr },
+  wordpress: { label: "WordPress", color: "bg-[hsl(205,60%,40%)]", brandColor: "#21759B", Icon: SiWordpress },
+  whatsapp: { label: "WhatsApp", color: "bg-[hsl(142,70%,41%)]", brandColor: "#25D366", Icon: SiWhatsapp },
+  snapchat: { label: "Snapchat", color: "bg-[hsl(54,100%,50%)]", brandColor: "#FFFC00", Icon: SiSnapchat },
+};
+
+export function PlatformIcon({ platformId, size = 16, className }: { platformId: string; size?: number; className?: string }) {
+  const brand = PLATFORM_BRANDS[platformId];
+  if (!brand) return null;
+  const IconComp = brand.Icon;
+  return <IconComp size={size} className={className} />;
+}
