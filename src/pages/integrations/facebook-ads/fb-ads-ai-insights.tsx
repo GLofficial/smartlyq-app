@@ -7,6 +7,8 @@ interface AiInsightsProps {
 	isLoading: boolean;
 	totals?: FbAdsTotals;
 	onAiChipClick?: (question: string) => void;
+	onQuickAction?: (action: string) => void;
+	onShowVerdicts?: () => void;
 }
 
 const SEVERITY_COLORS: Record<string, { dot: string; bg: string; text: string }> = {
@@ -33,7 +35,7 @@ const QUICK_ACTIONS = [
 	{ label: "Export Report", icon: Download, color: "text-purple-600", bg: "bg-purple-50" },
 ];
 
-export function FbAdsAiInsights({ insights, isLoading, onAiChipClick }: AiInsightsProps) {
+export function FbAdsAiInsights({ insights, isLoading, onAiChipClick, onQuickAction, onShowVerdicts }: AiInsightsProps) {
 	return (
 		<div className="space-y-4">
 			{/* AI Insights Card */}
@@ -74,10 +76,16 @@ export function FbAdsAiInsights({ insights, isLoading, onAiChipClick }: AiInsigh
 					</div>
 				)}
 
-				<Button variant="outline" size="sm" className="w-full mt-3 gap-1.5 text-xs bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 text-blue-700 hover:from-blue-100 hover:to-purple-100">
+				<Button variant="outline" size="sm" className="w-full mt-3 gap-1.5 text-xs bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 text-blue-700 hover:from-blue-100 hover:to-purple-100"
+					onClick={() => onAiChipClick?.("Analyze my Facebook Ads performance and give me actionable recommendations")}>
 					<Sparkles size={12} />
 					Ask AI about this data
 				</Button>
+				{onShowVerdicts && insights.length > 0 && (
+					<Button variant="ghost" size="sm" className="w-full mt-1 gap-1.5 text-xs" onClick={onShowVerdicts}>
+						View AI Verdicts
+					</Button>
+				)}
 			</div>
 
 			{/* AI Chip Questions */}
@@ -100,7 +108,7 @@ export function FbAdsAiInsights({ insights, isLoading, onAiChipClick }: AiInsigh
 					{QUICK_ACTIONS.map((a) => {
 						const Icon = a.icon;
 						return (
-							<button key={a.label}
+							<button key={a.label} onClick={() => onQuickAction?.(a.label)}
 								className={`flex items-center gap-2 rounded-lg ${a.bg} p-2.5 text-xs font-medium ${a.color} hover:opacity-80 transition-opacity`}>
 								<Icon size={14} />
 								{a.label}

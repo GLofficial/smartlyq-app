@@ -12,8 +12,13 @@ import { FbAdsDeviceBreakdown } from "./fb-ads-device-breakdown";
 import { FbAdsAiInsights } from "./fb-ads-ai-insights";
 import { FbAdsPreviewModal } from "./fb-ads-preview-modal";
 import { FbAdsCreativeInsights } from "./fb-ads-creative-insights";
+import { FbAdsFiltersBar } from "./fb-ads-filters";
+import { FbAdsVerdictsModal } from "./fb-ads-verdicts-modal";
 import { DemographicsChart, PlacementChart, HourOfDayChart, ConversionFunnelChart } from "./fb-ads-tab-charts";
-import type { FbAdsTab, FbAdsAccount, FbAdsRow, FbAdsQueryParams } from "./fb-ads-types";
+import type { FbAdsTab, FbAdsAccount, FbAdsRow, FbAdsQueryParams, FbAdsFilters } from "./fb-ads-types";
+import { useWorkspaceStore } from "@/stores/workspace-store";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 function defaultDateRange() {
 	const end = new Date();
@@ -32,6 +37,11 @@ export function FbAdsInsightsPage() {
 	const [compare, setCompare] = useState(false);
 	const [previewAdId, setPreviewAdId] = useState<string | null>(null);
 	const [cachedAccounts, setCachedAccounts] = useState<FbAdsAccount[]>([]);
+	const [filters, setFilters] = useState<FbAdsFilters>({ campaign: "", adset: "", device: "", country: "" });
+	const [verdictsOpen, setVerdictsOpen] = useState(false);
+	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
+	const navigate = useNavigate();
+	const setPage1 = useCallback(() => { setAccumulated([]); setCursor(""); }, []);
 
 	const [accountsLoaded, setAccountsLoaded] = useState(false);
 
@@ -44,6 +54,10 @@ export function FbAdsInsightsPage() {
 		...(cursor ? { after: cursor } : {}),
 		conversion_type: conversionType,
 		...(compare ? { compare: "1" } : {}),
+		...(filters.campaign ? { campaign: filters.campaign } : {}),
+		...(filters.adset ? { adset: filters.adset } : {}),
+		...(filters.device ? { device: filters.device } : {}),
+		...(filters.country ? { country: filters.country } : {}),
 	};
 
 	const { data, isLoading, error, refetch } = useFbAdsInsights(params);
@@ -77,9 +91,29 @@ export function FbAdsInsightsPage() {
 	}, [tab]);
 
 	const handleExport = useCallback((fmt: string) => {
-		if (fmt === "ai") { /* TODO: AI report modal */ return; }
+		if (fmt === "ai") {
+			// Navigate to AI Captain with context about this ad account
+			const aiPath = wsHash ? `/w/${wsHash}/ai-captain` : "/ai-captain";
+			navigate(aiPath + "?prompt=" + encodeURIComponent("Generate a full performance report for my Facebook Ads. Include: executive summary, top/bottom campaigns by ROAS, budget recommendations, audience insights, and creative performance."));
+			return;
+		}
 		window.open(fbAdsExportUrl(params, fmt), "_blank");
-	}, [params]);
+	}, [params, wsHash, navigate]);
+
+	const handleAiChipClick = useCallback((question: string) => {
+		const aiPath = wsHash ? `/w/${wsHash}/ai-captain` : "/ai-captain";
+		navigate(aiPath + "?prompt=" + encodeURIComponent(question));
+	}, [wsHash, navigate]);
+
+	const handleQuickAction = useCallback((action: string) => {
+		switch (action) {
+			case "Scale Winners": handleAiChipClick("Which Facebook Ad campaigns should I scale and why? Show me the top performers by ROAS."); break;
+			case "Pause Losers": handleAiChipClick("Which Facebook Ad campaigns should I pause? Show me the worst performers with negative ROAS."); break;
+			case "Optimize Budget": handleAiChipClick("How should I reallocate my Facebook Ads budget across campaigns for maximum ROAS?"); break;
+			case "Export Report": handleExport("pdf"); break;
+			default: toast.info(action);
+		}
+	}, [handleAiChipClick, handleExport]);
 
 	if (data && !isLoading && data.error === "Facebook Ads is not connected") return <NotConnected />;
 	if (data && !isLoading && data.error?.includes("token missing")) return <TokenExpired />;
@@ -89,6 +123,7 @@ export function FbAdsInsightsPage() {
 	const insights = data?.verdicts?.insights ?? [];
 	const displayError = data?.error || fetchError;
 	const attribution = data?.badges?.facebook_attribution;
+	const aiHandlers: AiHandlers = { onAiChipClick: handleAiChipClick, onQuickAction: handleQuickAction, onShowVerdicts: () => setVerdictsOpen(true) };
 
 	return (
 		<div className="space-y-5">
@@ -99,6 +134,9 @@ export function FbAdsInsightsPage() {
 				conversionType={conversionType} onConversionTypeChange={setConversionType}
 				compare={compare} onCompareChange={setCompare} attribution={attribution}
 			/>
+
+			{/* Filters bar */}
+			<FbAdsFiltersBar filters={filters} onChange={(f) => { setFilters(f); setPage1(); }} rows={allRows} />
 
 			{needsAccountSelection ? (
 				<Card>
@@ -158,22 +196,22 @@ export function FbAdsInsightsPage() {
 					{tab === "overview" && (
 						<OverviewLayout data={data} allRows={allRows} currency={currency} insights={insights}
 							isLoading={isLoading} accountId={accountId} dateRange={dateRange}
-							onTriageChange={handleTriageChange} onRowClick={handleRowClick} />
+							onTriageChange={handleTriageChange} onRowClick={handleRowClick} aiHandlers={aiHandlers} />
 					)}
 					{tab === "demographics" && (
 						<TabWithChart chart={<DemographicsChart rows={allRows} currency={currency} />}
 							table={<FbAdsDataTable rows={allRows} tab={tab} currency={currency} nextCursor={data.next_cursor ?? ""} onLoadMore={() => setCursor(data.next_cursor ?? "")} isLoadingMore={!!cursor && isLoading} />}
-							insights={insights} isLoading={isLoading} />
+							insights={insights} isLoading={isLoading} aiHandlers={aiHandlers} />
 					)}
 					{tab === "placements" && (
 						<TabWithChart chart={<PlacementChart rows={allRows} currency={currency} />}
 							table={<FbAdsDataTable rows={allRows} tab={tab} currency={currency} nextCursor={data.next_cursor ?? ""} onLoadMore={() => setCursor(data.next_cursor ?? "")} isLoadingMore={!!cursor && isLoading} />}
-							insights={insights} isLoading={isLoading} />
+							insights={insights} isLoading={isLoading} aiHandlers={aiHandlers} />
 					)}
 					{tab === "hours" && (
 						<TabWithChart chart={<HourOfDayChart rows={allRows} currency={currency} />}
 							table={<FbAdsDataTable rows={allRows} tab={tab} currency={currency} nextCursor={data.next_cursor ?? ""} onLoadMore={() => setCursor(data.next_cursor ?? "")} isLoadingMore={!!cursor && isLoading} />}
-							insights={insights} isLoading={isLoading} />
+							insights={insights} isLoading={isLoading} aiHandlers={aiHandlers} />
 					)}
 					{tab === "creatives" && (
 						<div className="grid gap-5 lg:grid-cols-[1fr_320px]">
@@ -183,7 +221,7 @@ export function FbAdsInsightsPage() {
 									nextCursor={data.next_cursor ?? ""} onLoadMore={() => setCursor(data.next_cursor ?? "")}
 									isLoadingMore={!!cursor && isLoading} onRowClick={handleRowClick} />
 							</div>
-							<FbAdsAiInsights insights={insights} isLoading={isLoading} />
+							<FbAdsAiInsights insights={insights} isLoading={isLoading} onAiChipClick={handleAiChipClick} onQuickAction={handleQuickAction} onShowVerdicts={() => setVerdictsOpen(true)} />
 						</div>
 					)}
 					{!["overview", "demographics", "placements", "hours", "creatives"].includes(tab) && (
@@ -195,7 +233,7 @@ export function FbAdsInsightsPage() {
 									isLoadingMore={!!cursor && isLoading} onRowClick={handleRowClick}
 									onTriageChange={tab === "campaigns" ? handleTriageChange : undefined} />
 							</div>
-							<FbAdsAiInsights insights={insights} isLoading={isLoading} />
+							<FbAdsAiInsights insights={insights} isLoading={isLoading} onAiChipClick={handleAiChipClick} onQuickAction={handleQuickAction} onShowVerdicts={() => setVerdictsOpen(true)} />
 						</div>
 					)}
 				</>
@@ -203,19 +241,25 @@ export function FbAdsInsightsPage() {
 				<Card><CardContent className="py-8 text-center"><p className="text-sm text-[var(--muted-foreground)]">{data.error}</p></CardContent></Card>
 			) : null}
 
-			<FbAdsPreviewModal adId={previewAdId} onClose={() => setPreviewAdId(null)} />
+			<FbAdsPreviewModal adId={previewAdId} onClose={() => setPreviewAdId(null)} accountId={accountId} />
+			<FbAdsVerdictsModal
+				open={verdictsOpen} onClose={() => setVerdictsOpen(false)}
+				recommendations={data?.verdicts?.recommendations?.campaigns ?? []}
+				rows={allRows} onTriageChange={handleTriageChange}
+			/>
 		</div>
 	);
 }
 
 /* ── Overview Layout ───────────────────────────────────────────────── */
 
-function OverviewLayout({ data, allRows, currency, insights, isLoading, accountId, dateRange, onTriageChange, onRowClick }: {
+function OverviewLayout({ data, allRows, currency, insights, isLoading, accountId, dateRange, onTriageChange, onRowClick, aiHandlers }: {
 	data: NonNullable<ReturnType<typeof useFbAdsInsights>["data"]>;
 	allRows: FbAdsRow[]; currency: string; insights: FbAdsVerdict[]; isLoading: boolean;
 	accountId: string; dateRange: { start: string; end: string };
 	onTriageChange: (id: string, level: string, decision: string) => void;
 	onRowClick: (row: FbAdsRow) => void;
+	aiHandlers: AiHandlers;
 }) {
 	return (
 		<div className="grid gap-5 lg:grid-cols-[1fr_320px]">
@@ -236,20 +280,22 @@ function OverviewLayout({ data, allRows, currency, insights, isLoading, accountI
 						onTriageChange={onTriageChange} onRowClick={onRowClick} />
 				)}
 			</div>
-			<FbAdsAiInsights insights={insights} isLoading={isLoading} totals={data.totals} />
+			<FbAdsAiInsights insights={insights} isLoading={isLoading} totals={data.totals} onAiChipClick={aiHandlers.onAiChipClick} onQuickAction={aiHandlers.onQuickAction} onShowVerdicts={aiHandlers.onShowVerdicts} />
 		</div>
 	);
 }
 
 import type { FbAdsVerdict } from "./fb-ads-types";
 
+interface AiHandlers { onAiChipClick: (q: string) => void; onQuickAction: (a: string) => void; onShowVerdicts: () => void }
+
 /* ── Tab with Chart Layout ─────────────────────────────────────────── */
 
-function TabWithChart({ chart, table, insights, isLoading }: { chart: React.ReactNode; table: React.ReactNode; insights: FbAdsVerdict[]; isLoading: boolean }) {
+function TabWithChart({ chart, table, insights, isLoading, aiHandlers }: { chart: React.ReactNode; table: React.ReactNode; insights: FbAdsVerdict[]; isLoading: boolean; aiHandlers: AiHandlers }) {
 	return (
 		<div className="grid gap-5 lg:grid-cols-[1fr_320px]">
 			<div className="space-y-5">{chart}{table}</div>
-			<FbAdsAiInsights insights={insights} isLoading={isLoading} />
+			<FbAdsAiInsights insights={insights} isLoading={isLoading} onAiChipClick={aiHandlers.onAiChipClick} onQuickAction={aiHandlers.onQuickAction} onShowVerdicts={aiHandlers.onShowVerdicts} />
 		</div>
 	);
 }

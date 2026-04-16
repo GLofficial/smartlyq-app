@@ -119,4 +119,15 @@ export interface FbAdsQueryParams {
 	rowLimit?: string;
 	conversion_type?: string;
 	refresh?: string;
+	campaign?: string;
+	adset?: string;
+	device?: string;
+	country?: string;
+}
+
+export interface FbAdsFilters {
+	campaign: string;
+	adset: string;
+	device: string;
+	country: string;
 }
