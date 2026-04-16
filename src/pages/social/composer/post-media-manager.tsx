@@ -1,136 +1,246 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ImagePlus, Video, X, GripVertical, Play } from "lucide-react";
+import { Image, Film, X, GripVertical, Play, Check, Trash2 } from "lucide-react";
+import { cn } from "@/lib/cn";
 
 export interface MediaItem {
-	id: string;
-	url: string;
-	type: "image" | "video";
-	name?: string;
+  id: string;
+  url: string;
+  type: "image" | "video";
+  name: string;
 }
 
 interface MediaManagerProps {
-	media: MediaItem[];
-	onMediaChange: (media: MediaItem[]) => void;
-	maxFiles?: number;
+  media: MediaItem[];
+  onMediaChange: (media: MediaItem[]) => void;
 }
 
-export function PostMediaManager({ media, onMediaChange, maxFiles = 10 }: MediaManagerProps) {
-	const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-	const [uploadType, setUploadType] = useState<"image" | "video">("image");
-	const fileRef = useRef<HTMLInputElement>(null);
+export function PostMediaManager({ media, onMediaChange }: MediaManagerProps) {
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [imagePickerOpen, setImagePickerOpen] = useState(false);
+  const [videoPickerOpen, setVideoPickerOpen] = useState(false);
+  const [selectedPickerItems, setSelectedPickerItems] = useState<number[]>([]);
+  const [thumbnailPickerOpen, setThumbnailPickerOpen] = useState(false);
+  const [selectedThumbnail, setSelectedThumbnail] = useState<number | null>(null);
 
-	function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-		const files = e.target.files;
-		if (!files) return;
-		const newMedia: MediaItem[] = [];
-		for (let i = 0; i < files.length && media.length + newMedia.length < maxFiles; i++) {
-			const file = files[i]!;
-			const url = URL.createObjectURL(file);
-			const type = file.type.startsWith("video") ? "video" : "image";
-			newMedia.push({ id: `${Date.now()}-${i}`, url, type, name: file.name });
-		}
-		onMediaChange([...media, ...newMedia]);
-		setUploadDialogOpen(false);
-		if (fileRef.current) fileRef.current.value = "";
-	}
+  const hasVideos = media.some((m) => m.type === "video");
 
-	function removeMedia(id: string) {
-		onMediaChange(media.filter((m) => m.id !== id));
-	}
+  const removeMedia = (idx: number) => onMediaChange(media.filter((_, i) => i !== idx));
+  const clearMedia = () => onMediaChange([]);
 
-	if (media.length === 0) return null;
+  const handleDragStart = (idx: number) => setDragIdx(idx);
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    if (dragIdx === null || dragIdx === idx) return;
+    const items = [...media];
+    const moved = items.splice(dragIdx, 1)[0]!;
+    items.splice(idx, 0, moved);
+    onMediaChange(items);
+    setDragIdx(idx);
+  };
+  const handleDragEnd = () => setDragIdx(null);
 
-	return (
-		<div className="space-y-2">
-			<div className="flex items-center justify-between">
-				<p className="text-[10px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
-					Media ({media.length}/{maxFiles})
-				</p>
-				{media.length < maxFiles && (
-					<div className="flex gap-1">
-						<Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1" onClick={() => { setUploadType("image"); setUploadDialogOpen(true); }}>
-							<ImagePlus size={12} /> Add Image
-						</Button>
-						<Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1" onClick={() => { setUploadType("video"); setUploadDialogOpen(true); }}>
-							<Video size={12} /> Add Video
-						</Button>
-					</div>
-				)}
-			</div>
+  const addImages = () => {
+    selectedPickerItems.forEach((_, idx) => {
+      const newItem: MediaItem = { id: `img-${media.length + idx + 1}`, url: "", type: "image", name: `image-${media.length + idx + 1}.jpg` };
+      onMediaChange([...media, newItem]);
+    });
+    setImagePickerOpen(false);
+    setSelectedPickerItems([]);
+  };
 
-			{/* Media grid */}
-			<div className="flex gap-2 overflow-x-auto pb-1">
-				{media.map((item) => (
-					<div key={item.id} className="relative shrink-0 group">
-						<div className="w-20 h-20 rounded-lg overflow-hidden border border-[var(--border)] bg-[var(--muted)]">
-							{item.type === "video" ? (
-								<div className="w-full h-full flex items-center justify-center bg-black/80">
-									<Play size={20} className="text-white" />
-								</div>
-							) : (
-								<img src={item.url} alt={item.name || ""} className="w-full h-full object-cover" />
-							)}
-						</div>
-						{/* Remove button */}
-						<button onClick={() => removeMedia(item.id)}
-							className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-							<X size={10} />
-						</button>
-						{/* Drag handle */}
-						<div className="absolute bottom-1 left-1 opacity-0 group-hover:opacity-70 transition-opacity">
-							<GripVertical size={12} className="text-white drop-shadow" />
-						</div>
-						{/* Type badge */}
-						{item.type === "video" && (
-							<span className="absolute top-1 left-1 bg-black/60 text-white text-[8px] px-1 rounded">VIDEO</span>
-						)}
-					</div>
-				))}
-			</div>
+  const addVideos = () => {
+    selectedPickerItems.forEach((_, idx) => {
+      const newItem: MediaItem = { id: `vid-${media.length + idx + 1}`, url: "", type: "video", name: `video-${media.length + idx + 1}.mp4` };
+      onMediaChange([...media, newItem]);
+    });
+    setVideoPickerOpen(false);
+    setSelectedPickerItems([]);
+  };
 
-			{/* Upload dialog */}
-			<Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-				<DialogContent className="max-w-sm">
-					<DialogHeader><DialogTitle>Upload {uploadType === "image" ? "Image" : "Video"}</DialogTitle></DialogHeader>
-					<div className="space-y-4">
-						<div className="border-2 border-dashed border-[var(--border)] rounded-lg p-8 text-center cursor-pointer hover:bg-[var(--muted)]/30 transition-colors"
-							onClick={() => fileRef.current?.click()}>
-							{uploadType === "image" ? <ImagePlus size={32} className="mx-auto text-[var(--muted-foreground)] mb-2" /> : <Video size={32} className="mx-auto text-[var(--muted-foreground)] mb-2" />}
-							<p className="text-sm text-[var(--foreground)]">Click to select {uploadType === "image" ? "images" : "a video"}</p>
-							<p className="text-xs text-[var(--muted-foreground)] mt-1">
-								{uploadType === "image" ? "JPG, PNG, GIF, WebP (max 10MB)" : "MP4, MOV, WebM (max 100MB)"}
-							</p>
-						</div>
-						<input ref={fileRef} type="file" accept={uploadType === "image" ? "image/*" : "video/*"}
-							multiple={uploadType === "image"} onChange={handleFileSelect} className="hidden" />
-					</div>
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setUploadDialogOpen(false)}>Cancel</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-		</div>
-	);
-}
+  return (
+    <>
+      {/* Media grid */}
+      {media.length > 0 && (
+        <div className="bg-card rounded-lg border border-border p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-foreground">Media ({media.length})</h3>
+            <Button variant="ghost" size="sm" className="text-xs text-destructive hover:text-destructive" onClick={clearMedia}>
+              <Trash2 className="w-3 h-3" /> Clear all
+            </Button>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {media.map((item, idx) => (
+              <div
+                key={item.id}
+                draggable
+                onDragStart={() => handleDragStart(idx)}
+                onDragOver={(e) => handleDragOver(e, idx)}
+                onDragEnd={handleDragEnd}
+                className={cn(
+                  "relative aspect-square rounded-lg bg-muted overflow-hidden border-2 transition-all group cursor-grab active:cursor-grabbing",
+                  dragIdx === idx ? "border-primary opacity-50" : "border-transparent",
+                )}
+              >
+                <div className="w-full h-full flex items-center justify-center">
+                  {item.type === "video" ? <Film className="w-6 h-6 text-muted-foreground/30" /> : <Image className="w-6 h-6 text-muted-foreground/30" />}
+                </div>
+                {item.type === "video" && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-foreground/50 flex items-center justify-center">
+                      <Play className="w-4 h-4 text-card ml-0.5" />
+                    </div>
+                  </div>
+                )}
+                <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <GripVertical className="w-4 h-4 text-card drop-shadow" />
+                </div>
+                <button onClick={() => removeMedia(idx)} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-foreground/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <X className="w-3 h-3 text-card" />
+                </button>
+                <span className="absolute bottom-1 left-1 right-1 text-[9px] text-card truncate bg-foreground/40 px-1 rounded">{item.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-/* ── Toolbar Media Buttons (used in content editor toolbar) ─────── */
+      {/* Video Thumbnail Picker (shown when video is uploaded) */}
+      {hasVideos && (
+        <div className="bg-card rounded-lg border border-border">
+          <div className="flex items-center justify-between px-5 py-3">
+            <div className="flex items-center gap-2">
+              <Film className="w-4 h-4 text-muted-foreground" />
+              <h3 className="text-sm font-medium text-foreground">Video Thumbnail</h3>
+            </div>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => setThumbnailPickerOpen(true)}>
+              <Play className="w-3 h-3" /> Pick thumbnail
+            </Button>
+          </div>
+          <div className="px-5 pb-4">
+            <p className="text-xs text-muted-foreground mb-3">{selectedThumbnail !== null ? `Frame ${selectedThumbnail + 1} selected` : "Auto-generated"}</p>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <button key={i} onClick={() => setSelectedThumbnail(i)} className={cn("shrink-0 w-16 h-10 rounded bg-muted flex items-center justify-center text-[9px] text-muted-foreground border-2 transition-colors", selectedThumbnail === i ? "border-primary" : "border-transparent hover:border-primary/30")}>
+                  0:{String((i + 1) * 4).padStart(2, "0")}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
-interface MediaToolbarProps {
-	onImageClick: () => void;
-	onVideoClick: () => void;
-}
+      {/* Thumbnail Picker Dialog */}
+      <Dialog open={thumbnailPickerOpen} onOpenChange={setThumbnailPickerOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>Thumbnail picker</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-[250px_1fr] gap-6">
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium text-foreground mb-2">Custom thumbnail</h4>
+                <p className="text-xs text-muted-foreground mb-3">Upload your own or select one from the video.</p>
+                <div className="space-y-2">
+                  <Button variant="outline" size="sm" className="w-full text-xs">Upload your own</Button>
+                  <Button variant="outline" size="sm" className="w-full text-xs">Select from Library</Button>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-sm font-medium text-foreground mb-1">Choose frame from video</h4>
+                <Button className="w-full text-xs">Capture current frame</Button>
+              </div>
+            </div>
+            <div>
+              <div className="bg-foreground rounded-lg flex items-center justify-center text-card/30" style={{ aspectRatio: "16/9" }}>
+                <div className="text-center"><Play className="w-10 h-10 mx-auto mb-2 opacity-40" /><span className="text-xs">Video preview</span></div>
+              </div>
+              <div className="mt-3">
+                <p className="text-xs font-medium text-foreground mb-2">Custom thumbnail</p>
+                <div className="flex gap-2 flex-wrap">
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <button key={i} onClick={() => setSelectedThumbnail(i)} className={cn("w-16 h-10 rounded bg-muted flex items-center justify-center text-[9px] text-muted-foreground border-2 transition-colors", selectedThumbnail === i ? "border-primary" : "border-transparent hover:border-primary/30")}>
+                      0/{String((i + 1) * 4).padStart(2, "0")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setThumbnailPickerOpen(false)}>Cancel</Button>
+            <Button onClick={() => setThumbnailPickerOpen(false)}>Save and update</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-export function MediaToolbarButtons({ onImageClick, onVideoClick }: MediaToolbarProps) {
-	return (
-		<>
-			<button onClick={onImageClick} className="p-1.5 rounded hover:bg-[var(--muted)] transition-colors" title="Upload Image">
-				<ImagePlus size={16} className="text-[var(--muted-foreground)]" />
-			</button>
-			<button onClick={onVideoClick} className="p-1.5 rounded hover:bg-[var(--muted)] transition-colors" title="Upload Video">
-				<Video size={16} className="text-[var(--muted-foreground)]" />
-			</button>
-		</>
-	);
+      {/* Image Picker Dialog */}
+      <Dialog open={imagePickerOpen} onOpenChange={setImagePickerOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Select Images</DialogTitle>
+            <p className="text-sm text-muted-foreground">You can select up to 10 images</p>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto space-y-4">
+            <button className="w-full border-2 border-dashed border-primary/40 rounded-xl p-8 text-center text-muted-foreground hover:border-primary/60 hover:bg-primary/5 transition-colors cursor-pointer">
+              <Image className="w-8 h-8 mx-auto mb-2 opacity-40" />
+              <p className="text-sm font-medium text-foreground">Drop or Select image file</p>
+              <p className="text-xs mt-1">Drop image files here or click browse</p>
+            </button>
+            <div className="grid grid-cols-5 gap-2">
+              {Array.from({ length: 10 }).map((_, i) => {
+                const isSelected = selectedPickerItems.includes(i);
+                return (
+                  <button key={i} onClick={() => setSelectedPickerItems((prev) => isSelected ? prev.filter((x) => x !== i) : prev.length < 10 ? [...prev, i] : prev)} className={cn("relative aspect-square rounded-lg bg-muted overflow-hidden border-2 transition-all hover:opacity-80", isSelected ? "border-primary ring-1 ring-primary" : "border-transparent")}>
+                    <div className="w-full h-full flex items-center justify-center"><Image className="w-8 h-8 text-muted-foreground/30" /></div>
+                    <div className={cn("absolute top-2 left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors", isSelected ? "bg-primary border-primary" : "border-muted-foreground/40 bg-card/80")}>
+                      {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <DialogFooter className="border-t border-border pt-4">
+            <Button variant="outline" className="text-destructive border-destructive/30" onClick={() => setImagePickerOpen(false)}>Cancel</Button>
+            <Button disabled={selectedPickerItems.length === 0} onClick={addImages}>Add to Post {selectedPickerItems.length > 0 && `(${selectedPickerItems.length})`}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Video Picker Dialog */}
+      <Dialog open={videoPickerOpen} onOpenChange={setVideoPickerOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Select Videos</DialogTitle>
+            <p className="text-sm text-muted-foreground">You can select up to 10 videos</p>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto space-y-4">
+            <button className="w-full border-2 border-dashed border-primary/40 rounded-xl p-8 text-center text-muted-foreground hover:border-primary/60 hover:bg-primary/5 transition-colors cursor-pointer">
+              <Film className="w-8 h-8 mx-auto mb-2 opacity-40" />
+              <p className="text-sm font-medium text-foreground">Drop or Select video file</p>
+              <p className="text-xs mt-1">Drop video files here or click browse</p>
+            </button>
+            <div className="grid grid-cols-5 gap-2">
+              {Array.from({ length: 10 }).map((_, i) => {
+                const isSelected = selectedPickerItems.includes(i);
+                return (
+                  <button key={i} onClick={() => setSelectedPickerItems((prev) => isSelected ? prev.filter((x) => x !== i) : prev.length < 10 ? [...prev, i] : prev)} className={cn("relative aspect-square rounded-lg bg-muted overflow-hidden border-2 transition-all hover:opacity-80", isSelected ? "border-primary ring-1 ring-primary" : "border-transparent")}>
+                    <div className="w-full h-full flex items-center justify-center"><Film className="w-6 h-6 text-muted-foreground/30" /></div>
+                    <div className="absolute inset-0 flex items-center justify-center"><div className="w-8 h-8 rounded-full bg-foreground/50 flex items-center justify-center"><Play className="w-4 h-4 text-card ml-0.5" /></div></div>
+                    <div className={cn("absolute top-2 left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors", isSelected ? "bg-primary border-primary" : "border-muted-foreground/40 bg-card/80")}>
+                      {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <DialogFooter className="border-t border-border pt-4">
+            <Button variant="outline" className="text-destructive border-destructive/30" onClick={() => setVideoPickerOpen(false)}>Cancel</Button>
+            <Button disabled={selectedPickerItems.length === 0} onClick={addVideos}>Add to Post {selectedPickerItems.length > 0 && `(${selectedPickerItems.length})`}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }

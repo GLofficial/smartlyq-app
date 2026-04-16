@@ -1,20 +1,16 @@
-import { useState, useMemo } from "react";
-import { Check, ChevronDown, ChevronUp, Search, AlertTriangle } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { Search, PlusCircle, ChevronDown, ChevronUp, AlertTriangle, Check } from "lucide-react";
+import { cn } from "@/lib/cn";
 import { PlatformBrandIcon, PLATFORM_BRANDS } from "../platform-brands";
 
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export interface SocialAccount {
   id: number;
   platform: string;
-  account_name: string;
-  account_username: string;
-  profile_picture: string;
-  token_status: string;
+  name: string;
+  profile_pic?: string;
+  status?: string;
 }
 
 interface AccountSelectorProps {
@@ -23,258 +19,163 @@ interface AccountSelectorProps {
   onSelectionChange: (ids: number[]) => void;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
-/* ------------------------------------------------------------------ */
-
-/** Group accounts by their normalised platform key (e.g. facebook, instagram). */
-function groupByPlatform(accounts: SocialAccount[]) {
-  const groups: Record<string, SocialAccount[]> = {};
-  for (const acc of accounts) {
-    const key = acc.platform;
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(acc);
-  }
-  return groups;
-}
-
-function platformLabel(platform: string): string {
-  return PLATFORM_BRANDS[platform]?.label ?? platform;
-}
-
-/* ------------------------------------------------------------------ */
-/*  Component                                                          */
-/* ------------------------------------------------------------------ */
-
 export function PostAccountSelector({ accounts, selectedIds, onSelectionChange }: AccountSelectorProps) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  /* Filtered list -------------------------------------------------- */
-  const filteredAccounts = useMemo(() => {
-    if (!search.trim()) return accounts;
-    const q = search.toLowerCase();
-    return accounts.filter(
-      (a) =>
-        a.account_name.toLowerCase().includes(q) ||
-        a.account_username.toLowerCase().includes(q) ||
-        platformLabel(a.platform).toLowerCase().includes(q),
-    );
-  }, [accounts, search]);
+  const safeAccounts = Array.isArray(accounts) ? accounts : [];
 
-  const grouped = useMemo(() => groupByPlatform(filteredAccounts), [filteredAccounts]);
+  const filteredAccounts = safeAccounts.filter(
+    (acc) =>
+      acc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      acc.platform.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
-  /* Selection helpers ---------------------------------------------- */
-  const toggle = (id: number) => {
-    onSelectionChange(
-      selectedIds.includes(id) ? selectedIds.filter((i) => i !== id) : [...selectedIds, id],
-    );
+  const needsReconnect = safeAccounts.filter((a) => a.status === "expired" || a.status === "revoked");
+
+  const toggleAccount = (accId: number) => {
+    const newSelected = selectedIds.includes(accId)
+      ? selectedIds.filter((id) => id !== accId)
+      : [...selectedIds, accId];
+    onSelectionChange(newSelected);
   };
 
   const selectAll = () => onSelectionChange(filteredAccounts.map((a) => a.id));
-  const deselectAll = () => onSelectionChange([]);
-  const allSelected = filteredAccounts.length > 0 && filteredAccounts.every((a) => selectedIds.includes(a.id));
-
-  /* Accounts that need reconnection -------------------------------- */
-  const needsReconnect = accounts.filter((a) => a.token_status !== "active" && a.token_status !== "ok");
-
-  /* Selected accounts for the pill strip --------------------------- */
-  const selectedAccounts = accounts.filter((a) => selectedIds.includes(a.id));
+  const unselectAll = () => onSelectionChange([]);
 
   return (
     <div className="bg-card rounded-lg border border-border p-5">
       <p className="text-sm font-semibold text-primary mb-3">Select Accounts</p>
 
-      <Popover open={open} onOpenChange={setOpen}>
-        {/* Trigger ------------------------------------------------- */}
-        <PopoverTrigger asChild>
-          <button className="w-full flex items-center justify-between border-2 border-primary/30 rounded-lg px-4 py-2.5 hover:border-primary/50 transition-colors">
-            <div className="flex items-center gap-1 overflow-hidden">
-              {selectedAccounts.length > 0 ? (
-                <div className="flex -space-x-1.5 overflow-x-auto">
-                  {selectedAccounts.map((acc) => (
-                    <SelectedPill key={acc.id} account={acc} />
-                  ))}
-                </div>
-              ) : (
-                <span className="text-sm text-muted-foreground">Select accounts...</span>
-              )}
+      {/* Selected accounts strip */}
+      <button
+        onClick={() => setShowDropdown(!showDropdown)}
+        className="w-full flex items-center justify-between border-2 border-primary/30 rounded-lg px-4 py-2.5 hover:border-primary/50 transition-colors"
+      >
+        <div className="flex items-center gap-1 overflow-hidden">
+          {selectedIds.length > 0 ? (
+            <div className="flex -space-x-1.5 overflow-x-auto">
+              {selectedIds.map((accId) => {
+                const acc = safeAccounts.find((a) => a.id === accId);
+                if (!acc) return null;
+                const brand = PLATFORM_BRANDS[acc.platform];
+                return (
+                  <div key={accId} className="relative shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-sm font-bold border-2 border-card overflow-hidden">
+                      {acc.profile_pic ? (
+                        <img src={acc.profile_pic} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        acc.name.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div
+                      className={cn(
+                        "absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-primary-foreground border border-card",
+                        brand?.color ?? "bg-muted",
+                      )}
+                    >
+                      <PlatformBrandIcon platformId={acc.platform} size={8} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            {open ? (
-              <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
-            )}
-          </button>
-        </PopoverTrigger>
+          ) : (
+            <span className="text-sm text-muted-foreground">Select accounts...</span>
+          )}
+        </div>
+        {showDropdown ? (
+          <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
+        ) : (
+          <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+        )}
+      </button>
 
-        {/* Dropdown content ---------------------------------------- */}
-        <PopoverContent align="start" sideOffset={4} className="w-[var(--radix-popover-trigger-width)] p-0">
-          {/* Search input */}
+      {showDropdown && (
+        <div className="mt-2 border border-border rounded-lg bg-card shadow-lg overflow-hidden">
+          {/* Search */}
           <div className="p-3 border-b border-border">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search accounts..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 border border-border rounded-lg text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>
 
-          {/* Select / Deselect All header */}
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/30">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-              All Accounts
-            </span>
-            <button
-              onClick={allSelected ? deselectAll : selectAll}
-              className="text-xs font-medium text-primary hover:underline"
-            >
-              {allSelected ? "Deselect All" : "Select All"}
+          {/* Connect new account */}
+          <div className="px-4 py-3 border-b border-border">
+            <button className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors text-sm font-medium">
+              <PlusCircle className="w-5 h-5" />
+              Connect a new Account
             </button>
           </div>
 
-          {/* Reconnect warning */}
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/30">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">All Accounts</span>
+            <button
+              onClick={selectedIds.length === filteredAccounts.length ? unselectAll : selectAll}
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              {selectedIds.length === filteredAccounts.length ? "Unselect All" : "Select All"}
+            </button>
+          </div>
+
+          {/* Warning banner */}
           {needsReconnect.length > 0 && (
             <div className="mx-3 mt-3 mb-1 bg-warning/15 border border-warning/30 rounded-lg px-4 py-3 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-warning shrink-0" />
               <p className="text-sm">
                 <span className="font-semibold text-foreground">
-                  {needsReconnect.length} account{needsReconnect.length > 1 ? "s" : ""} need
-                  {needsReconnect.length === 1 ? "s" : ""} reconnecting.
+                  {needsReconnect.length} account{needsReconnect.length > 1 ? "s" : ""} needs reconnecting.
                 </span>{" "}
-                <span className="text-muted-foreground">Token expired or revoked.</span>
+                <span className="text-muted-foreground">Token expired or revoked.</span>{" "}
+                <button className="text-primary font-medium hover:underline">Reconnect now</button>
               </p>
             </div>
           )}
 
-          {/* Grouped account list */}
-          <div className="max-h-[320px] overflow-y-auto py-1">
-            {Object.entries(grouped).map(([platform, accs]) => (
-              <div key={platform}>
-                <div className="px-4 pt-3 pb-1">
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    {platformLabel(platform)}
-                  </span>
-                </div>
-                {accs.map((acc) => (
-                  <AccountRow
-                    key={acc.id}
-                    account={acc}
-                    selected={selectedIds.includes(acc.id)}
-                    onToggle={() => toggle(acc.id)}
-                  />
-                ))}
-              </div>
-            ))}
+          {/* Account list */}
+          <div className="max-h-[320px] overflow-y-auto py-2">
+            {filteredAccounts.map((acc) => {
+              const isSelected = selectedIds.includes(acc.id);
+              const brand = PLATFORM_BRANDS[acc.platform];
+              return (
+                <button
+                  key={acc.id}
+                  onClick={() => toggleAccount(acc.id)}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors"
+                >
+                  <div className={cn("w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors", isSelected ? "bg-primary" : "border-2 border-muted-foreground/30")}>
+                    {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+                  </div>
+                  <div className="relative shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold overflow-hidden">
+                      {acc.profile_pic ? (
+                        <img src={acc.profile_pic} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        acc.name.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div className={cn("absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-primary-foreground border-2 border-card", brand?.color ?? "bg-muted")}>
+                      <PlatformBrandIcon platformId={acc.platform} size={10} />
+                    </div>
+                  </div>
+                  <span className="text-sm text-foreground text-left">{acc.name}</span>
+                </button>
+              );
+            })}
             {filteredAccounts.length === 0 && (
               <p className="px-4 py-6 text-sm text-muted-foreground text-center">No accounts found</p>
             )}
           </div>
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Sub-components                                                     */
-/* ------------------------------------------------------------------ */
-
-/** Small avatar pill shown in the collapsed trigger strip. */
-function SelectedPill({ account }: { account: SocialAccount }) {
-  return (
-    <div className="relative shrink-0">
-      {account.profile_picture ? (
-        <img
-          src={account.profile_picture}
-          alt={account.account_name}
-          className="w-9 h-9 rounded-full border-2 border-card object-cover"
-        />
-      ) : (
-        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-sm font-bold border-2 border-card">
-          {account.account_name.charAt(0).toUpperCase()}
         </div>
       )}
-      <div
-        className={cn(
-          "absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-white border border-card",
-          PLATFORM_BRANDS[account.platform]?.color ?? "bg-muted",
-        )}
-      >
-        <PlatformBrandIcon platformId={account.platform} size={8} className="w-4 h-4" />
-      </div>
     </div>
-  );
-}
-
-/** Single account row inside the dropdown list. */
-function AccountRow({
-  account,
-  selected,
-  onToggle,
-}: {
-  account: SocialAccount;
-  selected: boolean;
-  onToggle: () => void;
-}) {
-  const needsReconnect = account.token_status !== "active" && account.token_status !== "ok";
-
-  return (
-    <button
-      onClick={onToggle}
-      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/40 transition-colors"
-    >
-      {/* Checkbox */}
-      <div
-        className={cn(
-          "w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors",
-          selected ? "bg-primary" : "border-2 border-muted-foreground/30",
-        )}
-      >
-        {selected && <Check className="w-3 h-3 text-primary-foreground" />}
-      </div>
-
-      {/* Avatar with platform badge */}
-      <div className="relative shrink-0">
-        {account.profile_picture ? (
-          <img
-            src={account.profile_picture}
-            alt={account.account_name}
-            className="w-10 h-10 rounded-full object-cover"
-          />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold">
-            {account.account_name.charAt(0).toUpperCase()}
-          </div>
-        )}
-        <div
-          className={cn(
-            "absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-white border-2 border-card",
-            PLATFORM_BRANDS[account.platform]?.color ?? "bg-muted",
-          )}
-        >
-          <PlatformBrandIcon platformId={account.platform} size={10} className="w-5 h-5" />
-        </div>
-      </div>
-
-      {/* Name and username */}
-      <div className="flex flex-col items-start min-w-0">
-        <span className="text-sm text-foreground truncate max-w-full flex items-center gap-1.5">
-          {account.account_name}
-          {needsReconnect && (
-            <span className="inline-block w-2 h-2 rounded-full bg-yellow-400 shrink-0" title="Needs reconnection" />
-          )}
-        </span>
-        {account.account_username && (
-          <span className="text-xs text-muted-foreground truncate max-w-full">
-            @{account.account_username}
-          </span>
-        )}
-      </div>
-    </button>
   );
 }

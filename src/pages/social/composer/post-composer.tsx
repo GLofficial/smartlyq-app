@@ -3,133 +3,133 @@ import { PostAccountSelector, type SocialAccount } from "./post-account-selector
 import { PostContentEditor } from "./post-content-editor";
 import { PostPlatformOptions } from "./post-platform-options";
 import { PostMediaManager, type MediaItem } from "./post-media-manager";
-import { AiTextModal, AiImageModal, AiVideoModal } from "./post-ai-modals";
+import { AiTextModal, AiImageModal, AiVideoModal, CanvaModal, HashtagModal, LinkModal } from "./post-ai-modals";
 import { PostActionsBar } from "./post-actions-bar";
 import { UtmTrackingSection, LabelsSection } from "./post-utm-labels";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 interface PostComposerProps {
-	accounts: SocialAccount[];
-	selectedAccountIds: number[];
-	onAccountsChange: (ids: number[]) => void;
-	content: string;
-	onContentChange: (val: string) => void;
-	platformContent: Record<string, string>;
-	onPlatformContentChange: (pc: Record<string, string>) => void;
-	customizeChannel: boolean;
-	onCustomizeChannelChange: (val: boolean) => void;
-	media: MediaItem[];
-	onMediaChange: (media: MediaItem[]) => void;
-	onSaveDraft: () => void;
-	onSchedule: (date: string, time: string) => void;
-	onPostNow: () => void;
-	isSubmitting: boolean;
+  accounts: SocialAccount[];
+  selectedAccountIds: number[];
+  onAccountsChange: (ids: number[]) => void;
+  content: string;
+  onContentChange: (val: string) => void;
+  platformContent: Record<string, string>;
+  onPlatformContentChange: (pc: Record<string, string>) => void;
+  customizeChannel: boolean;
+  onCustomizeChannelChange: (val: boolean) => void;
+  media: MediaItem[];
+  onMediaChange: (media: MediaItem[]) => void;
+  onSaveDraft: () => void;
+  onSchedule: (date: string, time: string) => void;
+  onPostNow: () => void;
+  isSubmitting: boolean;
+  onImageCountChange?: (count: number) => void;
+  onPostTypeChange?: (postTypes: Record<string, string>) => void;
 }
 
 export function PostComposer(props: PostComposerProps) {
-	const {
-		accounts, selectedAccountIds, onAccountsChange,
-		content, onContentChange, platformContent, onPlatformContentChange,
-		customizeChannel, onCustomizeChannelChange,
-		media, onMediaChange, onSaveDraft, onSchedule, onPostNow, isSubmitting,
-	} = props;
+  const {
+    accounts, selectedAccountIds, onAccountsChange,
+    content, onContentChange, platformContent, onPlatformContentChange,
+    customizeChannel, onCustomizeChannelChange,
+    media, onMediaChange, onSaveDraft, onSchedule, onPostNow, isSubmitting,
+    onImageCountChange, onPostTypeChange,
+  } = props;
 
-	// Derive selected platforms from selected accounts
-	const safeAccounts = Array.isArray(accounts) ? accounts : [];
-	const selectedPlatforms = [...new Set(
-		safeAccounts.filter((a) => a && selectedAccountIds.includes(a.id)).map((a) => a.platform).filter(Boolean)
-	)];
+  const safeAccounts = Array.isArray(accounts) ? accounts : [];
+  const selectedPlatforms = [...new Set(
+    safeAccounts.filter((a) => a && selectedAccountIds.includes(a.id)).map((a) => a.platform).filter(Boolean),
+  )];
 
-	// Platform settings state
-	const [platformSettings, setPlatformSettings] = useState<Record<string, Record<string, any>>>({});
-	const [platformPostType, setPlatformPostType] = useState<Record<string, string>>({});
+  const [platformSettings, setPlatformSettings] = useState<Record<string, Record<string, any>>>({});
+  const [platformPostType, setPlatformPostType] = useState<Record<string, string>>({});
+  const [utmValues, setUtmValues] = useState({ source: "", medium: "", campaign: "", term: "", content: "" });
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
 
-	// UTM + Labels state
-	const [utmValues, setUtmValues] = useState({ source: "", medium: "", campaign: "", term: "", content: "" });
-	const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
+  // Modal state
+  const [aiTextOpen, setAiTextOpen] = useState(false);
+  const [aiImageOpen, setAiImageOpen] = useState(false);
+  const [aiVideoOpen, setAiVideoOpen] = useState(false);
+  const [canvaOpen, setCanvaOpen] = useState(false);
+  const [hashtagOpen, setHashtagOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
 
-	// AI modal state
-	const [aiTextOpen, setAiTextOpen] = useState(false);
-	const [aiImageOpen, setAiImageOpen] = useState(false);
-	const [aiVideoOpen, setAiVideoOpen] = useState(false);
+  function handleSettingsChange(platform: string, key: string, value: any) {
+    setPlatformSettings((prev) => ({ ...prev, [platform]: { ...(prev[platform] ?? {}), [key]: value } }));
+  }
 
-	// Media upload state (for future use)
+  function handlePostTypeChange(platform: string, type: string) {
+    const next = { ...platformPostType, [platform]: type };
+    setPlatformPostType(next);
+    onPostTypeChange?.(next);
+  }
 
-	function handleSettingsChange(platform: string, key: string, value: any) {
-		setPlatformSettings((prev) => ({ ...prev, [platform]: { ...(prev[platform] ?? {}), [key]: value } }));
-	}
+  function handleAiTextUse(text: string) { onContentChange(content + text); }
+  function handleImageUpload() {
+    const newItem: MediaItem = { id: String(Date.now()), url: "", type: "image", name: "AI Generated" };
+    onMediaChange([...media, newItem]);
+    onImageCountChange?.(media.length + 1);
+  }
 
-	function handlePostTypeChange(platform: string, type: string) {
-		setPlatformPostType((prev) => ({ ...prev, [platform]: type }));
-	}
+  const hasContent = content.trim().length > 0;
+  const hasAccounts = selectedAccountIds.length > 0;
 
-	function handleAiTextUse(text: string) {
-		onContentChange(text);
-	}
+  return (
+    <div className="flex-1 min-w-0 space-y-4">
+      {/* Account Selector */}
+      <PostAccountSelector accounts={accounts} selectedIds={selectedAccountIds} onSelectionChange={onAccountsChange} />
 
-	function handleImageUpload() {
-		// Add a placeholder — real implementation would upload to R2
-		const newItem: MediaItem = { id: String(Date.now()), url: "", type: "image", name: "AI Generated" };
-		onMediaChange([...media, newItem]);
-	}
+      {/* Content Editor */}
+      <PostContentEditor
+        content={content} onContentChange={onContentChange}
+        platformContent={platformContent} onPlatformContentChange={onPlatformContentChange}
+        customizeChannel={customizeChannel} onCustomizeChannelChange={onCustomizeChannelChange}
+        selectedPlatforms={selectedPlatforms}
+        onOpenAiText={() => setAiTextOpen(true)}
+        onOpenAiImage={() => setAiImageOpen(true)}
+        onOpenAiVideo={() => setAiVideoOpen(true)}
+        onOpenCanva={() => setCanvaOpen(true)}
+        onOpenHashtag={() => setHashtagOpen(true)}
+        onOpenLink={() => setLinkOpen(true)}
+      />
 
-	const hasContent = content.trim().length > 0;
-	const hasAccounts = selectedAccountIds.length > 0;
+      {/* Media Manager */}
+      <PostMediaManager media={media} onMediaChange={(m) => { onMediaChange(m); onImageCountChange?.(m.length); }} />
 
-	return (
-		<div className="space-y-5">
-			{/* Account Selector */}
-			<div>
-				<p className="text-sm font-semibold text-[var(--sq-primary)] mb-2">Select Accounts</p>
-				<PostAccountSelector accounts={accounts} selectedIds={selectedAccountIds} onSelectionChange={onAccountsChange} />
-			</div>
+      {/* Platform-specific options */}
+      {selectedPlatforms.length > 0 && (
+        <PostPlatformOptions
+          selectedPlatforms={selectedPlatforms}
+          platformSettings={platformSettings}
+          onSettingsChange={handleSettingsChange}
+          platformPostType={platformPostType}
+          onPostTypeChange={handlePostTypeChange}
+        />
+      )}
 
-			{/* Content Editor (toolbar + textarea + char counter) */}
-			{selectedAccountIds.length > 0 && (
-				<div>
-					<PostContentEditor
-						content={content} onContentChange={onContentChange}
-						platformContent={platformContent} onPlatformContentChange={onPlatformContentChange}
-						customizeChannel={customizeChannel} onCustomizeChannelChange={onCustomizeChannelChange}
-						selectedPlatforms={selectedPlatforms}
-						onOpenAiText={() => setAiTextOpen(true)}
-						onOpenAiImage={() => setAiImageOpen(true)}
-						onOpenAiVideo={() => setAiVideoOpen(true)}
-					/>
-				</div>
-			)}
+      {/* UTM Tracking */}
+      <UtmTrackingSection values={utmValues} onChange={setUtmValues} selectedPlatforms={selectedPlatforms} />
 
-			{/* Media Manager */}
-			<PostMediaManager media={media} onMediaChange={onMediaChange} />
+      {/* Labels */}
+      <LabelsSection selectedLabels={selectedLabels} onLabelsChange={setSelectedLabels} />
 
-			{/* Platform-specific options */}
-			{selectedPlatforms.length > 0 && (
-				<PostPlatformOptions
-					selectedPlatforms={selectedPlatforms}
-					platformSettings={platformSettings}
-					onSettingsChange={handleSettingsChange}
-					platformPostType={platformPostType}
-					onPostTypeChange={handlePostTypeChange}
-				/>
-			)}
+      {/* Action buttons */}
+      <PostActionsBar
+        onSaveDraft={onSaveDraft} onSchedule={onSchedule} onPostNow={onPostNow}
+        isSubmitting={isSubmitting} hasContent={hasContent} hasAccounts={hasAccounts}
+      />
 
-			{/* UTM Tracking */}
-			<UtmTrackingSection values={utmValues} onChange={setUtmValues} />
-
-			{/* Labels */}
-			<LabelsSection selectedLabels={selectedLabels} onLabelsChange={setSelectedLabels} />
-
-			{/* Action buttons */}
-			<PostActionsBar
-				onSaveDraft={onSaveDraft} onSchedule={onSchedule} onPostNow={onPostNow}
-				isSubmitting={isSubmitting} hasContent={hasContent} hasAccounts={hasAccounts}
-			/>
-
-			{/* AI Modals */}
-			<AiTextModal open={aiTextOpen} onClose={() => setAiTextOpen(false)} onUse={handleAiTextUse} />
-			<AiImageModal open={aiImageOpen} onClose={() => setAiImageOpen(false)} onUse={handleImageUpload} />
-			<AiVideoModal open={aiVideoOpen} onClose={() => setAiVideoOpen(false)} onUse={handleImageUpload} />
-		</div>
-	);
+      {/* AI Modals */}
+      <AiTextModal open={aiTextOpen} onClose={() => setAiTextOpen(false)} onUse={handleAiTextUse} />
+      <AiImageModal open={aiImageOpen} onClose={() => setAiImageOpen(false)} onUse={handleImageUpload} />
+      <AiVideoModal open={aiVideoOpen} onClose={() => setAiVideoOpen(false)} onUse={handleImageUpload} />
+      <CanvaModal open={canvaOpen} onClose={() => setCanvaOpen(false)} />
+      <HashtagModal open={hashtagOpen} onClose={() => setHashtagOpen(false)} onAdd={(text) => onContentChange(content + text)} />
+      <LinkModal open={linkOpen} onClose={() => setLinkOpen(false)} onAdd={(url) => onContentChange(content + (content ? " " : "") + url)} />
+    </div>
+  );
 }
 
 export { type MediaItem } from "./post-media-manager";

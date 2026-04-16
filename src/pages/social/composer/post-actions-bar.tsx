@@ -1,97 +1,102 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useState, useMemo } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Save, Clock, Send, ListPlus, RefreshCw } from "lucide-react";
+import { Save, CalendarDays, Send, ListOrdered, Clock, Sparkles } from "lucide-react";
 
 interface ActionsBarProps {
-	onSaveDraft: () => void;
-	onSchedule: (date: string, time: string) => void;
-	onPostNow: () => void;
-	onQueue?: () => void;
-	isSubmitting: boolean;
-	hasContent: boolean;
-	hasAccounts: boolean;
+  onSaveDraft: () => void;
+  onSchedule: (date: string, time: string) => void;
+  onPostNow: () => void;
+  isSubmitting: boolean;
+  hasContent: boolean;
+  hasAccounts: boolean;
 }
 
-const SUGGESTED_TIMES = ["09:00 AM", "12:00 PM", "03:00 PM", "06:00 PM", "08:00 PM"];
+export function PostActionsBar({ onSaveDraft, onSchedule, onPostNow, isSubmitting, hasContent, hasAccounts }: ActionsBarProps) {
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState(() => {
+    const now = new Date();
+    return `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+  });
+  const [scheduleTime, setScheduleTime] = useState(() => {
+    const now = new Date();
+    let h = now.getHours();
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    return `${String(h).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")} ${ampm}`;
+  });
 
-export function PostActionsBar({ onSaveDraft, onSchedule, onPostNow, onQueue, isSubmitting, hasContent, hasAccounts }: ActionsBarProps) {
-	const [scheduleOpen, setScheduleOpen] = useState(false);
-	const [schedDate, setSchedDate] = useState("");
-	const [schedTime, setSchedTime] = useState("");
+  const scheduleSummary = useMemo(() => {
+    const parts = scheduleDate.split("/");
+    if (parts.length !== 3) return "";
+    const [d, m, y] = parts;
+    const date = new Date(Number(y), Number(m) - 1, Number(d));
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    return `Post will be published on ${days[date.getDay()]}, ${months[date.getMonth()]} ${Number(d)}, ${y} at ${scheduleTime}`;
+  }, [scheduleDate, scheduleTime]);
 
-	const canPost = hasContent && hasAccounts && !isSubmitting;
+  const handleScheduleConfirm = () => {
+    const parts = scheduleDate.split("/");
+    if (parts.length !== 3) return;
+    const [d, m, y] = parts;
+    const isoDate = `${y}-${m}-${d}`;
+    onSchedule(isoDate, scheduleTime);
+    setScheduleOpen(false);
+  };
 
-	return (
-		<>
-			<div className="flex flex-wrap gap-2 pt-4 border-t border-[var(--border)]">
-				<Button variant="outline" size="sm" onClick={onSaveDraft} disabled={!hasContent || isSubmitting} className="gap-1.5">
-					<Save size={14} /> Save Draft
-				</Button>
-				<Button size="sm" onClick={() => setScheduleOpen(true)} disabled={!canPost}
-					className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
-					<Clock size={14} /> Schedule Post
-				</Button>
-				<Button size="sm" onClick={onPostNow} disabled={!canPost}
-					className="gap-1.5 bg-[var(--sq-primary)] hover:bg-[var(--sq-primary)]/90 text-white">
-					<Send size={14} /> Post Now
-				</Button>
-				{onQueue && (
-					<Button variant="outline" size="sm" onClick={onQueue} disabled={!canPost} className="gap-1.5">
-						<ListPlus size={14} /> Queue
-					</Button>
-				)}
-			</div>
+  const disabled = isSubmitting || !hasContent || !hasAccounts;
 
-			{/* Schedule Dialog */}
-			<Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
-				<DialogContent className="max-w-sm">
-					<DialogHeader><DialogTitle>Schedule Post</DialogTitle></DialogHeader>
-					<div className="space-y-4">
-						<div>
-							<label className="text-[10px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-1.5 block">Date</label>
-							<Input type="date" value={schedDate} onChange={(e) => setSchedDate(e.target.value)} className="text-sm" />
-						</div>
-						<div>
-							<label className="text-[10px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-1.5 block">Time</label>
-							<Input type="time" value={schedTime} onChange={(e) => setSchedTime(e.target.value)} className="text-sm" />
-						</div>
-						<div>
-							<div className="flex items-center justify-between mb-2">
-								<label className="text-[10px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">Suggested Times</label>
-								<button className="text-xs text-[var(--sq-primary)] flex items-center gap-1"><RefreshCw size={10} /> Refresh</button>
-							</div>
-							<div className="flex flex-wrap gap-2">
-								{SUGGESTED_TIMES.map((t) => (
-									<button key={t} onClick={() => setSchedTime(convertTo24h(t))}
-										className={`rounded-full border px-3 py-1 text-xs transition-colors ${schedTime === convertTo24h(t) ? "bg-[var(--sq-primary)] text-white border-[var(--sq-primary)]" : "border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--muted)]"}`}>
-										{t}
-									</button>
-								))}
-							</div>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setScheduleOpen(false)}>Cancel</Button>
-						<Button onClick={() => { onSchedule(schedDate, schedTime); setScheduleOpen(false); }}
-							disabled={!schedDate || !schedTime}
-							className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5">
-							<Clock size={14} /> Schedule
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-		</>
-	);
-}
+  return (
+    <>
+      <div className="flex flex-wrap gap-2 sm:gap-3">
+        <Button variant="accent" className="flex-1 min-w-[100px] sm:min-w-[140px] text-xs sm:text-sm" disabled={disabled} onClick={onSaveDraft}>
+          <Save className="w-4 h-4" /> Save Draft
+        </Button>
+        <Button variant="success" className="flex-1 min-w-[100px] sm:min-w-[140px] text-xs sm:text-sm" disabled={disabled} onClick={() => setScheduleOpen(true)}>
+          <CalendarDays className="w-4 h-4" /> Schedule Post
+        </Button>
+        <Button className="flex-1 min-w-[100px] sm:min-w-[140px] text-xs sm:text-sm" disabled={disabled} onClick={onPostNow}>
+          <Send className="w-4 h-4" /> Post Now
+        </Button>
+        <Button variant="outline" className="min-w-[80px] sm:min-w-[120px] text-xs sm:text-sm" disabled={disabled}>
+          <ListOrdered className="w-4 h-4" /> Queue
+        </Button>
+      </div>
 
-function convertTo24h(time12: string): string {
-	const [time, modifier] = time12.split(" ");
-	if (!time || !modifier) return "";
-	const [h, m] = time.split(":");
-	let hours = parseInt(h!, 10);
-	if (modifier === "PM" && hours !== 12) hours += 12;
-	if (modifier === "AM" && hours === 12) hours = 0;
-	return `${String(hours).padStart(2, "0")}:${m}`;
+      {/* Schedule Dialog */}
+      <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">Schedule</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5 py-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Select date</label>
+              <div className="relative">
+                <input type="text" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} className="w-full px-4 py-3 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="DD/MM/YYYY" />
+                <CalendarDays className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Select time</label>
+              <div className="relative">
+                <input type="text" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="w-full px-4 py-3 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="HH:MM AM/PM" />
+                <Clock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
+            <p className="text-sm font-medium text-[hsl(var(--destructive))]">{scheduleSummary}</p>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-sm text-foreground"><Sparkles className="w-4 h-4" /> Suggested times</div>
+                <button className="text-sm font-medium text-primary hover:underline">Refresh</button>
+              </div>
+              <p className="text-xs text-muted-foreground">Could not load suggestions.</p>
+            </div>
+          </div>
+          <Button className="w-full mt-2" onClick={handleScheduleConfirm}>Post</Button>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }
