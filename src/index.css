@@ -172,37 +172,37 @@ label[for], .cursor-pointer { cursor: pointer; }
 
 /* FullCalendar theme overrides (from skeleton) */
 .calendar-wrapper .fc {
-	--fc-border-color: hsl(var(--border));
-	--fc-page-bg-color: hsl(var(--card));
-	--fc-neutral-bg-color: hsl(var(--muted));
-	--fc-today-bg-color: hsl(var(--primary) / 0.04);
+	--fc-border-color: var(--border);
+	--fc-page-bg-color: var(--card);
+	--fc-neutral-bg-color: var(--muted);
+	--fc-today-bg-color: color-mix(in srgb, var(--primary) 4%, transparent);
 	--fc-event-bg-color: transparent;
 	--fc-event-border-color: transparent;
 	--fc-event-text-color: inherit;
 	font-family: inherit;
 }
 .calendar-wrapper .fc .fc-col-header-cell {
-	background: hsl(var(--muted));
+	background: var(--muted);
 	padding: 8px 0;
 	font-size: 12px;
 	font-weight: 600;
-	color: hsl(var(--muted-foreground));
+	color: var(--muted-foreground);
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 }
 .calendar-wrapper .fc .fc-daygrid-day-number {
 	font-size: 13px;
 	font-weight: 500;
-	color: hsl(var(--foreground));
+	color: var(--foreground);
 	padding: 6px 8px;
 }
 .calendar-wrapper .fc .fc-day-other .fc-daygrid-day-number {
-	color: hsl(var(--muted-foreground));
+	color: var(--muted-foreground);
 	opacity: 0.5;
 }
 .calendar-wrapper .fc .fc-day-today .fc-daygrid-day-number {
-	background: hsl(var(--primary));
-	color: hsl(var(--primary-foreground));
+	background: var(--primary);
+	color: var(--primary-foreground);
 	border-radius: 50%;
 	width: 28px;
 	height: 28px;
@@ -212,6 +212,8 @@ label[for], .cursor-pointer { cursor: pointer; }
 }
 .calendar-wrapper .fc .fc-daygrid-day {
 	min-height: 100px;
+	border-right: 1px solid var(--border);
+	border-bottom: 1px solid var(--border);
 }
 .calendar-wrapper .fc .fc-daygrid-day-frame {
 	min-height: 100px;
@@ -219,7 +221,7 @@ label[for], .cursor-pointer { cursor: pointer; }
 .calendar-wrapper .fc .fc-daygrid-more-link {
 	font-size: 11px;
 	font-weight: 600;
-	color: hsl(var(--primary));
+	color: var(--primary);
 	padding: 2px 6px;
 }
 .calendar-wrapper .fc .fc-event {
@@ -230,11 +232,16 @@ label[for], .cursor-pointer { cursor: pointer; }
 	height: 48px;
 }
 .calendar-wrapper .fc .fc-list-event:hover td {
-	background: hsl(var(--muted));
+	background: var(--muted);
 }
 .calendar-wrapper .fc .fc-scrollgrid {
-	border: none;
+	border: 1px solid var(--border);
+	border-radius: 0.5rem;
+	overflow: hidden;
 }
 .calendar-wrapper .fc .fc-scrollgrid-section > * {
 	border: none;
+}
+.calendar-wrapper .fc td, .calendar-wrapper .fc th {
+	border-color: var(--border);
 }
