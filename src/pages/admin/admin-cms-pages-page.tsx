@@ -12,6 +12,13 @@ import {
 	type AdminPage,
 } from "@/api/admin-pages";
 
+const fmtDate = (d: string | null | undefined) => {
+	if (!d || d.startsWith("0000")) return "—";
+	const dt = new Date(d);
+	if (isNaN(dt.getTime())) return "—";
+	return `${String(dt.getDate()).padStart(2, "0")}/${String(dt.getMonth() + 1).padStart(2, "0")}/${dt.getFullYear()}`;
+};
+
 export function AdminCmsPagesPage() {
 	const { data, isLoading } = useAdminPages();
 	const [editingId, setEditingId] = useState<number | null>(null);
@@ -55,7 +62,7 @@ export function AdminCmsPagesPage() {
 											: <XCircle size={14} className="text-gray-400" />}
 									</td>
 									<td className="py-2 text-xs text-[var(--muted-foreground)]">
-										{p.created ? new Date(p.created).toLocaleDateString() : "—"}
+										{fmtDate(p.created)}
 									</td>
 									<td className="py-2 text-right">
 										<div className="flex justify-end gap-1">
