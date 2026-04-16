@@ -457,9 +457,9 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                   return (
                     <div className="w-full px-1.5 py-1 cursor-pointer group">
                       <div className="bg-card border border-border rounded-md p-1.5 shadow-sm hover:shadow-md transition-shadow">
-                        {post.thumbnail && (
+                        {post.thumbnail && post.thumbnail.startsWith("http") && (
                           <div className="w-full h-12 bg-muted rounded mb-1 overflow-hidden">
-                            <img src={post.thumbnail} alt="" className="w-full h-full object-cover" />
+                            <img src={post.thumbnail} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                           </div>
                         )}
                         <p className="text-[10px] font-semibold text-foreground line-clamp-1">{post.title}</p>
@@ -634,9 +634,9 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                     <StatusBadge status={post.status} />
                   </div>
                   <div className="flex gap-3 mt-2">
-                    {post.thumbnail ? (
+                    {post.thumbnail && post.thumbnail.startsWith("http") ? (
                       <div className="w-20 h-20 rounded-lg bg-muted overflow-hidden shrink-0">
-                        <img src={post.thumbnail} alt="" className="w-full h-full object-cover" />
+                        <img src={post.thumbnail} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                       </div>
                     ) : (
                       <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center shrink-0">

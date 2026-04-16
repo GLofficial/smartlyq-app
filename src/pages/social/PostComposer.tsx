@@ -763,15 +763,21 @@ export default function PostComposer({
               </button>
             </div>
 
-            {/* Warning banner (demo) */}
-            <div className="mx-3 mt-3 mb-1 bg-warning/15 border border-warning/30 rounded-lg px-4 py-3 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-warning shrink-0" />
-              <p className="text-sm">
-                <span className="font-semibold text-foreground">1 account needs reconnecting.</span>{" "}
-                <span className="text-muted-foreground">Token expired or revoked.</span>{" "}
-                <button className="text-primary font-medium hover:underline">Reconnect now</button>
-              </p>
-            </div>
+            {/* Warning banner — only show when accounts need reconnection */}
+            {(() => {
+              const expired = ACCOUNTS.filter(a => a.tokenStatus === 'expired' || a.tokenStatus === 'revoked' || a.tokenStatus === 'invalid');
+              if (expired.length === 0) return null;
+              return (
+                <div className="mx-3 mt-3 mb-1 bg-warning/15 border border-warning/30 rounded-lg px-4 py-3 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-warning shrink-0" />
+                  <p className="text-sm">
+                    <span className="font-semibold text-foreground">{expired.length} account{expired.length > 1 ? 's' : ''} need{expired.length === 1 ? 's' : ''} reconnecting.</span>{" "}
+                    <span className="text-muted-foreground">Token expired or revoked.</span>{" "}
+                    <button className="text-primary font-medium hover:underline" onClick={() => window.location.href = '/my/social-media/accounts'}>Reconnect now</button>
+                  </p>
+                </div>
+              );
+            })()}
 
             {/* Account list */}
             <div className="max-h-[320px] overflow-y-auto py-2">
@@ -941,7 +947,7 @@ export default function PostComposer({
                     className="min-h-[120px] border-none shadow-none resize-y p-0 text-sm focus-visible:ring-0 placeholder:text-muted-foreground/60"
                   />
                   <div className="text-xs text-muted-foreground mt-1">
-                    Char limit: {val.length} / {charLimit}
+                    <span className={val.length > charLimit ? "text-destructive font-medium" : charLimit - val.length < 20 ? "text-destructive" : charLimit - val.length < 60 ? "text-warning" : ""}>Char limit: {val.length} / {charLimit}</span>
                   </div>
                 </div>
               );
@@ -1029,7 +1035,7 @@ export default function PostComposer({
                 disabled={selectedPlatforms.length === 0}
               />
               <div className="text-xs text-muted-foreground pb-1">
-                Char limit: {content.length} / {activeCharLimit}
+                <span className={content.length > activeCharLimit ? "text-destructive font-medium" : activeCharLimit - content.length < 20 ? "text-destructive" : activeCharLimit - content.length < 60 ? "text-warning" : ""}>Char limit: {content.length} / {activeCharLimit}</span>
               </div>
             </div>
           </>
@@ -1794,8 +1800,8 @@ export default function PostComposer({
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold">✦</div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">SmartlyQ AI</p>
-                    <p className="text-xs text-muted-foreground">Uses your plan's allowed text models.</p>
+                    <p className="text-sm font-medium text-foreground">GPT-4o Mini</p>
+                    <p className="text-xs text-muted-foreground">OpenAI text generation · 0.01 credits</p>
                   </div>
                 </div>
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -1921,8 +1927,8 @@ export default function PostComposer({
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">◆</div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">SmartlyQ AI — Image</p>
-                    <p className="text-xs text-muted-foreground">Generated images are saved into your Media Library.</p>
+                    <p className="text-sm font-medium text-foreground">DALL-E 3</p>
+                    <p className="text-xs text-muted-foreground">OpenAI image generation · 0.02 credits</p>
                   </div>
                 </div>
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -2016,8 +2022,8 @@ export default function PostComposer({
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-white text-[8px] font-bold">▶</div>
                     <div>
-                      <p className="text-xs font-medium text-foreground">SmartlyQ AI — Video</p>
-                      <p className="text-[10px] text-muted-foreground">Generated videos saved to Media Library.</p>
+                      <p className="text-xs font-medium text-foreground">Pollo.ai</p>
+                      <p className="text-[10px] text-muted-foreground">AI video generation · 0.10 credits</p>
                     </div>
                   </div>
                   <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
