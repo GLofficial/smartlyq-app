@@ -133,15 +133,9 @@ export const TAB_FIELDS: Record<string, FieldDef[]> = {
 	],
 	// social_oauth: handled by SocialOAuthTab component (reads social_oauth_providers table)
 	storage: [
-		{ key: "storage_driver", label: "Storage driver", type: "select", options: [
-			{ value: "local", label: "Local" }, { value: "r2", label: "Cloudflare R2" }, { value: "s3", label: "AWS S3" },
-		] },
-		{ key: "r2_access_key_id", label: "R2 Access Key ID", type: "password" },
-		{ key: "r2_secret_access_key", label: "R2 Secret Access Key", type: "password" },
-		{ key: "r2_bucket", label: "R2 Bucket name", type: "text" },
-		{ key: "r2_endpoint", label: "R2 Endpoint URL", type: "text" },
-		{ key: "r2_region", label: "R2 Region", type: "text", placeholder: "auto" },
-		{ key: "r2_public_url", label: "R2 Public URL (CDN)", type: "text" },
+		{ key: "r2_accesskey", label: "Access key", type: "password" },
+		{ key: "r2_secretkey", label: "Secret key", type: "password" },
+		{ key: "r2_bucket", label: "Bucket name", type: "text" },
 	],
 	app: [
 		{ key: "jwt_key", label: "JWT Secret Key", type: "password" },
