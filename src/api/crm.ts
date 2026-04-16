@@ -238,7 +238,7 @@ export function useCrmDealDelete() {
 
 // Contacts
 
-export function useCrmContacts(params?: { status?: string; search?: string; page?: number; limit?: number }) {
+export function useCrmContacts(params?: { status?: string; search?: string; page?: number; limit?: number; tag?: string }) {
   return useQuery({
     queryKey: ["crm", "contacts", params ?? {}],
     queryFn: () => {
@@ -247,8 +247,9 @@ export function useCrmContacts(params?: { status?: string; search?: string; page
       if (params?.search) sp.set("search", params.search);
       if (params?.page) sp.set("page", String(params.page));
       if (params?.limit) sp.set("limit", String(params.limit));
+      if (params?.tag) sp.set("tag", params.tag);
       const qs = sp.toString();
-      return apiClient.get<{ contacts: ApiContact[]; pagination: { page: number; limit: number; total: number; pages: number } }>(`/api/spa/crm/contacts${qs ? `?${qs}` : ""}`);
+      return apiClient.get<{ contacts: ApiContact[]; pagination: { page: number; limit: number; total: number; pages: number }; available_tags?: string[] }>(`/api/spa/crm/contacts${qs ? `?${qs}` : ""}`);
     },
   });
 }

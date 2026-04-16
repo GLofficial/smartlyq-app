@@ -40,6 +40,7 @@ export function CrmContactsPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [tagFilter, setTagFilter] = useState<string>("");
   const [sortKey, setSortKey] = useState<string>("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
@@ -57,11 +58,13 @@ export function CrmContactsPage() {
     limit: perPage,
     search: debouncedSearch || undefined,
     status: statusFilter || undefined,
+    tag: tagFilter || undefined,
   });
   const deleteContactMut = useCrmContactDelete();
 
   const contacts = data?.contacts ?? [];
   const pagination = data?.pagination ?? { page: 1, limit: 50, total: 0, pages: 1 };
+  const availableTags = (data as any)?.available_tags ?? [];
 
   // Client-side sort (server returns page, we sort within page for instant feedback)
   const sorted = [...contacts].sort((a, b) => {
@@ -127,7 +130,7 @@ export function CrmContactsPage() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-foreground)]" />
-          <Input placeholder="Search contacts..." value={search} onChange={(e) => handleSearch(e.target.value)} className="pl-9" />
+          <Input placeholder="Search by name, email, company, or tag..." value={search} onChange={(e) => handleSearch(e.target.value)} className="pl-9" />
         </div>
         <Select value={statusFilter || "all"} onValueChange={handleStatusChange}>
           <SelectTrigger className="w-[150px]"><SelectValue placeholder="All statuses" /></SelectTrigger>
@@ -139,6 +142,15 @@ export function CrmContactsPage() {
             <SelectItem value="lost">Lost</SelectItem>
           </SelectContent>
         </Select>
+        {availableTags.length > 0 && (
+          <Select value={tagFilter || "all"} onValueChange={(v) => { setTagFilter(v === "all" ? "" : v); setPage(1); }}>
+            <SelectTrigger className="w-[170px]"><SelectValue placeholder="All tags" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All tags</SelectItem>
+              {availableTags.map((t: string) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Table */}
