@@ -187,3 +187,23 @@ export function useSocialAnalytics(period = "30d") {
 			apiClient.get<AnalyticsData>(`/api/spa/social/analytics?period=${period}`),
 	});
 }
+
+export interface PostingLimits {
+	has_social_media: boolean;
+	account_limit: number | null;
+	connected_accounts: number;
+	global_daily_cap: number;
+	global_used_today: number;
+	platform_usage: Record<string, number>;
+	platform_limits: Record<string, number>;
+	upload_limits: { max_image_mb: number; max_video_mb: number };
+	duplicate_window_hours: number;
+}
+
+export function usePostingLimits() {
+	return useQuery({
+		queryKey: ["social", "posting-limits"],
+		queryFn: () => apiClient.get<PostingLimits>("/api/spa/social/posting-limits"),
+		staleTime: 30_000,
+	});
+}

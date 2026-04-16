@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useSocialHub } from "@/api/social";
+import { useSocialHub, usePostingLimits } from "@/api/social";
 import { useCreatePost, type CreatePostData } from "@/api/social-posts";
 import { useAiRewrite, useAiImage } from "@/api/ai-generate";
 import { useGenerateVideo } from "@/api/video-gen";
 import { apiClient } from "@/lib/api-client";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { toast } from "sonner";
+import { AlertTriangle, Info } from "lucide-react";
 import PostComposer from "./PostComposer";
 import PostPreview from "./PostPreview";
 
@@ -26,6 +27,7 @@ export function CreatePostPage() {
   const navigate = useNavigate();
   const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
   const { data: hubData, isLoading: hubLoading } = useSocialHub();
+  const { data: limits } = usePostingLimits();
   const createPost = useCreatePost();
   const aiRewrite = useAiRewrite();
   const aiImage = useAiImage();
@@ -48,12 +50,51 @@ export function CreatePostPage() {
     if (state) window.history.replaceState({}, document.title);
   }, [state]);
 
+  // Validate before posting
+  const validatePost = useCallback((action: string, scheduledTime?: string): boolean => {
+    if (selectedAccountIds.length === 0) {
+      toast.error("Please select at least one account");
+      return false;
+    }
+    if (!content.trim() && action !== "save_draft") {
+      toast.error("Please write some content");
+      return false;
+    }
+    // Schedule in past check
+    if (action === "scheduled" && scheduledTime) {
+      const schedDate = new Date(scheduledTime);
+      if (schedDate <= new Date()) {
+        toast.error("Cannot schedule in the past. Please select a future date and time.");
+        return false;
+      }
+    }
+    // Global daily cap
+    if (limits && action !== "save_draft") {
+      if (limits.global_used_today >= limits.global_daily_cap) {
+        toast.error(`Daily posting limit reached (${limits.global_daily_cap} posts/day). Try again tomorrow.`);
+        return false;
+      }
+      // Per-platform limit check
+      for (const platform of selectedPlatforms) {
+        const used = limits.platform_usage[platform] ?? 0;
+        const limit = limits.platform_limits[platform];
+        if (limit && used >= limit) {
+          toast.error(`Daily limit reached for ${platform} (${limit} posts/day).`);
+          return false;
+        }
+      }
+    }
+    // Plan gate
+    if (limits && !limits.has_social_media) {
+      toast.error("Social media posting is not available on your current plan. Please upgrade.");
+      return false;
+    }
+    return true;
+  }, [selectedAccountIds, content, selectedPlatforms, limits]);
+
   const handleSubmit = useCallback(
     (action: CreatePostData["action"], scheduledTime?: string) => {
-      if (selectedAccountIds.length === 0) {
-        toast.error("Please select at least one account");
-        return;
-      }
+      if (!validatePost(action, scheduledTime)) return;
       createPost.mutate(
         {
           title: "",
@@ -77,7 +118,7 @@ export function CreatePostPage() {
         },
       );
     },
-    [content, selectedPlatforms, selectedAccountIds, createPost, navigate, wsHash],
+    [content, selectedPlatforms, selectedAccountIds, createPost, navigate, wsHash, validatePost],
   );
 
   const handleAiText = useCallback(async (topic: string, tone: string) => {
@@ -96,14 +137,24 @@ export function CreatePostPage() {
   }, [aiVideo]);
 
   const handleMediaUpload = useCallback(async (file: File) => {
+    // File size validation
+    if (limits) {
+      const isVideo = file.type.startsWith("video/");
+      const maxMb = isVideo ? limits.upload_limits.max_video_mb : limits.upload_limits.max_image_mb;
+      const fileMb = file.size / (1024 * 1024);
+      if (fileMb > maxMb) {
+        toast.error(`File too large. Maximum ${maxMb}MB for ${isVideo ? "videos" : "images"}.`);
+        throw new Error("File too large");
+      }
+    }
     const formData = new FormData();
     formData.append("file", file);
     const result = await apiClient.upload<{ url: string; name: string; file_type: string }>("/my/social-media/upload", formData);
+    toast.success("Media uploaded");
     return { url: result.url, name: result.name || file.name, type: (result.file_type === "video" ? "video" : "image") as "image" | "video" };
-  }, []);
+  }, [limits]);
 
   const handleCanvaDesign = useCallback((width: string, height: string) => {
-    // Open Canva in a new window via the Bootstrap OAuth flow
     window.open(`/my/canva/connect?width=${width}&height=${height}`, "_blank", "width=1200,height=800");
   }, []);
 
@@ -115,43 +166,93 @@ export function CreatePostPage() {
     );
   }
 
+  // Plan gate — full block
+  if (limits && !limits.has_social_media) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center space-y-3">
+          <AlertTriangle className="w-12 h-12 text-warning mx-auto" />
+          <p className="text-lg font-semibold text-foreground">Social Media Not Available</p>
+          <p className="text-sm text-muted-foreground">To access this feature, please upgrade your current plan.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">
-      <div className="flex flex-col xl:flex-row gap-4 lg:gap-6 max-w-6xl mx-auto">
-        <PostComposer
-          selectedPlatforms={selectedPlatforms}
-          onPlatformsChange={setSelectedPlatforms}
-          content={content}
-          onContentChange={setContent}
-          platformContent={platformContent}
-          onPlatformContentChange={setPlatformContent}
-          customizeChannel={customizeChannel}
-          onCustomizeChannelChange={setCustomizeChannel}
-          onImageCountChange={setImageCount}
-          onPostTypeChange={setPlatformPostType}
-          initialScheduledDate={state?.prefillDate || state?.editPost?.date}
-          initialScheduledTime={state?.prefillTime || state?.editPost?.time}
-          realAccounts={accounts}
-          selectedAccountIds={selectedAccountIds}
-          onSelectedAccountIdsChange={setSelectedAccountIds}
-          onSaveDraft={() => handleSubmit("save_draft")}
-          onPostNow={() => handleSubmit("post_now")}
-          onSchedulePost={(date, time) => handleSubmit("scheduled", `${date}T${time}:00`)}
-          isSubmitting={createPost.isPending}
-          onAiGenerateText={handleAiText}
-          onAiGenerateImage={handleAiImage}
-          onAiGenerateVideo={handleAiVideo}
-          onMediaUpload={handleMediaUpload}
-          onCanvaDesign={handleCanvaDesign}
-        />
-        <PostPreview
-          selectedPlatforms={selectedPlatforms}
-          content={content}
-          platformContent={platformContent}
-          customizeChannel={customizeChannel}
-          imageCount={imageCount}
-          platformPostType={platformPostType}
-        />
+      <div className="max-w-6xl mx-auto space-y-4">
+        {/* Posting limits warning banner */}
+        {limits && limits.global_used_today >= limits.global_daily_cap * 0.8 && (
+          <div className={`flex items-center gap-2 px-4 py-3 rounded-lg border ${limits.global_used_today >= limits.global_daily_cap ? "bg-destructive/10 border-destructive/30" : "bg-warning/10 border-warning/30"}`}>
+            <AlertTriangle className={`w-5 h-5 shrink-0 ${limits.global_used_today >= limits.global_daily_cap ? "text-destructive" : "text-warning"}`} />
+            <p className="text-sm">
+              <span className="font-semibold text-foreground">
+                {limits.global_used_today >= limits.global_daily_cap
+                  ? "Daily posting limit reached."
+                  : `Approaching daily limit: ${limits.global_used_today}/${limits.global_daily_cap} posts today.`}
+              </span>
+              {limits.global_used_today >= limits.global_daily_cap && (
+                <span className="text-muted-foreground ml-1">You can still save drafts. Try again tomorrow.</span>
+              )}
+            </p>
+          </div>
+        )}
+
+        {/* Per-platform usage info */}
+        {limits && selectedPlatforms.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {selectedPlatforms.map(p => {
+              const used = limits.platform_usage[p] ?? 0;
+              const limit = limits.platform_limits[p];
+              if (!limit) return null;
+              const pct = used / limit;
+              return (
+                <div key={p} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${pct >= 1 ? "bg-destructive/10 border-destructive/30 text-destructive" : pct >= 0.7 ? "bg-warning/10 border-warning/30 text-warning" : "bg-muted border-border text-muted-foreground"}`}>
+                  <Info className="w-3 h-3" />
+                  <span className="capitalize">{p}</span>: {used}/{limit} today
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="flex flex-col xl:flex-row gap-4 lg:gap-6">
+          <PostComposer
+            selectedPlatforms={selectedPlatforms}
+            onPlatformsChange={setSelectedPlatforms}
+            content={content}
+            onContentChange={setContent}
+            platformContent={platformContent}
+            onPlatformContentChange={setPlatformContent}
+            customizeChannel={customizeChannel}
+            onCustomizeChannelChange={setCustomizeChannel}
+            onImageCountChange={setImageCount}
+            onPostTypeChange={setPlatformPostType}
+            initialScheduledDate={state?.prefillDate || state?.editPost?.date}
+            initialScheduledTime={state?.prefillTime || state?.editPost?.time}
+            realAccounts={accounts}
+            selectedAccountIds={selectedAccountIds}
+            onSelectedAccountIdsChange={setSelectedAccountIds}
+            onSaveDraft={() => handleSubmit("save_draft")}
+            onPostNow={() => handleSubmit("post_now")}
+            onSchedulePost={(date, time) => handleSubmit("scheduled", `${date}T${time}:00`)}
+            isSubmitting={createPost.isPending}
+            onAiGenerateText={handleAiText}
+            onAiGenerateImage={handleAiImage}
+            onAiGenerateVideo={handleAiVideo}
+            onMediaUpload={handleMediaUpload}
+            onCanvaDesign={handleCanvaDesign}
+          />
+          <PostPreview
+            selectedPlatforms={selectedPlatforms}
+            content={content}
+            platformContent={platformContent}
+            customizeChannel={customizeChannel}
+            imageCount={imageCount}
+            platformPostType={platformPostType}
+          />
+        </div>
       </div>
     </div>
   );
