@@ -12,6 +12,7 @@ interface PostPreviewProps {
   imageCount?: number;
   platformPostType?: Record<string, string>;
   mediaUrls?: { url: string; type: "image" | "video" }[];
+  accountInfo?: { name: string; avatar: string; username?: string };
 }
 
 type Device = "desktop" | "mobile";
@@ -100,16 +101,70 @@ const PLATFORM_DIMENSIONS: Record<string, {
 
 // Use PLATFORM_BRANDS from PlatformIcons.tsx instead of inline PLATFORM_META
 
+// Character limit for "See more" truncation (approx 4 lines at preview width)
+const SEE_MORE_CHAR_LIMIT = 200;
+
+function TruncatedText({ text, className, placeholder }: { text: string; className?: string; placeholder?: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const display = text || placeholder || "";
+  if (!display) return null;
+
+  const needsTruncation = display.length > SEE_MORE_CHAR_LIMIT && !expanded;
+  const shown = needsTruncation ? display.slice(0, SEE_MORE_CHAR_LIMIT).trimEnd() + "..." : display;
+
+  return (
+    <p className={cn("text-sm text-foreground whitespace-pre-wrap", className)}>
+      {shown}
+      {needsTruncation && (
+        <button onClick={() => setExpanded(true)} className="text-primary hover:underline ml-0.5 font-medium text-sm">
+          See more
+        </button>
+      )}
+    </p>
+  );
+}
+
+function InstagramCaption({ username, text }: { username: string; text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const needsTruncation = text.length > SEE_MORE_CHAR_LIMIT && !expanded;
+  const shown = needsTruncation ? text.slice(0, SEE_MORE_CHAR_LIMIT).trimEnd() + "..." : text;
+  return (
+    <p className="text-sm">
+      <span className="font-semibold text-foreground">{username}</span>{" "}
+      <span className="text-foreground whitespace-pre-wrap">{shown}</span>
+      {needsTruncation && (
+        <button onClick={() => setExpanded(true)} className="text-muted-foreground hover:text-foreground ml-0.5 text-sm">
+          more
+        </button>
+      )}
+    </p>
+  );
+}
+
 function SingleImagePlaceholder({ aspect, label, mediaUrl, mediaType }: { aspect: string; label: string; mediaUrl?: string; mediaType?: "image" | "video" }) {
+  const videoRef = useState<HTMLVideoElement | null>(null);
+  const [playing, setPlaying] = useState(false);
   if (mediaUrl && mediaType === "video") {
     return (
-      <div className="relative" style={{ aspectRatio: aspect }}>
-        <video src={mediaUrl} className="w-full h-full object-cover" muted />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
-            <Play className="w-5 h-5 text-white ml-0.5" />
+      <div
+        className="relative cursor-pointer"
+        style={{ aspectRatio: aspect }}
+        onClick={() => {
+          const vid = videoRef[0];
+          if (vid) {
+            if (vid.paused) { vid.play(); setPlaying(true); }
+            else { vid.pause(); setPlaying(false); }
+          }
+        }}
+      >
+        <video ref={(el) => { videoRef[0] = el; }} src={mediaUrl} className="w-full h-full object-cover" muted playsInline loop />
+        {!playing && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center">
+              <Play className="w-6 h-6 text-white ml-0.5" />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }
@@ -344,18 +399,24 @@ function MultiImageGrid({ platform, device, imageCount, spec, mediaUrls }: { pla
   );
 }
 
-function FacebookPreview({ content, device, imageCount = 1, mediaUrls }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
+function FacebookPreview({ content, device, imageCount = 1, mediaUrls, accountInfo }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-3 flex items-center gap-2">
-        <div className="w-10 h-10 rounded-full bg-muted" />
+        {accountInfo?.avatar ? (
+          <img src={accountInfo.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-muted" />
+        )}
         <div>
-          <p className="text-sm font-semibold text-foreground">George Liontos</p>
+          <p className="text-sm font-semibold text-foreground">{accountInfo?.name || "Your Page"}</p>
           <p className="text-xs text-muted-foreground">Just now · 🌐</p>
         </div>
         <MoreHorizontal className="w-5 h-5 text-muted-foreground ml-auto" />
       </div>
-      <p className="px-3 pb-3 text-sm text-foreground whitespace-pre-wrap">{content || "Your post preview will appear here..."}</p>
+      <div className="px-3 pb-3">
+        <TruncatedText text={content} placeholder="Your post preview will appear here..." />
+      </div>
       <ImagePlaceholder platform="facebook" device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
       <div className="px-3 py-1.5 flex items-center text-xs text-muted-foreground">
         <span>❤️😊 0 others</span>
@@ -372,12 +433,17 @@ function FacebookPreview({ content, device, imageCount = 1, mediaUrls }: { conte
   );
 }
 
-function InstagramPreview({ content, device, imageCount = 1, mediaUrls }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
+function InstagramPreview({ content, device, imageCount = 1, mediaUrls, accountInfo }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
+  const displayName = accountInfo?.username || accountInfo?.name || "your_page";
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-3 flex items-center gap-2">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[hsl(45,100%,60%)] via-[hsl(var(--instagram))] to-[hsl(280,70%,55%)]" />
-        <p className="text-sm font-semibold text-foreground">your_page</p>
+        {accountInfo?.avatar ? (
+          <img src={accountInfo.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[hsl(45,100%,60%)] via-[hsl(var(--instagram))] to-[hsl(280,70%,55%)]" />
+        )}
+        <p className="text-sm font-semibold text-foreground">{displayName}</p>
         <MoreHorizontal className="w-5 h-5 text-muted-foreground ml-auto" />
       </div>
       <ImagePlaceholder platform="instagram" device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
@@ -388,7 +454,7 @@ function InstagramPreview({ content, device, imageCount = 1, mediaUrls }: { cont
         <Bookmark className="w-6 h-6 text-foreground ml-auto" />
       </div>
       <div className="px-3 pb-3">
-        <p className="text-sm"><span className="font-semibold text-foreground">your_page</span>{" "}<span className="text-foreground">{content || "Your caption here..."}</span></p>
+        <InstagramCaption username={displayName} text={content || "Your caption here..."} />
         <p className="text-xs text-muted-foreground mt-1">JUST NOW</p>
       </div>
     </div>
@@ -405,7 +471,9 @@ function TwitterPreview({ content, device, imageCount = 1 }: { content: string; 
             <span className="text-sm font-bold text-foreground">Your Name</span>
             <span className="text-sm text-muted-foreground">@handle · now</span>
           </div>
-          <p className="text-sm text-foreground mt-1 whitespace-pre-wrap">{content || "Your post preview will appear here..."}</p>
+          <div className="mt-1">
+            <TruncatedText text={content} placeholder="Your post preview will appear here..." />
+          </div>
           <div className="rounded-xl mt-2 overflow-hidden">
             <ImagePlaceholder platform="twitter" device={device} imageCount={imageCount} />
           </div>
@@ -430,7 +498,9 @@ function LinkedInPreview({ content, device, imageCount = 1 }: { content: string;
           <p className="text-xs text-muted-foreground">Your headline · Just now</p>
         </div>
       </div>
-      <p className="px-3 pb-3 text-sm text-foreground whitespace-pre-wrap">{content || "Your post preview will appear here..."}</p>
+      <div className="px-3 pb-3">
+        <TruncatedText text={content} placeholder="Your post preview will appear here..." />
+      </div>
       <ImagePlaceholder platform="linkedin" device={device} imageCount={imageCount} />
       <div className="border-t border-border flex">
         {[{ icon: ThumbsUp, l: "Like" }, { icon: MessageCircle, l: "Comment" }, { icon: Repeat2, l: "Repost" }, { icon: Send, l: "Send" }].map((a) => (
@@ -842,17 +912,26 @@ function InstagramStoryPreview({ content }: { content: string }) {
   );
 }
 
-function InstagramReelsPreview({ content }: { content: string }) {
+function InstagramReelsPreview({ content, mediaUrls }: { content: string; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
+  const firstMedia = mediaUrls?.[0];
   return (
     <div className="flex justify-center">
       <div className="relative rounded-[2rem] overflow-hidden border-[6px] border-foreground mx-auto" style={{ aspectRatio: "9/16", maxHeight: 560, width: 300 }}>
         <div className="absolute inset-0 bg-foreground">
-          {/* Video placeholder */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-14 h-14 rounded-full bg-card/20 flex items-center justify-center backdrop-blur-sm">
-              <Play className="w-7 h-7 text-card/80 ml-1" fill="currentColor" />
+          {/* Media or video placeholder */}
+          {firstMedia ? (
+            firstMedia.type === "video" ? (
+              <video src={firstMedia.url} className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline />
+            ) : (
+              <img src={firstMedia.url} alt="Reel" className="absolute inset-0 w-full h-full object-cover" />
+            )
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-14 h-14 rounded-full bg-card/20 flex items-center justify-center backdrop-blur-sm">
+                <Play className="w-7 h-7 text-card/80 ml-1" fill="currentColor" />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Instagram Reels header */}
           <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
@@ -905,13 +984,22 @@ function InstagramReelsPreview({ content }: { content: string }) {
   );
 }
 
-function FacebookStoryPreview({ content }: { content: string }) {
+function FacebookStoryPreview({ content, mediaUrls }: { content: string; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
+  const firstMedia = mediaUrls?.[0];
   return (
     <div className="relative rounded-2xl overflow-hidden bg-foreground mx-auto" style={{ aspectRatio: "9/16", maxHeight: 520, maxWidth: 280 }}>
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-card/30 gap-1">
-        <span className="text-xs">Story / Reel preview</span>
-        <span className="text-[10px]">1080 × 1920px (9:16)</span>
-      </div>
+      {firstMedia ? (
+        firstMedia.type === "video" ? (
+          <video src={firstMedia.url} className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline />
+        ) : (
+          <img src={firstMedia.url} alt="Story" className="absolute inset-0 w-full h-full object-cover" />
+        )
+      ) : (
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-card/30 gap-1">
+          <span className="text-xs">Story / Reel preview</span>
+          <span className="text-[10px]">1080 × 1920px (9:16)</span>
+        </div>
+      )}
       {/* Progress bars */}
       <div className="absolute top-2 left-3 right-3 flex gap-1">
         <div className="flex-1 h-0.5 bg-card/40 rounded-full overflow-hidden">
@@ -938,18 +1026,27 @@ function FacebookStoryPreview({ content }: { content: string }) {
   );
 }
 
-function TikTokStoryPreview({ content }: { content: string }) {
+function TikTokStoryPreview({ content, mediaUrls }: { content: string; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
+  const firstMedia = mediaUrls?.[0];
   return (
     <div className="flex justify-center">
       <div className="relative rounded-[2rem] overflow-hidden border-[6px] border-foreground mx-auto" style={{ aspectRatio: "9/16", maxHeight: 560, width: 300 }}>
         <div className="absolute inset-0 bg-foreground">
-          {/* Video area placeholder */}
+          {/* Media or video area placeholder */}
+          {firstMedia ? (
+            firstMedia.type === "video" ? (
+              <video src={firstMedia.url} className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline />
+            ) : (
+              <img src={firstMedia.url} alt="TikTok" className="absolute inset-0 w-full h-full object-cover" />
+            )
+          ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             {/* Play button */}
             <div className="w-14 h-14 rounded-full bg-card/20 flex items-center justify-center backdrop-blur-sm">
               <div className="w-0 h-0 border-t-[10px] border-t-transparent border-b-[10px] border-b-transparent border-l-[16px] border-l-card/80 ml-1" />
             </div>
           </div>
+          )}
 
           {/* Right side actions */}
           <div className="absolute right-3 bottom-36 flex flex-col items-center gap-5">
@@ -997,17 +1094,26 @@ function TikTokStoryPreview({ content }: { content: string }) {
   );
 }
 
-function YouTubeShortPreview({ content }: { content: string }) {
+function YouTubeShortPreview({ content, mediaUrls }: { content: string; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
+  const firstMedia = mediaUrls?.[0];
   return (
     <div className="flex justify-center">
       <div className="relative rounded-[2rem] overflow-hidden border-[6px] border-foreground mx-auto" style={{ aspectRatio: "9/16", maxHeight: 560, width: 300 }}>
         <div className="absolute inset-0 bg-foreground">
-          {/* Video area placeholder */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-14 h-14 rounded-full bg-card/20 flex items-center justify-center backdrop-blur-sm">
-              <div className="w-0 h-0 border-t-[10px] border-t-transparent border-b-[10px] border-b-transparent border-l-[16px] border-l-card/80 ml-1" />
+          {/* Media or placeholder */}
+          {firstMedia ? (
+            firstMedia.type === "video" ? (
+              <video src={firstMedia.url} className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline />
+            ) : (
+              <img src={firstMedia.url} alt="Short" className="absolute inset-0 w-full h-full object-cover" />
+            )
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-14 h-14 rounded-full bg-card/20 flex items-center justify-center backdrop-blur-sm">
+                <div className="w-0 h-0 border-t-[10px] border-t-transparent border-b-[10px] border-b-transparent border-l-[16px] border-l-card/80 ml-1" />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Right side actions */}
           <div className="absolute right-3 bottom-32 flex flex-col items-center gap-4">
@@ -1068,16 +1174,25 @@ function YouTubeShortPreview({ content }: { content: string }) {
   );
 }
 
-function SnapchatStoryPreview({ content }: { content: string }) {
+function SnapchatStoryPreview({ content, mediaUrls }: { content: string; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
+  const firstMedia = mediaUrls?.[0];
   return (
     <div className="flex justify-center">
       <div className="relative rounded-[2rem] overflow-hidden border-[6px] border-foreground mx-auto" style={{ aspectRatio: "9/16", maxHeight: 560, width: 300 }}>
         <div className="absolute inset-0 bg-foreground">
+          {firstMedia ? (
+            firstMedia.type === "video" ? (
+              <video src={firstMedia.url} className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline />
+            ) : (
+              <img src={firstMedia.url} alt="Snap" className="absolute inset-0 w-full h-full object-cover" />
+            )
+          ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-14 h-14 rounded-full bg-card/20 flex items-center justify-center backdrop-blur-sm">
               <Play className="w-7 h-7 text-card/80 ml-1" fill="currentColor" />
             </div>
           </div>
+          )}
 
           {/* Snapchat header */}
           <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
@@ -1120,7 +1235,7 @@ function SnapchatStoryPreview({ content }: { content: string }) {
   );
 }
 
-const STORY_PREVIEW_MAP: Record<string, React.FC<{ content: string }>> = {
+const STORY_PREVIEW_MAP: Record<string, React.FC<{ content: string; mediaUrls?: { url: string; type: "image" | "video" }[] }>> = {
   instagram: InstagramReelsPreview,
   facebook: FacebookStoryPreview,
   tiktok: TikTokStoryPreview,
@@ -1147,7 +1262,7 @@ const PREVIEW_MAP: Record<string, React.FC<{ content: string; device: Device; im
   whatsapp: WhatsAppPreview,
 };
 
-export default function PostPreview({ selectedPlatforms, content, platformContent, customizeChannel, imageCount = 1, platformPostType = {}, mediaUrls }: PostPreviewProps) {
+export default function PostPreview({ selectedPlatforms, content, platformContent, customizeChannel, imageCount = 1, platformPostType = {}, mediaUrls, accountInfo }: PostPreviewProps) {
   const [device, setDevice] = useState<Device>("desktop");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("feed");
   const platforms = selectedPlatforms.length > 0 ? selectedPlatforms : ["facebook"];
@@ -1250,7 +1365,7 @@ export default function PostPreview({ selectedPlatforms, content, platformConten
           effectiveMode === "feed" && device === "mobile" && "max-w-[320px] mx-auto"
         )}>
           {effectiveMode === "story" && supportsStory
-            ? (() => { const StoryComp = STORY_PREVIEW_MAP[currentPreview]; return StoryComp ? <StoryComp content={displayContent} /> : null; })()
+            ? (() => { const StoryComp = STORY_PREVIEW_MAP[currentPreview]; return StoryComp ? <StoryComp content={displayContent} mediaUrls={mediaUrls} accountInfo={accountInfo} /> : null; })()
             : (() => {
                 // Check for LinkedIn Document post type
                 const postType = platformPostType[currentPreview] || platformPostType[currentPreview.replace("_page", "")] || "";
@@ -1258,7 +1373,7 @@ export default function PostPreview({ selectedPlatforms, content, platformConten
                   return <LinkedInDocumentPreview content={displayContent} device={device} />;
                 }
                 const FeedComp = PREVIEW_MAP[currentPreview];
-                return FeedComp ? <FeedComp content={displayContent} device={device} imageCount={imageCount} mediaUrls={mediaUrls} /> : <GenericPreview platform={currentPreview} content={displayContent} device={device} imageCount={imageCount} mediaUrls={mediaUrls} />;
+                return FeedComp ? <FeedComp content={displayContent} device={device} imageCount={imageCount} mediaUrls={mediaUrls} accountInfo={accountInfo} /> : <GenericPreview platform={currentPreview} content={displayContent} device={device} imageCount={imageCount} mediaUrls={mediaUrls} accountInfo={accountInfo} />;
               })()
           }
         </div>
@@ -1267,21 +1382,27 @@ export default function PostPreview({ selectedPlatforms, content, platformConten
   );
 }
 
-function GenericPreview({ platform, content, device, imageCount = 1, mediaUrls }: { platform: string; content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
+function GenericPreview({ platform, content, device, imageCount = 1, mediaUrls, accountInfo }: { platform: string; content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   const brand = PLATFORM_BRANDS[platform];
   if (!brand) return null;
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-4 flex items-center gap-2">
-        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-primary-foreground", brand.color)}>
-          <PlatformIcon platformId={platform} size={16} />
-        </div>
+        {accountInfo?.avatar ? (
+          <img src={accountInfo.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+        ) : (
+          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-primary-foreground", brand.color)}>
+            <PlatformIcon platformId={platform} size={16} />
+          </div>
+        )}
         <div>
-          <p className="text-sm font-semibold text-foreground">{brand.label}</p>
+          <p className="text-sm font-semibold text-foreground">{accountInfo?.name || brand.label}</p>
           <p className="text-xs text-muted-foreground">Just now</p>
         </div>
       </div>
-      <p className="px-4 pb-3 text-sm text-foreground whitespace-pre-wrap">{content || "Your post preview will appear here..."}</p>
+      <div className="px-4 pb-3">
+        <TruncatedText text={content} placeholder="Your post preview will appear here..." />
+      </div>
       <ImagePlaceholder platform={platform} device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
     </div>
   );
