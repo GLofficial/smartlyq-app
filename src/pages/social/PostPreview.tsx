@@ -158,13 +158,14 @@ function InstagramCaption({ username, text }: { username: string; text: string }
   );
 }
 
-function SingleImagePlaceholder({ aspect, label, mediaUrl, mediaType }: { aspect: string; label: string; mediaUrl?: string; mediaType?: "image" | "video" }) {
+function SingleImagePlaceholder({ aspect, label, mediaUrl, mediaType, forceCrop }: { aspect: string; label: string; mediaUrl?: string; mediaType?: "image" | "video"; forceCrop?: boolean }) {
   const videoRef = useState<HTMLVideoElement | null>(null);
   const [playing, setPlaying] = useState(false);
   if (mediaUrl && mediaType === "video") {
     return (
       <div
         className="relative cursor-pointer bg-foreground"
+        style={forceCrop ? { aspectRatio: aspect } : undefined}
         onClick={() => {
           const vid = videoRef[0];
           if (vid) {
@@ -173,7 +174,14 @@ function SingleImagePlaceholder({ aspect, label, mediaUrl, mediaType }: { aspect
           }
         }}
       >
-        <video ref={(el) => { videoRef[0] = el; }} src={mediaUrl} className="w-full h-auto block max-h-[600px] object-contain mx-auto" muted playsInline loop />
+        <video
+          ref={(el) => { videoRef[0] = el; }}
+          src={mediaUrl}
+          className={cn(forceCrop ? "absolute inset-0 w-full h-full object-cover" : "w-full h-auto block max-h-[600px] object-contain mx-auto")}
+          muted
+          playsInline
+          loop
+        />
         {!playing && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center">
@@ -185,6 +193,13 @@ function SingleImagePlaceholder({ aspect, label, mediaUrl, mediaType }: { aspect
     );
   }
   if (mediaUrl) {
+    if (forceCrop) {
+      return (
+        <div className="bg-foreground overflow-hidden" style={{ aspectRatio: aspect }}>
+          <img src={mediaUrl} alt="Preview" className="w-full h-full object-cover" />
+        </div>
+      );
+    }
     return <img src={mediaUrl} alt="Preview" className="w-full h-auto block max-h-[600px] object-contain mx-auto bg-foreground" />;
   }
   return (
@@ -195,13 +210,17 @@ function SingleImagePlaceholder({ aspect, label, mediaUrl, mediaType }: { aspect
   );
 }
 
+/** Platforms that force a crop on feed images (match real platform behavior). */
+const FORCE_CROP_PLATFORMS = new Set(["instagram", "twitter", "youtube"]);
+
 function ImagePlaceholder({ platform, device, imageCount = 1, mediaUrls }: { platform: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
   const dims = PLATFORM_DIMENSIONS[platform];
   const spec = dims ? dims[device] : { imageAspect: "16/9", imageLabel: "1200 × 630px" };
   const firstMedia = mediaUrls?.[0];
+  const forceCrop = FORCE_CROP_PLATFORMS.has(platform);
 
   if (imageCount <= 1) {
-    return <SingleImagePlaceholder aspect={spec.imageAspect} label={spec.imageLabel} mediaUrl={firstMedia?.url} mediaType={firstMedia?.type} />;
+    return <SingleImagePlaceholder aspect={spec.imageAspect} label={spec.imageLabel} mediaUrl={firstMedia?.url} mediaType={firstMedia?.type} forceCrop={forceCrop} />;
   }
 
   // Platform-specific multi-image layouts
@@ -229,13 +248,14 @@ function MultiImageGrid({ platform, device, imageCount, spec, mediaUrls }: { pla
   const [carouselIndex, setCarouselIndex] = useState(0);
   const capped = Math.min(imageCount, 10);
   const mediaAt = (i: number) => mediaUrls?.[i];
+  const forceCrop = FORCE_CROP_PLATFORMS.has(platform);
 
   // Instagram & Threads: swipeable carousel with dots
   if (platform === "instagram" || platform === "threads") {
     const currentMedia = mediaAt(carouselIndex);
     return (
       <div className="relative">
-        <SingleImagePlaceholder aspect={spec.imageAspect} label={`Image ${carouselIndex + 1} of ${capped}`} mediaUrl={currentMedia?.url} mediaType={currentMedia?.type} />
+        <SingleImagePlaceholder aspect={spec.imageAspect} label={`Image ${carouselIndex + 1} of ${capped}`} mediaUrl={currentMedia?.url} mediaType={currentMedia?.type} forceCrop={forceCrop} />
         {carouselIndex > 0 && (
           <button onClick={() => setCarouselIndex(i => i - 1)} className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-card/80 shadow flex items-center justify-center">
             <ChevronLeft className="w-3.5 h-3.5 text-foreground" />
@@ -365,7 +385,7 @@ function MultiImageGrid({ platform, device, imageCount, spec, mediaUrls }: { pla
     const currentMedia = mediaAt(carouselIndex);
     return (
       <div className="relative">
-        <SingleImagePlaceholder aspect={spec.imageAspect} label={`Image ${carouselIndex + 1} of ${capped}`} mediaUrl={currentMedia?.url} mediaType={currentMedia?.type} />
+        <SingleImagePlaceholder aspect={spec.imageAspect} label={`Image ${carouselIndex + 1} of ${capped}`} mediaUrl={currentMedia?.url} mediaType={currentMedia?.type} forceCrop={forceCrop} />
         {carouselIndex > 0 && (
           <button onClick={() => setCarouselIndex(i => i - 1)} className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-card/80 shadow flex items-center justify-center">
             <ChevronLeft className="w-3.5 h-3.5 text-foreground" />
@@ -418,7 +438,7 @@ function MultiImageGrid({ platform, device, imageCount, spec, mediaUrls }: { pla
   const currentMedia = mediaAt(carouselIndex);
   return (
     <div className="relative">
-      <SingleImagePlaceholder aspect={spec.imageAspect} label={`Image ${carouselIndex + 1} of ${capped}`} mediaUrl={currentMedia?.url} mediaType={currentMedia?.type} />
+      <SingleImagePlaceholder aspect={spec.imageAspect} label={`Image ${carouselIndex + 1} of ${capped}`} mediaUrl={currentMedia?.url} mediaType={currentMedia?.type} forceCrop={forceCrop} />
       {carouselIndex > 0 && (
         <button onClick={() => setCarouselIndex(i => i - 1)} className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-card/80 shadow flex items-center justify-center">
           <ChevronLeft className="w-3.5 h-3.5 text-foreground" />
