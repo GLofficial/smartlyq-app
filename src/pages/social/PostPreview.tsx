@@ -883,7 +883,8 @@ function WhatsAppPreview({ content, device, imageCount = 1, accountInfo }: { con
 }
 
 // Story/Reel preview components (9:16 vertical)
-function InstagramStoryPreview({ content }: { content: string }) {
+function InstagramStoryPreview({ content, accountInfo }: { content: string; accountInfo?: { name: string; avatar: string; username?: string } }) {
+  const displayName = accountInfo?.username || accountInfo?.name || "your_page";
   return (
     <div className="relative rounded-2xl overflow-hidden bg-foreground mx-auto" style={{ aspectRatio: "9/16", maxHeight: 520, maxWidth: 280 }}>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-card/30 gap-1">
@@ -901,9 +902,13 @@ function InstagramStoryPreview({ content }: { content: string }) {
       {/* Header */}
       <div className="absolute top-5 left-3 right-3 flex items-center gap-2">
         <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[hsl(45,100%,60%)] via-[hsl(var(--instagram))] to-[hsl(280,70%,55%)] p-0.5">
-          <div className="w-full h-full rounded-full bg-foreground" />
+          {accountInfo?.avatar ? (
+            <img src={accountInfo.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+          ) : (
+            <div className="w-full h-full rounded-full bg-foreground" />
+          )}
         </div>
-        <span className="text-card text-xs font-semibold">your_page</span>
+        <span className="text-card text-xs font-semibold">{displayName}</span>
         <span className="text-card/60 text-[10px]">1h</span>
       </div>
       {/* Bottom caption */}
@@ -923,8 +928,9 @@ function InstagramStoryPreview({ content }: { content: string }) {
   );
 }
 
-function InstagramReelsPreview({ content, mediaUrls }: { content: string; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
+function InstagramReelsPreview({ content, mediaUrls, accountInfo }: { content: string; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   const firstMedia = mediaUrls?.[0];
+  const displayName = accountInfo?.username || accountInfo?.name || "your_page";
   return (
     <div className="flex justify-center">
       <div className="relative rounded-[2rem] overflow-hidden border-[6px] border-foreground mx-auto" style={{ aspectRatio: "9/16", maxHeight: 560, width: 300 }}>
@@ -978,15 +984,19 @@ function InstagramReelsPreview({ content, mediaUrls }: { content: string; mediaU
           <div className="absolute bottom-0 left-0 right-16 p-4">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[hsl(45,100%,60%)] via-[hsl(var(--instagram))] to-[hsl(280,70%,55%)] p-0.5">
-                <div className="w-full h-full rounded-full bg-foreground" />
+                {accountInfo?.avatar ? (
+                  <img src={accountInfo.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                ) : (
+                  <div className="w-full h-full rounded-full bg-foreground" />
+                )}
               </div>
-              <span className="text-card text-xs font-bold">your_page</span>
+              <span className="text-card text-xs font-bold">{displayName}</span>
               <button className="border border-card text-card text-[10px] font-semibold px-3 py-1 rounded-lg">Follow</button>
             </div>
             <p className="text-card/90 text-xs mt-2 line-clamp-2">{content || "Your reel caption here..."}</p>
             <div className="flex items-center gap-2 mt-2">
               <Music className="w-3.5 h-3.5 text-card/70" />
-              <span className="text-card/70 text-[10px]">your_page · Original audio</span>
+              <span className="text-card/70 text-[10px]">{displayName} · Original audio</span>
             </div>
           </div>
         </div>
@@ -1246,7 +1256,7 @@ function SnapchatStoryPreview({ content, mediaUrls }: { content: string; mediaUr
   );
 }
 
-const STORY_PREVIEW_MAP: Record<string, React.FC<{ content: string; mediaUrls?: { url: string; type: "image" | "video" }[] }>> = {
+const STORY_PREVIEW_MAP: Record<string, React.FC<{ content: string; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }>> = {
   instagram: InstagramReelsPreview,
   facebook: FacebookStoryPreview,
   tiktok: TikTokStoryPreview,
