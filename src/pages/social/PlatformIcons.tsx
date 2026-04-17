@@ -55,29 +55,17 @@ export function PlatformIcon({ platformId, size = 16, className }: { platformId:
 
 // Per-brand optical adjustments (fractional translate of icon relative to its own size)
 // Values are in "icon-pixels"; tuned so glyphs like Facebook's "f", LinkedIn "in", Pinterest "P" sit visually centered.
-// Per-brand optical adjustments as a FRACTION of the badge size (so they scale with the badge).
-// Tuned empirically because many brand SVGs aren't geometrically centered in their viewbox.
+// Per-brand optical adjustments as a FRACTION of the badge size (scales with badge).
+// Only kept for glyphs whose SVG is demonstrably asymmetric in its own viewbox.
+// Vertical offsets are mostly unnecessary now that the badge uses proper flex centering
+// with line-height:0 and explicit vertical-align:top on the SVG.
 // Negative x = nudge LEFT, positive = RIGHT. Positive y = DOWN.
 const ICON_NUDGE_FRACTION: Record<string, { x?: number; y?: number }> = {
-  facebook:      { x:  0.04 }, // "f" glyph's right curve makes it look left-heavy → nudge right
-  facebook_page: { x:  0.04 },
-  linkedin:      { x:  0.02 },
-  linkedin_page: { x:  0.02 },
-  pinterest:     { x: -0.03 }, // "P" bowl is top-right; pulls visual centre right → nudge left
-  tumblr:        { x:  0.00 },
-  twitter:       { y:  0.00 },
-  instagram:     { y:  0.00 },
-  tiktok:        { x: -0.03 }, // note has swoosh on the right
-  youtube:       { y:  0.02 }, // play triangle is vertically asymmetric
-  reddit:        { y:  0.02 },
-  bluesky:       { y:  0.00 },
-  mastodon:      {},
-  telegram:      { x: -0.04 }, // paper-plane tail sits right
-  whatsapp:      {},
-  snapchat:      {},
-  google:        {},
-  wordpress:     {},
-  threads:       { x:  0.02 },
+  facebook:      { x:  0.03 }, // "f" glyph's right curve makes it look left-heavy → nudge right slightly
+  facebook_page: { x:  0.03 },
+  pinterest:     { x: -0.02 }, // "P" bowl is top-right; pulls visual centre right → nudge left
+  tiktok:        { x: -0.02 }, // note has swoosh on the right
+  telegram:      { x: -0.03 }, // paper-plane tail sits right
 };
 
 /** Colored circle badge with platform icon inside — use for small badges on calendar cards, account strips, etc. */
@@ -90,12 +78,38 @@ export function PlatformBadge({ platformId, size = 18 }: { platformId: string; s
   const dx = nudge?.x ? size * nudge.x : 0;
   const dy = nudge?.y ? size * nudge.y : 0;
   const transform = (dx || dy) ? `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px)` : undefined;
+  // Force geometric centering. Explicit inline styles override:
+  //   - react-icons' default `verticalAlign: middle` (which offsets ~1-2px down)
+  //   - any ambient line-height/text-baseline from the surrounding row
+  //   - parent padding that could otherwise leak through
   return (
     <span
-      className="inline-grid place-items-center rounded-full shrink-0 leading-none text-white"
-      style={{ width: size, height: size, backgroundColor: brand.brandColor }}
+      className="rounded-full shrink-0 text-white"
+      style={{
+        width: size,
+        height: size,
+        backgroundColor: brand.brandColor,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        lineHeight: 0,
+        padding: 0,
+        margin: 0,
+        overflow: "hidden",
+        flexShrink: 0,
+      }}
     >
-      <IconComp size={iconSize} style={{ display: "block", transform }} />
+      <IconComp
+        size={iconSize}
+        style={{
+          display: "block",
+          width: iconSize,
+          height: iconSize,
+          verticalAlign: "top",
+          flexShrink: 0,
+          transform,
+        }}
+      />
     </span>
   );
 }
