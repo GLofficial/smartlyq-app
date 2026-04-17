@@ -88,16 +88,13 @@ export const TAB_FIELDS: Record<string, FieldDef[]> = {
 		] },
 	],
 	security: [
-		{ key: "signup", label: "Allow registration", type: "select", options: [
+		{ key: "registration_status", label: "Allow registration", type: "select", options: [
 			{ value: "1", label: "Enabled" }, { value: "0", label: "Disabled" },
 		], half: true },
-		{ key: "signup_verification", label: "Email verification on signup", type: "select", options: [
+		{ key: "email_verification", label: "Email verification on signup", type: "select", options: [
 			{ value: "1", label: "Enabled" }, { value: "0", label: "Disabled" },
 		], half: true },
 		{ key: "device_verification", label: "Device verification on login", type: "select", options: [
-			{ value: "1", label: "Enabled" }, { value: "0", label: "Disabled" },
-		], half: true },
-		{ key: "login_captcha", label: "Login CAPTCHA", type: "select", options: [
 			{ value: "1", label: "Enabled" }, { value: "0", label: "Disabled" },
 		], half: true },
 		{ key: "_turnstile_section", label: "Cloudflare Turnstile (Bot Protection)", type: "heading",
