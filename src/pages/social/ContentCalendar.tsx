@@ -129,7 +129,7 @@ interface DemoPost {
   thumbnail?: string;
   status: "published" | "scheduled" | "draft" | "failed" | "partial";
   mediaUrls?: string[];
-  postUrls?: Record<string, string>;
+  postUrls?: Record<string, string | string[]>;
   errorMessage?: string;
 }
 
@@ -330,7 +330,7 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
         thumbnail: (ep.thumbnail as string) || undefined,
         status: ((ep.status as string) || "scheduled") as DemoPost["status"],
         mediaUrls: Array.isArray(ep.mediaUrls) ? (ep.mediaUrls as string[]) : undefined,
-        postUrls: (ep.postUrls && typeof ep.postUrls === "object") ? ep.postUrls as Record<string, string> : undefined,
+        postUrls: (ep.postUrls && typeof ep.postUrls === "object" && !Array.isArray(ep.postUrls)) ? ep.postUrls as Record<string, string | string[]> : undefined,
         errorMessage: (ep.errorMessage as string) || undefined,
       };
     });
@@ -655,8 +655,21 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                     <span className="text-sm font-semibold text-foreground">{selectedPost.platforms[0]?.name}</span>
                   </div>
                   {(() => {
-                    const urls = selectedPost.postUrls
-                      ? Object.entries(selectedPost.postUrls).filter(([k, u]) => !k.startsWith("_") && u && typeof u === "string" && u.startsWith("http"))
+                    // Normalize: backend stores post_urls as { platform: string | string[] } and may include _errors/_retry_count
+                    const pickUrl = (v: string | string[] | undefined): string | null => {
+                      if (!v) return null;
+                      if (typeof v === "string") return v.startsWith("http") ? v : null;
+                      if (Array.isArray(v)) {
+                        const first = v.find((x) => typeof x === "string" && x.startsWith("http"));
+                        return first || null;
+                      }
+                      return null;
+                    };
+                    const urls: [string, string][] = selectedPost.postUrls
+                      ? Object.entries(selectedPost.postUrls)
+                          .filter(([k]) => !k.startsWith("_"))
+                          .map(([k, v]) => [k, pickUrl(v as string | string[])] as [string, string | null])
+                          .filter((pair): pair is [string, string] => !!pair[1])
                       : [];
                     if (urls.length === 1) {
                       return (

@@ -84,7 +84,7 @@ export interface CalendarEvent {
 		content?: string;
 		thumbnail?: string;
 		mediaUrls?: string[];
-		postUrls?: Record<string, string>;
+		postUrls?: Record<string, string | string[]>;
 		hasMedia?: boolean;
 		timeDisplay?: string;
 		bgColor?: string;
