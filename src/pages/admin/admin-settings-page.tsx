@@ -39,6 +39,8 @@ export function AdminSettingsPage() {
 	const saveMutation = useSaveAdminSettings();
 	const testMailMutation = useSendTestMail();
 	const [values, setValues] = useState<Record<string, string>>({});
+	const [testMailOpen, setTestMailOpen] = useState(false);
+	const [testMailTo, setTestMailTo] = useState("");
 	const { data: plansData } = useAdminPlans();
 	const { data: modelsData } = useAdminModels();
 
@@ -159,15 +161,8 @@ export function AdminSettingsPage() {
 											<Save size={16} /> {saveMutation.isPending ? "Saving..." : "Update details"}
 										</Button>
 										{activeTab === "mail" && (
-											<Button
-												variant="outline"
-												onClick={() => testMailMutation.mutate(undefined, {
-													onSuccess: (d) => toast.success(d.message),
-													onError: (e: unknown) => toast.error((e as { message?: string })?.message ?? "Failed to send test mail."),
-												})}
-												disabled={testMailMutation.isPending}
-											>
-												<Send size={16} /> {testMailMutation.isPending ? "Sending..." : "Test mail"}
+											<Button variant="outline" onClick={() => setTestMailOpen(true)}>
+												<Send size={16} /> Test mail
 											</Button>
 										)}
 									</div>
@@ -184,6 +179,40 @@ export function AdminSettingsPage() {
 					)}
 				</div>
 			</div>
+
+			{/* Test mail modal */}
+			{testMailOpen && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+					<div className="w-full max-w-sm rounded-lg bg-[var(--background)] p-6 shadow-xl space-y-4">
+						<div className="flex items-center justify-between">
+							<h2 className="text-base font-semibold">Send test mail</h2>
+							<button type="button" onClick={() => setTestMailOpen(false)} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">✕</button>
+						</div>
+						<p className="text-sm text-[var(--muted-foreground)]">
+							We will send an email to you. If mail arrived in your inbox or spam folder that means your mail server working successfully.
+						</p>
+						<p className="text-sm">From: <span className="font-medium">{values.site_email || "—"}</span></p>
+						<Input
+							type="email"
+							placeholder="Enter your email address"
+							value={testMailTo}
+							onChange={(e) => setTestMailTo(e.target.value)}
+						/>
+						<Button
+							className="w-full"
+							disabled={testMailMutation.isPending || !testMailTo}
+							onClick={() => {
+								testMailMutation.mutate(testMailTo, {
+									onSuccess: (d) => { toast.success(d.message); setTestMailOpen(false); setTestMailTo(""); },
+									onError: (e: unknown) => toast.error((e as { message?: string })?.message ?? "Failed to send test mail."),
+								});
+							}}
+						>
+							{testMailMutation.isPending ? "Sending..." : "Send"}
+						</Button>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

@@ -23,8 +23,8 @@ export function useAdminModels() {
 
 export function useSendTestMail() {
 	return useMutation({
-		mutationFn: () =>
-			apiClient.post<{ message: string }>("/api/spa/admin/settings/test-mail", {}),
+		mutationFn: (to: string) =>
+			apiClient.post<{ message: string }>("/api/spa/admin/settings/test-mail", { to }),
 	});
 }
 
