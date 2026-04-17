@@ -63,6 +63,10 @@ export function CreatePostPage() {
   })();
   const { data: editData } = usePostForEdit(editId);
 
+  // Composer media + post-type seeds (separate state so we can bump the reference on new editData arrival).
+  const [initialUploadedMedia, setInitialUploadedMedia] = useState<{ id: string; type: "image" | "video"; name: string; url?: string }[]>([]);
+  const [initialPlatformPostType, setInitialPlatformPostType] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (!editData?.post) return;
     const p = editData.post;
@@ -70,13 +74,32 @@ export function CreatePostPage() {
     setSelectedPlatforms(Array.isArray(p.platforms) ? p.platforms : []);
     setSelectedAccountIds(Array.isArray(p.selected_account_ids) ? p.selected_account_ids : []);
     setMediaUrls(Array.isArray(p.media_urls) ? p.media_urls : []);
-    // Build previewMedia from URLs (detect type by extension)
-    const preview = (p.media_urls || []).map((url) => ({
+
+    // Build previewMedia + composer-internal uploadedMedia seed from URLs.
+    const typed = (p.media_urls || []).map((url, idx) => ({
       url,
       type: (/\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url) ? "video" : "image") as "image" | "video",
+      idx,
     }));
-    setPreviewMedia(preview);
-    setImageCount(preview.length);
+    setPreviewMedia(typed.map(({ url, type }) => ({ url, type })));
+    setImageCount(typed.length);
+    setInitialUploadedMedia(typed.map(({ url, type, idx }) => ({
+      id: `edit-${p.id}-${idx}`,
+      type,
+      name: (url.split("/").pop() || `media-${idx + 1}`).split("?")[0]!,
+      url,
+    })));
+
+    // Pull per-platform post type from platform_overrides if backend provides it.
+    const overrides = (p.platform_overrides ?? {}) as Record<string, unknown>;
+    const postTypes: Record<string, string> = {};
+    for (const [platformKey, val] of Object.entries(overrides)) {
+      if (val && typeof val === "object") {
+        const pt = (val as { post_type?: unknown }).post_type;
+        if (typeof pt === "string") postTypes[platformKey] = pt;
+      }
+    }
+    setInitialPlatformPostType(postTypes);
   }, [editData]);
 
   // Validate before posting
@@ -300,6 +323,8 @@ export function CreatePostPage() {
             onCustomizeChannelChange={setCustomizeChannel}
             onImageCountChange={setImageCount}
             onPostTypeChange={setPlatformPostType}
+            initialUploadedMedia={initialUploadedMedia}
+            initialPlatformPostType={initialPlatformPostType}
             initialScheduledDate={state?.prefillDate || state?.editPost?.date}
             initialScheduledTime={state?.prefillTime || state?.editPost?.time}
             realAccounts={accounts}

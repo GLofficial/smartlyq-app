@@ -383,6 +383,10 @@ interface PostComposerProps {
   onLoadMoreMedia?: () => void;
   /** Callback when uploaded media list changes — parent can track URLs for posting */
   onUploadedMediaChange?: (media: { id: string; type: "image" | "video"; name: string; url?: string }[]) => void;
+  /** One-time seed for uploadedMedia (edit-post flow prefill). Changing the array REFERENCE re-seeds. */
+  initialUploadedMedia?: { id: string; type: "image" | "video"; name: string; url?: string }[];
+  /** One-time seed for per-platform post type (e.g. Instagram → "Reel"). */
+  initialPlatformPostType?: Record<string, string>;
 }
 
 function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
@@ -433,6 +437,8 @@ export default function PostComposer({
   mediaLibraryVideos,
   onLoadMoreMedia,
   onUploadedMediaChange,
+  initialUploadedMedia,
+  initialPlatformPostType,
 }: PostComposerProps) {
   // Map real accounts to the internal format used by the UI
   // When realAccounts is provided (even empty), never show demo data
@@ -639,6 +645,22 @@ export default function PostComposer({
     onPlatformsChange(derivePlatforms(composerIds));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAccountIds, realAccountsProvided, ACCOUNTS]);
+
+  // Seed uploadedMedia from parent (edit-post prefill). Fires when the array reference changes.
+  useEffect(() => {
+    if (!initialUploadedMedia || initialUploadedMedia.length === 0) return;
+    setUploadedMedia(initialUploadedMedia);
+    onImageCountChange?.(initialUploadedMedia.length);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialUploadedMedia]);
+
+  // Seed per-platform post type on edit.
+  useEffect(() => {
+    if (!initialPlatformPostType || Object.keys(initialPlatformPostType).length === 0) return;
+    setPlatformPostType(initialPlatformPostType);
+    onPostTypeChange?.(initialPlatformPostType);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPlatformPostType]);
 
   const toggleAccount = (accId: string) => {
     const acc = ACCOUNTS.find(a => a.id === accId);

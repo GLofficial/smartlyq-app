@@ -136,6 +136,8 @@ interface DemoPost {
   platformAccounts?: Record<string, string>;
   platformErrors?: Record<string, string>;
   platformSucceeded?: Record<string, boolean>;
+  /** Per-platform post type label: "Reel", "Story", "Short", "Video", "Post", etc. */
+  platformPostTypes?: Record<string, string>;
 }
 
 const today = new Date();
@@ -351,6 +353,7 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
       const platformAccounts = (ep.platformAccounts && typeof ep.platformAccounts === "object" && !Array.isArray(ep.platformAccounts)) ? ep.platformAccounts as Record<string, string> : {};
       const platformSucceeded = (ep.platformSucceeded && typeof ep.platformSucceeded === "object" && !Array.isArray(ep.platformSucceeded)) ? ep.platformSucceeded as Record<string, boolean> : {};
       const platformErrors = (ep.platformErrors && typeof ep.platformErrors === "object" && !Array.isArray(ep.platformErrors)) ? ep.platformErrors as Record<string, string> : {};
+      const platformPostTypes = (ep.platformPostTypes && typeof ep.platformPostTypes === "object" && !Array.isArray(ep.platformPostTypes)) ? ep.platformPostTypes as Record<string, string> : {};
       // Derive per-platform status — for partial posts, per-platform success varies
       const derivePlatformStatus = (pid: string): "published" | "scheduled" | "draft" | "failed" => {
         if (postStatus === "partial") {
@@ -383,6 +386,7 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
         platformAccounts,
         platformErrors,
         platformSucceeded,
+        platformPostTypes,
       };
     });
   }, [realEvents]);
@@ -734,7 +738,14 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                     {activePid && <PlatformBadge platformId={activePid} size={24} />}
                     <div className="flex flex-col min-w-0">
                       <span className="text-sm font-semibold text-foreground truncate">{activeAccount || activeLabel}</span>
-                      {activeAccount && <span className="text-xs text-muted-foreground truncate">{activeLabel}</span>}
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        {activeAccount && <span className="truncate">{activeLabel}</span>}
+                        {activePid && selectedPost.platformPostTypes?.[activePid] && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-semibold">
+                            {selectedPost.platformPostTypes[activePid]}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
