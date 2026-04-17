@@ -128,8 +128,8 @@ function TruncatedText({ text, className, placeholder }: { text: string; classNa
 }
 
 function AccountAvatar({ avatar, name, size = 10 }: { avatar?: string; name?: string; size?: number }) {
-  const sizeClass = size === 10 ? "w-10 h-10" : "w-8 h-8";
-  const textSize = size === 10 ? "text-sm" : "text-xs";
+  const sizeClass = size === 10 ? "w-10 h-10" : size === 8 ? "w-8 h-8" : "w-6 h-6";
+  const textSize = size === 10 ? "text-sm" : size === 8 ? "text-xs" : "text-[9px]";
   if (avatar) {
     return <img src={avatar} alt="" className={cn(sizeClass, "rounded-full object-cover")} />;
   }
@@ -504,7 +504,7 @@ function LinkedInPreview({ content, device, imageCount = 1, accountInfo }: { con
         <AccountAvatar avatar={accountInfo?.avatar} name={accountInfo?.name} size={10} />
         <div>
           <p className="text-sm font-semibold text-foreground">{accountInfo?.name || "Your Name"}</p>
-          <p className="text-xs text-muted-foreground">{accountInfo?.username || "Your headline"} · Just now</p>
+          <p className="text-xs text-muted-foreground">Just now</p>
         </div>
       </div>
       <div className="px-3 pb-3">
@@ -595,7 +595,7 @@ function LinkedInDocumentPreview({ content, device }: { content: string; device:
   );
 }
 
-function YouTubePreview({ content, device, imageCount = 1 }: { content: string; device: Device; imageCount?: number }) {
+function YouTubePreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="relative">
@@ -604,13 +604,16 @@ function YouTubePreview({ content, device, imageCount = 1 }: { content: string; 
       </div>
       <div className="p-3">
         <p className="text-sm font-semibold text-foreground line-clamp-2">{content || "Video title here..."}</p>
-        <p className="text-xs text-muted-foreground mt-1">Your Channel · 0 views · Just now</p>
+        <div className="flex items-center gap-2 mt-1">
+          <AccountAvatar avatar={accountInfo?.avatar} name={accountInfo?.name} size={6} />
+          <p className="text-xs text-muted-foreground">{accountInfo?.name || "Your Channel"} · 0 views · Just now</p>
+        </div>
       </div>
     </div>
   );
 }
 
-function TikTokPreview({ content, device }: { content: string; device: Device; imageCount?: number }) {
+function TikTokPreview({ content, device, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="flex justify-center">
       <div className="relative rounded-[2rem] overflow-hidden border-[6px] border-foreground mx-auto" style={{ aspectRatio: "9/16", maxHeight: device === "mobile" ? 520 : 420, width: device === "mobile" ? 300 : 240 }}>
@@ -642,8 +645,7 @@ function TikTokPreview({ content, device }: { content: string; device: Device; i
           {/* Bottom content */}
           <div className="absolute bottom-0 left-0 right-14 p-3">
             <div className="flex items-center gap-1.5">
-              <span className="text-card text-xs font-bold">@yourhandle</span>
-              <span className="bg-[hsl(var(--instagram))] text-card text-[8px] font-bold px-1 py-0.5 rounded">VERIFIED</span>
+              <span className="text-card text-xs font-bold">@{accountInfo?.username || accountInfo?.name || "yourhandle"}</span>
             </div>
             <p className="text-card/90 text-[10px] mt-1 line-clamp-2">{content || "Your caption here..."}</p>
             <div className="flex items-center gap-1.5 mt-1.5">
@@ -657,22 +659,22 @@ function TikTokPreview({ content, device }: { content: string; device: Device; i
   );
 }
 
-function PinterestPreview({ content, device, imageCount = 1 }: { content: string; device: Device; imageCount?: number }) {
+function PinterestPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-2xl border border-border overflow-hidden mx-auto" style={{ maxWidth: 240 }}>
       <ImagePlaceholder platform="pinterest" device={device} imageCount={imageCount} />
       <div className="p-3">
         <p className="text-sm font-semibold text-foreground line-clamp-2">{content || "Pin title..."}</p>
         <div className="flex items-center gap-1.5 mt-2">
-          <div className="w-6 h-6 rounded-full bg-muted" />
-          <span className="text-xs text-muted-foreground">Your Board</span>
+          <AccountAvatar avatar={accountInfo?.avatar} name={accountInfo?.name} size={6} />
+          <span className="text-xs text-muted-foreground">{accountInfo?.name || "Your Board"}</span>
         </div>
       </div>
     </div>
   );
 }
 
-function RedditPreview({ content, device, imageCount = 1 }: { content: string; device: Device; imageCount?: number }) {
+function RedditPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="flex">
@@ -682,7 +684,7 @@ function RedditPreview({ content, device, imageCount = 1 }: { content: string; d
           <ArrowDown className="w-4 h-4 text-muted-foreground" />
         </div>
         <div className="p-3 flex-1">
-          <p className="text-xs text-muted-foreground">r/subreddit · Posted by u/you · just now</p>
+          <p className="text-xs text-muted-foreground">r/subreddit · Posted by u/{accountInfo?.username || accountInfo?.name || "you"} · just now</p>
           <p className="text-sm font-semibold text-foreground mt-1">{content || "Post title here..."}</p>
           <div className="rounded mt-2 overflow-hidden">
             <ImagePlaceholder platform="reddit" device={device} imageCount={imageCount} />
@@ -697,17 +699,17 @@ function RedditPreview({ content, device, imageCount = 1 }: { content: string; d
   );
 }
 
-function ThreadsPreview({ content, device, imageCount = 1 }: { content: string; device: Device; imageCount?: number }) {
+function ThreadsPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border p-3">
       <div className="flex gap-3">
         <div className="flex flex-col items-center">
-          <div className="w-9 h-9 rounded-full bg-muted" />
+          <AccountAvatar avatar={accountInfo?.avatar} name={accountInfo?.name} size={8} />
           <div className="w-0.5 flex-1 bg-border mt-2" />
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-1">
-            <span className="text-sm font-bold text-foreground">your_page</span>
+            <span className="text-sm font-bold text-foreground">{accountInfo?.username || accountInfo?.name || "your_page"}</span>
             <span className="text-xs text-muted-foreground">· now</span>
           </div>
           <p className="text-sm text-foreground mt-1 whitespace-pre-wrap">{content || "Your post preview..."}</p>
@@ -725,15 +727,15 @@ function ThreadsPreview({ content, device, imageCount = 1 }: { content: string; 
   );
 }
 
-function BlueskyPreview({ content, device, imageCount = 1 }: { content: string; device: Device; imageCount?: number }) {
+function BlueskyPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border p-3">
       <div className="flex gap-2">
-        <div className="w-10 h-10 rounded-full bg-muted shrink-0" />
+        <AccountAvatar avatar={accountInfo?.avatar} name={accountInfo?.name} size={10} />
         <div className="flex-1">
           <div className="flex items-center gap-1">
-            <span className="text-sm font-bold text-foreground">Your Name</span>
-            <span className="text-sm text-muted-foreground">@you.bsky.social · now</span>
+            <span className="text-sm font-bold text-foreground">{accountInfo?.name || "Your Name"}</span>
+            <span className="text-sm text-muted-foreground">@{accountInfo?.username || "you.bsky.social"} · now</span>
           </div>
           <p className="text-sm text-foreground mt-1 whitespace-pre-wrap">{content || "Your post preview..."}</p>
           <div className="rounded-lg mt-2 overflow-hidden">
@@ -750,15 +752,15 @@ function BlueskyPreview({ content, device, imageCount = 1 }: { content: string; 
   );
 }
 
-function MastodonPreview({ content, device, imageCount = 1 }: { content: string; device: Device; imageCount?: number }) {
+function MastodonPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border p-3">
       <div className="flex gap-2">
-        <div className="w-10 h-10 rounded-full bg-muted shrink-0" />
+        <AccountAvatar avatar={accountInfo?.avatar} name={accountInfo?.name} size={10} />
         <div className="flex-1">
           <div className="flex items-center gap-1">
-            <span className="text-sm font-bold text-foreground">Your Name</span>
-            <span className="text-sm text-muted-foreground">@you@mastodon.social · now</span>
+            <span className="text-sm font-bold text-foreground">{accountInfo?.name || "Your Name"}</span>
+            <span className="text-sm text-muted-foreground">@{accountInfo?.username || "you@mastodon.social"} · now</span>
           </div>
           <p className="text-sm text-foreground mt-1 whitespace-pre-wrap">{content || "Your post preview..."}</p>
           <div className="rounded-lg mt-2 overflow-hidden">
@@ -775,12 +777,12 @@ function MastodonPreview({ content, device, imageCount = 1 }: { content: string;
   );
 }
 
-function TelegramPreview({ content, device, imageCount = 1 }: { content: string; device: Device; imageCount?: number }) {
+function TelegramPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-3 flex items-center gap-2 border-b border-border">
-        <div className="w-8 h-8 rounded-full bg-[hsl(200,80%,50%)]" />
-        <p className="text-sm font-semibold text-foreground">Your Channel</p>
+        <AccountAvatar avatar={accountInfo?.avatar} name={accountInfo?.name} size={8} />
+        <p className="text-sm font-semibold text-foreground">{accountInfo?.name || "Your Channel"}</p>
       </div>
       <div className="p-3">
         <p className="text-sm text-foreground whitespace-pre-wrap">{content || "Your message preview..."}</p>
@@ -799,13 +801,13 @@ function TelegramPreview({ content, device, imageCount = 1 }: { content: string;
   );
 }
 
-function GooglePreview({ content, device, imageCount = 1 }: { content: string; device: Device; imageCount?: number }) {
+function GooglePreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-3 flex items-center gap-2">
-        <div className="w-10 h-10 rounded-lg bg-[hsl(217,89%,61%)] flex items-center justify-center text-primary-foreground font-bold text-sm">G</div>
+        <AccountAvatar avatar={accountInfo?.avatar} name={accountInfo?.name} size={10} />
         <div>
-          <p className="text-sm font-semibold text-foreground">Your Business</p>
+          <p className="text-sm font-semibold text-foreground">{accountInfo?.name || "Your Business"}</p>
           <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" /> Location · Just now</p>
         </div>
       </div>
@@ -818,12 +820,12 @@ function GooglePreview({ content, device, imageCount = 1 }: { content: string; d
   );
 }
 
-function TumblrPreview({ content, device, imageCount = 1 }: { content: string; device: Device; imageCount?: number }) {
+function TumblrPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-3 flex items-center gap-2">
-        <div className="w-8 h-8 rounded bg-[hsl(210,25%,25%)]" />
-        <p className="text-sm font-semibold text-foreground">yourblog</p>
+        <AccountAvatar avatar={accountInfo?.avatar} name={accountInfo?.name} size={8} />
+        <p className="text-sm font-semibold text-foreground">{accountInfo?.name || "yourblog"}</p>
       </div>
       <ImagePlaceholder platform="tumblr" device={device} imageCount={imageCount} />
       <div className="p-3">
@@ -838,14 +840,14 @@ function TumblrPreview({ content, device, imageCount = 1 }: { content: string; d
   );
 }
 
-function WordPressPreview({ content, device, imageCount = 1 }: { content: string; device: Device; imageCount?: number }) {
+function WordPressPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-3 border-b border-border flex items-center gap-2">
-        <div className="w-8 h-8 rounded bg-[hsl(205,60%,40%)] flex items-center justify-center text-primary-foreground font-bold text-xs">W</div>
+        <AccountAvatar avatar={accountInfo?.avatar} name={accountInfo?.name} size={8} />
         <div>
-          <p className="text-sm font-semibold text-foreground">Your Blog Post</p>
-          <p className="text-xs text-muted-foreground">smartlyq.com · Draft</p>
+          <p className="text-sm font-semibold text-foreground">{accountInfo?.name || "Your Blog"}</p>
+          <p className="text-xs text-muted-foreground">Draft</p>
         </div>
       </div>
       <ImagePlaceholder platform="wordpress" device={device} imageCount={imageCount} />
@@ -860,12 +862,12 @@ function WordPressPreview({ content, device, imageCount = 1 }: { content: string
   );
 }
 
-function WhatsAppPreview({ content, device, imageCount = 1 }: { content: string; device: Device; imageCount?: number }) {
+function WhatsAppPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-[hsl(140,20%,90%)] rounded-lg overflow-hidden">
       <div className="p-3 bg-[hsl(142,70%,35%)] flex items-center gap-2">
-        <div className="w-8 h-8 rounded-full bg-primary-foreground/20 flex items-center justify-center text-primary-foreground text-sm">💬</div>
-        <p className="text-sm font-semibold text-primary-foreground">Your Group</p>
+        <AccountAvatar avatar={accountInfo?.avatar} name={accountInfo?.name} size={8} />
+        <p className="text-sm font-semibold text-primary-foreground">{accountInfo?.name || "Your Group"}</p>
       </div>
       <div className="p-3 min-h-[120px]">
         <div className="inline-block bg-card rounded-lg p-2.5 shadow-sm max-w-[85%]">
