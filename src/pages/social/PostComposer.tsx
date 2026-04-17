@@ -628,19 +628,22 @@ export default function PostComposer({
     }
   };
 
-  // When parent seeds selectedAccountIds (e.g. edit mode prefill), translate DB ids → composer ids.
-  // Only runs when the parent's set of ids actually differs from what we already have.
+  // When parent seeds selectedAccountIds (edit-mode prefill) AND the accounts list has loaded,
+  // translate DB ids → composer ids. Runs on every meaningful change until the two sides agree.
   useEffect(() => {
-    if (!realAccountsProvided || !selectedAccountIds || ACCOUNTS.length === 0) return;
+    if (!realAccountsProvided) return;
+    if (!selectedAccountIds || selectedAccountIds.length === 0) return;
+    if (ACCOUNTS.length === 0) return;
     const parentIdsKey = [...selectedAccountIds].sort().join(",");
     const currentRealIds = selectedAccounts
       .map(id => ACCOUNTS.find(a => a.id === id)?.realId)
-      .filter(Boolean) as number[];
+      .filter((v): v is number => typeof v === "number");
     const currentKey = [...currentRealIds].sort().join(",");
     if (parentIdsKey === currentKey) return;
     const composerIds = selectedAccountIds
       .map(rid => ACCOUNTS.find(a => a.realId === rid)?.id)
-      .filter(Boolean) as string[];
+      .filter((v): v is string => typeof v === "string" && v.length > 0);
+    if (composerIds.length === 0) return; // Accounts list exists but none match — avoid clobbering user's selection
     setSelectedAccounts(composerIds);
     onPlatformsChange(derivePlatforms(composerIds));
     // eslint-disable-next-line react-hooks/exhaustive-deps

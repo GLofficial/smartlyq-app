@@ -19,7 +19,7 @@ export interface EditablePost {
 export function usePostForEdit(postId: number | null) {
 	return useQuery({
 		queryKey: ["social", "post-edit", postId],
-		queryFn: () => apiClient.get<{ post: EditablePost }>(`/api/spa/social/posts/get?id=${postId}`),
+		queryFn: () => apiClient.get<{ post: EditablePost }>(`/api/spa/social/posts/fetch?id=${postId}`),
 		enabled: postId !== null && postId > 0,
 		staleTime: 0,
 	});
