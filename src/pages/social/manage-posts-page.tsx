@@ -2,9 +2,9 @@ import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, ChevronLeft, ChevronRight, Search, Pencil, Copy, Trash2, RotateCw, XCircle, SlidersHorizontal, Loader2, Calendar, Inbox as InboxIcon } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Search, Pencil, Copy, Trash2, RotateCw, XCircle, SlidersHorizontal, Loader2, Calendar, Inbox as InboxIcon, Send, FileDown } from "lucide-react";
 import { useSocialPosts } from "@/api/social";
-import { useRetryPost, useDeletePost } from "@/api/social-posts";
+import { useRetryPost, useDeletePost, useDuplicatePost, useMoveToDraft, useShareNow } from "@/api/social-posts";
 import { PlatformIcon } from "./platform-icon";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { toast } from "sonner";
@@ -40,6 +40,9 @@ export function ManagePostsPage() {
 	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
 	const retryMut = useRetryPost();
 	const deleteMut = useDeletePost();
+	const duplicateMut = useDuplicatePost();
+	const moveToDraftMut = useMoveToDraft();
+	const shareNowMut = useShareNow();
 
 	const handleSearch = useCallback((val: string) => {
 		setSearch(val);
@@ -165,7 +168,22 @@ export function ManagePostsPage() {
 											<Link to={editPath(post.id)}>
 												<Button variant="outline" size="sm" className="h-7 w-7 p-0" title="Edit"><Pencil size={13} /></Button>
 											</Link>
-											<Button variant="outline" size="sm" className="h-7 w-7 p-0" title="Duplicate"><Copy size={13} /></Button>
+											<Button variant="outline" size="sm" className="h-7 w-7 p-0" title="Duplicate"
+												onClick={() => duplicateMut.mutate(post.id, { onSuccess: () => toast.success("Post duplicated as draft") })}>
+												<Copy size={13} />
+											</Button>
+											{post.status === "scheduled" && (
+												<>
+													<Button variant="outline" size="sm" className="h-7 w-7 p-0 text-green-600" title="Share Now"
+														onClick={() => shareNowMut.mutate(post.id, { onSuccess: () => toast.success("Publishing now...") })}>
+														<Send size={13} />
+													</Button>
+													<Button variant="outline" size="sm" className="h-7 w-7 p-0 text-amber-600" title="Move to Draft"
+														onClick={() => moveToDraftMut.mutate(post.id, { onSuccess: () => toast.success("Moved to draft") })}>
+														<FileDown size={13} />
+													</Button>
+												</>
+											)}
 											{(post.status === "failed" || post.status === "partially_published") && (
 												<Button variant="outline" size="sm" className="h-7 w-7 p-0 text-blue-600" title="Retry"
 													onClick={() => retryMut.mutate(post.id, { onSuccess: () => toast.success("Queued for retry") })}>

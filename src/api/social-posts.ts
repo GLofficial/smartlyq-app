@@ -64,6 +64,38 @@ export function useRetryPost() {
 	});
 }
 
+export function useDuplicatePost() {
+	return useMutation({
+		mutationFn: (postId: number) =>
+			apiClient.post<{ message: string; id: number }>("/api/spa/social/posts/duplicate", { post_id: postId }),
+		onSuccess: invalidatePosts,
+	});
+}
+
+export function useMoveToDraft() {
+	return useMutation({
+		mutationFn: (postId: number) =>
+			apiClient.post<{ message: string }>("/api/spa/social/posts/move-to-draft", { post_id: postId }),
+		onSuccess: invalidatePosts,
+	});
+}
+
+export function useShareNow() {
+	return useMutation({
+		mutationFn: (postId: number) =>
+			apiClient.post<{ message: string }>("/api/spa/social/posts/share-now", { post_id: postId }),
+		onSuccess: invalidatePosts,
+	});
+}
+
+export function useReschedulePost() {
+	return useMutation({
+		mutationFn: (data: { post_id: number; scheduled_time: string; timezone?: string }) =>
+			apiClient.post<{ message: string; scheduled_time: string }>("/api/spa/social/posts/reschedule", data),
+		onSuccess: invalidatePosts,
+	});
+}
+
 export function useReplyComment() {
 	return useMutation({
 		mutationFn: (data: { comment_id: number; reply: string }) =>
