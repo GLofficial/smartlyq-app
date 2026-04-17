@@ -89,6 +89,12 @@ export interface CalendarEvent {
 		timeDisplay?: string;
 		bgColor?: string;
 		errorMessage?: string;
+		/** Platform → account display name, for per-platform chip labels. */
+		platformAccounts?: Record<string, string>;
+		/** Platform → error message string for failed platforms. */
+		platformErrors?: Record<string, string>;
+		/** Platform → true if it successfully posted. */
+		platformSucceeded?: Record<string, boolean>;
 	};
 	// Legacy fields (keep for backward compat)
 	date?: string | null;

@@ -133,6 +133,9 @@ interface DemoPost {
   errorMessage?: string;
   /** Original ISO-UTC datetime from API (e.g. "2026-04-17T12:05:00Z"). Use this, not the split date/time parts, when you need to format for display. */
   startIso?: string;
+  platformAccounts?: Record<string, string>;
+  platformErrors?: Record<string, string>;
+  platformSucceeded?: Record<string, boolean>;
 }
 
 const today = new Date();
@@ -301,6 +304,7 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
   const createPostPath = wsHash ? `/w/${wsHash}/social-media/create-post` : "/social-media/create-post";
   const calendarRef = useRef<FullCalendar>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [activePlatformId, setActivePlatformId] = useState<string | null>(null);
   const deleteMutation = useDeletePost();
   const handleDelete = (postId: number) => {
     if (onDeletePost) { onDeletePost(postId); return; }
@@ -334,23 +338,43 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
       const ep = ev.extendedProps || {};
       const startStr = ev.start ?? "";
       const { date: datePart, time: timePart } = splitLocal(startStr);
+      const postStatus = ((ep.status as string) || "scheduled") as DemoPost["status"];
+      const platformIds = Array.isArray(ep.platforms) ? (ep.platforms as string[]) : [];
+      const platformAccounts = (ep.platformAccounts && typeof ep.platformAccounts === "object" && !Array.isArray(ep.platformAccounts)) ? ep.platformAccounts as Record<string, string> : {};
+      const platformSucceeded = (ep.platformSucceeded && typeof ep.platformSucceeded === "object" && !Array.isArray(ep.platformSucceeded)) ? ep.platformSucceeded as Record<string, boolean> : {};
+      const platformErrors = (ep.platformErrors && typeof ep.platformErrors === "object" && !Array.isArray(ep.platformErrors)) ? ep.platformErrors as Record<string, string> : {};
+      // Derive per-platform status — for partial posts, per-platform success varies
+      const derivePlatformStatus = (pid: string): "published" | "scheduled" | "draft" | "failed" => {
+        if (postStatus === "partial") {
+          if (platformSucceeded[pid]) return "published";
+          if (platformErrors[pid]) return "failed";
+          return "failed";
+        }
+        if (postStatus === "published") return "published";
+        if (postStatus === "failed") return "failed";
+        if (postStatus === "draft") return "draft";
+        return "scheduled";
+      };
       return {
         id: String(ev.id),
         title: isMeaningfulTitle(ev.title) ? ev.title : ((ep.content as string || "").slice(0, 50) || "Untitled"),
         content: (ep.content as string) || "",
         date: datePart || "",
         time: timePart ? timePart.slice(0, 5) : "00:00",
-        platforms: Array.isArray(ep.platforms) ? (ep.platforms as string[]).map(pid => ({
+        platforms: platformIds.map(pid => ({
           id: pid,
-          name: (ep.accountName as string) || pid,
-          status: ((ep.status as string) || "scheduled") as "published" | "scheduled" | "draft" | "failed",
-        })) : [],
+          name: platformAccounts[pid] || (PLATFORM_BRANDS[pid]?.label ?? pid),
+          status: derivePlatformStatus(pid),
+        })),
         thumbnail: (ep.thumbnail as string) || undefined,
-        status: ((ep.status as string) || "scheduled") as DemoPost["status"],
+        status: postStatus,
         mediaUrls: Array.isArray(ep.mediaUrls) ? (ep.mediaUrls as string[]) : undefined,
         postUrls: (ep.postUrls && typeof ep.postUrls === "object" && !Array.isArray(ep.postUrls)) ? ep.postUrls as Record<string, string | string[]> : undefined,
         errorMessage: (ep.errorMessage as string) || undefined,
         startIso: startStr,
+        platformAccounts,
+        platformErrors,
+        platformSucceeded,
       };
     });
   }, [realEvents]);
@@ -613,128 +637,138 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
             </div>
           </div>
       {/* Post Detail Modal */}
-      <Dialog open={!!selectedPost} onOpenChange={() => setSelectedPost(null)}>
+      <Dialog open={!!selectedPost} onOpenChange={() => { setSelectedPost(null); setActivePlatformId(null); }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          {selectedPost && (
+          {selectedPost && (() => {
+            // Pick a URL value (may be string or array in backend storage)
+            const pickUrl = (v: string | string[] | undefined): string | null => {
+              if (!v) return null;
+              if (typeof v === "string") return v.startsWith("http") ? v : null;
+              if (Array.isArray(v)) {
+                const first = v.find((x) => typeof x === "string" && x.startsWith("http"));
+                return first || null;
+              }
+              return null;
+            };
+            const activePid = activePlatformId && selectedPost.platforms.some(p => p.id === activePlatformId) ? activePlatformId : (selectedPost.platforms[0]?.id ?? null);
+            const activePlatform = selectedPost.platforms.find(p => p.id === activePid);
+            const activeUrl = activePid && selectedPost.postUrls ? pickUrl(selectedPost.postUrls[activePid] as string | string[] | undefined) : null;
+            const activeError = activePid ? selectedPost.platformErrors?.[activePid] : undefined;
+            const activeBrand = activePid ? PLATFORM_BRANDS[activePid] : undefined;
+            const activeAccount = activePid ? (selectedPost.platformAccounts?.[activePid] || "") : "";
+            const activeLabel = activeBrand?.label || activePid || "";
+            return (
             <>
               <DialogHeader>
                 <div className="flex items-center gap-2">
-                  <PlatformIcons platforms={selectedPost.platforms} />
+                  <div className="flex items-center gap-1">
+                    {selectedPost.platforms.map((p) => (
+                      <PlatformBadge key={p.id} platformId={p.id} size={22} />
+                    ))}
+                  </div>
                   <DialogTitle className="text-lg">{selectedPost.title}</DialogTitle>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">
-                    {selectedPost.status === "published" ? "Published on" : selectedPost.status === "scheduled" ? "Scheduled for" : "Created"}: {new Date(selectedPost.date + "T" + selectedPost.time).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} at {selectedPost.time}
+                    {selectedPost.status === "published" ? "Published on" : selectedPost.status === "partial" ? "Partially published on" : selectedPost.status === "scheduled" ? "Scheduled for" : "Created"}: {new Date(selectedPost.date + "T" + selectedPost.time).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} at {selectedPost.time}
                   </span>
                   <StatusBadge status={selectedPost.status} />
                 </div>
               </DialogHeader>
 
               {/* Error banner for partial/failed */}
-              {(selectedPost.status === "partial" || selectedPost.status === "failed") && (
-                <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 mt-2">
-                  <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                    <AlertTriangle className="w-4 h-4 text-warning" />
-                    {selectedPost.status === "partial" ? "Partially Published." : "Failed to publish."} {selectedPost.platforms.filter(p => p.status === "published").length}/{selectedPost.platforms.length} platforms succeeded.
-                  </p>
-                  {selectedPost.errorMessage && (
-                    <p className="text-xs text-muted-foreground mt-1">{selectedPost.errorMessage}</p>
-                  )}
-                </div>
-              )}
+              {(selectedPost.status === "partial" || selectedPost.status === "failed") && (() => {
+                const okCount = selectedPost.platforms.filter(p => p.status === "published").length;
+                const failedList = selectedPost.platforms.filter(p => p.status === "failed").map(p => (PLATFORM_BRANDS[p.id]?.label ?? p.id));
+                return (
+                  <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 mt-2">
+                    <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 text-warning" />
+                      {selectedPost.status === "partial" ? "Partially Published." : "Failed to publish."} {okCount}/{selectedPost.platforms.length} platforms succeeded.
+                      {failedList.length > 0 && <span className="font-normal text-muted-foreground"> {failedList.join(", ")} failed.</span>}
+                    </p>
+                  </div>
+                );
+              })()}
 
-              {/* Platform tabs */}
+              {/* Platform tabs — clickable, per-platform status */}
               <div className="flex flex-wrap gap-2 mt-3">
-                {selectedPost.platforms.map((p, i) => {
-                  const brand = PLATFORM_BRANDS[p.id];
+                {selectedPost.platforms.map((p) => {
+                  const label = PLATFORM_BRANDS[p.id]?.label || p.id;
+                  const isActive = p.id === activePid;
                   return (
-                    <div
-                      key={i}
+                    <button
+                      key={p.id}
+                      onClick={() => setActivePlatformId(p.id)}
                       className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium",
-                        i === 0 ? "bg-[hsl(var(--facebook))]/10 border-[hsl(var(--facebook))]/30 text-foreground" : "border-border text-muted-foreground"
+                        "flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors",
+                        isActive ? "bg-primary/10 border-primary/40 text-foreground" : "border-border text-muted-foreground hover:bg-muted/50"
                       )}
                     >
-                      <PlatformBadge platformId={p.id} size={20} />
-                      {p.name}
+                      <PlatformBadge platformId={p.id} size={18} />
+                      <span>{label}</span>
                       {p.status === "published" && <CheckCircle2 className="w-4 h-4 text-success" />}
                       {p.status === "failed" && <X className="w-4 h-4 text-destructive" />}
                       {p.status === "scheduled" && <Clock className="w-4 h-4 text-primary" />}
-                    </div>
+                    </button>
                   );
                 })}
               </div>
 
-              {/* Content preview */}
+              {/* Active platform header + per-platform actions */}
               <div className="mt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    {selectedPost.platforms[0]?.id && <PlatformBadge platformId={selectedPost.platforms[0].id} size={24} />}
-                    <span className="text-sm font-semibold text-foreground">{selectedPost.platforms[0]?.name}</span>
+                <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {activePid && <PlatformBadge platformId={activePid} size={24} />}
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-semibold text-foreground truncate">{activeLabel}</span>
+                      {activeAccount && <span className="text-xs text-muted-foreground truncate">{activeAccount}</span>}
+                    </div>
                   </div>
-                  {(() => {
-                    // Normalize: backend stores post_urls as { platform: string | string[] } and may include _errors/_retry_count
-                    const pickUrl = (v: string | string[] | undefined): string | null => {
-                      if (!v) return null;
-                      if (typeof v === "string") return v.startsWith("http") ? v : null;
-                      if (Array.isArray(v)) {
-                        const first = v.find((x) => typeof x === "string" && x.startsWith("http"));
-                        return first || null;
-                      }
-                      return null;
-                    };
-                    const urls: [string, string][] = selectedPost.postUrls
-                      ? Object.entries(selectedPost.postUrls)
-                          .filter(([k]) => !k.startsWith("_"))
-                          .map(([k, v]) => [k, pickUrl(v as string | string[])] as [string, string | null])
-                          .filter((pair): pair is [string, string] => !!pair[1])
-                      : [];
-                    if (urls.length === 1) {
-                      return (
-                        <Button variant="outline" size="sm" className="gap-1.5 text-primary" onClick={() => window.open(urls[0]![1], "_blank", "noopener,noreferrer")}>
-                          <ExternalLink className="w-3.5 h-3.5" /> View Post
-                        </Button>
-                      );
-                    }
-                    if (urls.length > 1) {
-                      return (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" size="sm" className="gap-1.5 text-primary">
-                              <ExternalLink className="w-3.5 h-3.5" /> View Post
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent align="end" className="w-64 p-1">
-                            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide px-2 py-1.5">Open on platform</p>
-                            {urls.map(([platformKey, url]) => (
-                              <button
-                                key={platformKey}
-                                onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
-                                className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm hover:bg-muted transition-colors"
-                              >
-                                <PlatformBadge platformId={platformKey} size={18} />
-                                <span className="capitalize">{platformKey}</span>
-                                <ExternalLink className="w-3 h-3 ml-auto text-muted-foreground" />
-                              </button>
-                            ))}
-                          </PopoverContent>
-                        </Popover>
-                      );
-                    }
-                    // No URLs available — show the button but disabled with explanation
-                    const hintText = selectedPost.status === "published"
-                      ? "Post URL not yet available. Resync your accounts to pull it."
-                      : selectedPost.status === "scheduled" || selectedPost.status === "draft"
-                      ? "Post hasn't been published yet."
-                      : "No post URL available for this post.";
-                    return (
-                      <Button variant="outline" size="sm" className="gap-1.5 text-primary/50" disabled title={hintText}>
+                  <div className="flex items-center gap-2">
+                    {activePlatform?.status === "failed" && (
+                      <Button
+                        variant="warning"
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={() => { if (onRetryPost && selectedPost) { onRetryPost(Number(selectedPost.id)); setSelectedPost(null); setActivePlatformId(null); } }}
+                      >
+                        <RotateCw className="w-3.5 h-3.5" /> Retry {activeLabel}
+                      </Button>
+                    )}
+                    {activeUrl ? (
+                      <Button variant="outline" size="sm" className="gap-1.5 text-primary" onClick={() => window.open(activeUrl, "_blank", "noopener,noreferrer")}>
                         <ExternalLink className="w-3.5 h-3.5" /> View Post
                       </Button>
-                    );
-                  })()}
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-primary/50"
+                        disabled
+                        title={
+                          activePlatform?.status === "published" ? "Post URL not yet available. Resync your accounts to pull it."
+                          : activePlatform?.status === "scheduled" || activePlatform?.status === "draft" ? "Post hasn't been published yet."
+                          : "No post URL for this platform."
+                        }
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" /> View Post
+                      </Button>
+                    )}
+                  </div>
                 </div>
+
+                {/* Per-platform error detail when viewing a failed platform */}
+                {activePlatform?.status === "failed" && (
+                  <div className="bg-warning/10 border border-warning/30 rounded-lg p-2.5 mb-3 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-foreground">Failed to publish to {activeLabel}</p>
+                      {activeError && <p className="text-xs text-muted-foreground mt-0.5">{activeError}</p>}
+                    </div>
+                  </div>
+                )}
 
                 {/* Real media, or placeholder if none */}
                 {selectedPost.mediaUrls && selectedPost.mediaUrls.length > 0 ? (
@@ -797,7 +831,8 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                 )}
               </div>
             </>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
 

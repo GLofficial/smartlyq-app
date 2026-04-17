@@ -63,6 +63,18 @@ const ICON_NUDGE: Record<string, { x?: number; y?: number }> = {
   pinterest: { x: 0.5 },
   tumblr: { x: 0.5 },
   twitter: { y: 0.5 },
+  instagram: { y: 0.25 },
+  tiktok: { x: 0.5 },
+  youtube: { x: 0.25 },
+  reddit: { y: 0.5 },
+  bluesky: { y: 0.25 },
+  mastodon: {},
+  telegram: { x: -0.5 },
+  whatsapp: { y: 0.25 },
+  snapchat: {},
+  google: { x: 0.25 },
+  wordpress: {},
+  threads: { x: 0.5 },
 };
 
 /** Colored circle badge with platform icon inside — use for small badges on calendar cards, account strips, etc. */
