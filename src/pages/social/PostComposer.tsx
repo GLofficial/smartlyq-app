@@ -708,20 +708,20 @@ export default function PostComposer({
           onClick={() => setShowAccountDropdown(!showAccountDropdown)}
           className="w-full flex items-center justify-between border-2 border-primary/30 rounded-lg px-4 py-2.5 hover:border-primary/50 transition-colors"
         >
-          <div className="flex items-center gap-1 overflow-hidden">
+          <div className="flex items-center gap-1 flex-1 min-w-0">
             {selectedAccounts.length > 0 ? (
-              <div className="flex -space-x-1.5 overflow-x-auto">
+              <div className="flex flex-wrap gap-x-2 gap-y-2 py-1 pr-1">
                 {selectedAccounts.map((accId) => {
                   const acc = ACCOUNTS.find(a => a.id === accId);
                   if (!acc) return null;
                   const platform = getPlatformForAccount(acc.platformId);
                   return (
                     <div key={accId} className="relative shrink-0">
-                      <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-sm font-bold border-2 border-card overflow-hidden">
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold overflow-hidden">
                         {acc.profilePic ? <img src={acc.profilePic} alt="" className="w-full h-full object-cover" /> : (acc.name ?? "?").charAt(0).toUpperCase()}
                       </div>
-                      <div className={cn("absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-primary-foreground border border-card", platform?.color)}>
-                        {platform?.icon}
+                      <div className={cn("absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-primary-foreground border-2 border-card", platform?.color)}>
+                        <PlatformIcon platformId={acc.platformId} size={10} />
                       </div>
                     </div>
                   );
