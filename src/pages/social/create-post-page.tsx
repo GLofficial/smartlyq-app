@@ -51,6 +51,9 @@ export function CreatePostPage() {
   const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [previewMedia, setPreviewMedia] = useState<{ url: string; type: "image" | "video" }[]>([]);
+  // When Customize channel is on, uploads can be scoped per-platform via targetPlatforms.
+  // Track the raw list so we can partition media per platform at submit time.
+  const [uploadedMediaFull, setUploadedMediaFull] = useState<{ url?: string; type: "image" | "video"; targetPlatforms?: string[] }[]>([]);
 
   useEffect(() => {
     if (state) window.history.replaceState({}, document.title);
@@ -214,14 +217,36 @@ export function CreatePostPage() {
       // Always send the user's IANA timezone so the backend can convert local → UTC correctly.
       // Avoids the classic "scheduled Friday post lands on Saturday" bug from manual offset math.
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-      // Per-platform content overrides — only if Customize channel is on AND the
-      // platform has a non-empty override that actually differs from the shared content.
-      const overrides: Record<string, string> = {};
+      // Per-platform overrides — when Customize channel is on, each platform may
+      // have its own text AND its own media subset. Items with no `targetPlatforms`
+      // tag are global (apply to every platform); items with the tag only apply
+      // to the listed platforms. If ANY media is tagged, we must emit media_urls
+      // for every selected platform — otherwise un-overridden platforms fall back
+      // to the top-level mediaUrls which contains the tagged items too.
+      const overrides: Record<string, string | { content?: string; media_urls?: string[] }> = {};
       if (customizeChannel) {
+        const globalMedia = uploadedMediaFull
+          .filter(m => !m.targetPlatforms && m.url)
+          .map(m => m.url!);
+        const anyTagged = uploadedMediaFull.some(m => m.targetPlatforms && m.targetPlatforms.length > 0);
         for (const pid of selectedPlatforms) {
           const v = platformContent[pid];
-          if (typeof v === "string" && v.trim() !== "" && v !== content) {
-            overrides[pid] = v;
+          const textOverride = typeof v === "string" && v.trim() !== "" && v !== content ? v : undefined;
+
+          const perPlatformMedia = uploadedMediaFull
+            .filter(m => m.targetPlatforms && m.targetPlatforms.includes(pid) && m.url)
+            .map(m => m.url!);
+          const mergedMedia = [...globalMedia, ...perPlatformMedia];
+          // Emit media override for every platform once any tagging exists, so
+          // that platforms without a per-platform tag get only the global set.
+          const mediaOverride = anyTagged ? mergedMedia : undefined;
+
+          if (textOverride !== undefined && mediaOverride !== undefined) {
+            overrides[pid] = { content: textOverride, media_urls: mediaOverride };
+          } else if (mediaOverride !== undefined) {
+            overrides[pid] = { media_urls: mediaOverride };
+          } else if (textOverride !== undefined) {
+            overrides[pid] = textOverride;
           }
         }
       }
@@ -424,6 +449,7 @@ export function CreatePostPage() {
             onUploadedMediaChange={(media) => {
               setMediaUrls(media.filter(m => m.url).map(m => m.url!));
               setPreviewMedia(media.filter(m => m.url).map(m => ({ url: m.url!, type: m.type })));
+              setUploadedMediaFull(media.map(m => ({ url: m.url, type: m.type, targetPlatforms: m.targetPlatforms })));
             }}
           />
           <PostPreview

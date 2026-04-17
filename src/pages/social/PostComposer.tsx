@@ -381,8 +381,10 @@ interface PostComposerProps {
   mediaLibraryImages?: { id: string; url: string; preview_url: string; name: string }[];
   mediaLibraryVideos?: { id: string; url: string; preview_url: string; name: string }[];
   onLoadMoreMedia?: () => void;
-  /** Callback when uploaded media list changes — parent can track URLs for posting */
-  onUploadedMediaChange?: (media: { id: string; type: "image" | "video"; name: string; url?: string }[]) => void;
+  /** Callback when uploaded media list changes — parent can track URLs for posting.
+      `targetPlatforms` is set for items uploaded under Customize channel (active tab scope)
+      so the parent can build per-platform media buckets for platform_overrides. */
+  onUploadedMediaChange?: (media: { id: string; type: "image" | "video"; name: string; url?: string; targetPlatforms?: string[] }[]) => void;
   /** One-time seed for uploadedMedia (edit-post flow prefill). Changing the array REFERENCE re-seeds. */
   initialUploadedMedia?: { id: string; type: "image" | "video"; name: string; url?: string }[];
   /** One-time seed for per-platform post type (e.g. Instagram → "Reel"). */
@@ -465,7 +467,10 @@ export default function PostComposer({
   }, [realAccountsProvided, realAccounts]);
 
   const [expandedOptions, setExpandedOptions] = useState<Record<string, boolean>>({});
-  const [uploadedMedia, setUploadedMediaRaw] = useState<{ id: string; type: "image" | "video"; name: string; url?: string }[]>([]);
+  // Each media item can optionally be scoped to a subset of platforms. When Customize
+  // channel is ON and a platform tab is active, new uploads are scoped to that tab only.
+  // When the tag is missing, the item is global — applies to every selected platform.
+  const [uploadedMedia, setUploadedMediaRaw] = useState<{ id: string; type: "image" | "video"; name: string; url?: string; targetPlatforms?: string[] }[]>([]);
   const setUploadedMedia = useCallback((updater) => {
     setUploadedMediaRaw(prev => {
       const next = typeof updater === "function" ? updater(prev) : updater;
@@ -772,6 +777,17 @@ export default function PostComposer({
 
   // Get unique raw platform IDs from selected accounts (including sub-types)
   const rawPlatformIds = [...new Set(selectedAccounts.map(id => ACCOUNTS.find(a => a.id === id)?.platformId).filter(Boolean))] as string[];
+
+  // Platform-scope helpers for per-platform media under Customize channel.
+  const customizeActivePid = (activeCustomizeTab || rawPlatformIds[0]) ?? "";
+  const scopeForNewMedia = (): string[] | undefined => {
+    return customizeChannel && customizeActivePid ? [customizeActivePid] : undefined;
+  };
+  // Items visible in the Media section + preview respect the active tab when customize is on.
+  // An item without targetPlatforms (= global) is always visible.
+  const visibleMedia = customizeChannel && customizeActivePid
+    ? uploadedMedia.filter(m => !m.targetPlatforms || m.targetPlatforms.includes(customizeActivePid))
+    : uploadedMedia;
 
 
   const activeCharLimit = selectedPlatforms.length > 0
@@ -1173,29 +1189,68 @@ export default function PostComposer({
       </div>
 
 
-      {/* Uploaded Media Grid */}
-      {uploadedMedia.length > 0 && (
+      {/* Uploaded Media Grid — when Customize channel is ON, shows only media scoped to the
+          active platform (items without a target scope are global + always shown).
+          Supports drag-drop reordering within the currently visible list. */}
+      {visibleMedia.length > 0 && (
         <div className="bg-card rounded-lg border border-border p-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-foreground">Media ({uploadedMedia.length})</h3>
-            <Button variant="ghost" size="sm" className="text-xs text-destructive hover:text-destructive" onClick={clearMedia}>
+            <h3 className="text-sm font-semibold text-foreground">
+              Media ({visibleMedia.length})
+              {customizeChannel && customizeActivePid && (
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  · {PLATFORMS.find(p => p.id === customizeActivePid)?.label ?? customizeActivePid} only
+                </span>
+              )}
+            </h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-destructive hover:text-destructive"
+              onClick={() => {
+                if (customizeChannel && customizeActivePid) {
+                  // Clear only this platform's scoped items
+                  setUploadedMedia(prev => prev.filter(m => !m.targetPlatforms || !m.targetPlatforms.includes(customizeActivePid)));
+                  onImageCountChange?.(0);
+                } else {
+                  clearMedia();
+                }
+              }}
+            >
               <Trash2 className="w-3 h-3" /> Clear all
             </Button>
           </div>
           <div className="grid grid-cols-4 gap-2">
-            {uploadedMedia.map((item, idx) => (
+            {visibleMedia.map((item) => (
               <div
                 key={item.id}
-                className="relative aspect-square rounded-lg bg-muted overflow-hidden border-2 border-transparent group"
+                draggable
+                onDragStart={(e) => { e.dataTransfer.setData("text/plain", item.id); e.dataTransfer.effectAllowed = "move"; }}
+                onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const draggedId = e.dataTransfer.getData("text/plain");
+                  if (!draggedId || draggedId === item.id) return;
+                  setUploadedMedia(prev => {
+                    const arr = [...prev];
+                    const from = arr.findIndex(m => m.id === draggedId);
+                    const to = arr.findIndex(m => m.id === item.id);
+                    if (from < 0 || to < 0) return prev;
+                    const [moved] = arr.splice(from, 1);
+                    arr.splice(to, 0, moved!);
+                    return arr;
+                  });
+                }}
+                className="relative aspect-square rounded-lg bg-muted overflow-hidden border-2 border-transparent group cursor-grab active:cursor-grabbing"
               >
                 {item.url ? (
                   item.type === "video" ? (
-                    <video src={item.url} className="w-full h-full object-cover" muted />
+                    <video src={item.url} className="w-full h-full object-cover pointer-events-none" muted />
                   ) : (
-                    <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
+                    <img src={item.url} alt={item.name} className="w-full h-full object-cover pointer-events-none" />
                   )
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
+                  <div className="w-full h-full flex items-center justify-center pointer-events-none">
                     {item.type === "video" ? <Film className="w-6 h-6 text-muted-foreground/30" /> : <Image className="w-6 h-6 text-muted-foreground/30" />}
                   </div>
                 )}
@@ -1206,13 +1261,23 @@ export default function PostComposer({
                     </div>
                   </div>
                 )}
-                <button onClick={() => removeMedia(idx)} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-foreground/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => {
+                    // Remove by id so the filtered index never drifts out of sync with the flat array.
+                    setUploadedMedia(prev => prev.filter(m => m.id !== item.id));
+                    onImageCountChange?.(uploadedMedia.length - 1);
+                  }}
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-foreground/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                >
                   <X className="w-3 h-3 text-card" />
                 </button>
-                <span className="absolute bottom-1 left-1 right-1 text-[9px] text-card truncate bg-foreground/40 px-1 rounded">{item.name}</span>
+                <span className="absolute bottom-1 left-1 right-1 text-[9px] text-card truncate bg-foreground/40 px-1 rounded pointer-events-none">{item.name}</span>
               </div>
             ))}
           </div>
+          {customizeChannel && customizeActivePid && (
+            <p className="text-[11px] text-muted-foreground mt-3">Uploads added while this tab is active are only used for {PLATFORMS.find(p => p.id === customizeActivePid)?.label ?? customizeActivePid}. Drag thumbnails to reorder.</p>
+          )}
         </div>
       )}
 
@@ -2067,19 +2132,20 @@ export default function PostComposer({
               <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
                 const files = e.target.files;
                 if (!files) return;
+                const scope = scopeForNewMedia();
                 for (const file of Array.from(files)) {
                   if (onMediaUpload) {
                     try {
                       const result = await onMediaUpload(file);
                       setUploadedMedia(prev => {
-                        const next = [...prev, { id: `img-${Date.now()}`, type: "image" as const, name: result.name, url: result.url }];
+                        const next = [...prev, { id: `img-${Date.now()}`, type: "image" as const, name: result.name, url: result.url, targetPlatforms: scope }];
                         onImageCountChange?.(next.length);
                         return next;
                       });
                     } catch { /* toast handled in parent */ }
                   } else {
                     setUploadedMedia(prev => {
-                      const next = [...prev, { id: `img-${Date.now()}`, type: "image" as const, name: file.name }];
+                      const next = [...prev, { id: `img-${Date.now()}`, type: "image" as const, name: file.name, targetPlatforms: scope }];
                       onImageCountChange?.(next.length);
                       return next;
                     });
@@ -2119,10 +2185,11 @@ export default function PostComposer({
             <Button
               disabled={selectedPickerItems.length === 0}
               onClick={() => {
+                const scope = scopeForNewMedia();
                 selectedPickerItems.forEach(itemId => {
                   const item = mediaLibraryImages?.find(m => String(m.id) === itemId);
                   if (item) {
-                    setUploadedMedia(prev => [...prev, { id: `lib-${item.id}`, type: "image", name: item.name, url: item.url }]);
+                    setUploadedMedia(prev => [...prev, { id: `lib-${item.id}`, type: "image", name: item.name, url: item.url, targetPlatforms: scope }]);
                   }
                 });
                 onImageCountChange?.(uploadedMedia.length + selectedPickerItems.length);
@@ -2151,19 +2218,20 @@ export default function PostComposer({
               <input type="file" accept="video/*" multiple className="hidden" onChange={async (e) => {
                 const files = e.target.files;
                 if (!files) return;
+                const scope = scopeForNewMedia();
                 for (const file of Array.from(files)) {
                   if (onMediaUpload) {
                     try {
                       const result = await onMediaUpload(file);
                       setUploadedMedia(prev => {
-                        const next = [...prev, { id: `vid-${Date.now()}`, type: "video" as const, name: result.name, url: result.url }];
+                        const next = [...prev, { id: `vid-${Date.now()}`, type: "video" as const, name: result.name, url: result.url, targetPlatforms: scope }];
                         onImageCountChange?.(next.length);
                         return next;
                       });
                     } catch { /* toast handled in parent */ }
                   } else {
                     setUploadedMedia(prev => {
-                      const next = [...prev, { id: `vid-${Date.now()}`, type: "video" as const, name: file.name }];
+                      const next = [...prev, { id: `vid-${Date.now()}`, type: "video" as const, name: file.name, targetPlatforms: scope }];
                       onImageCountChange?.(next.length);
                       return next;
                     });
@@ -2204,10 +2272,11 @@ export default function PostComposer({
             <Button
               disabled={selectedPickerItems.length === 0}
               onClick={() => {
+                const scope = scopeForNewMedia();
                 selectedPickerItems.forEach(itemId => {
                   const item = mediaLibraryVideos?.find(m => String(m.id) === itemId);
                   if (item) {
-                    setUploadedMedia(prev => [...prev, { id: `lib-${item.id}`, type: "video", name: item.name, url: item.url }]);
+                    setUploadedMedia(prev => [...prev, { id: `lib-${item.id}`, type: "video", name: item.name, url: item.url, targetPlatforms: scope }]);
                   }
                 });
                 onImageCountChange?.(uploadedMedia.length + selectedPickerItems.length);
@@ -2493,7 +2562,8 @@ export default function PostComposer({
               disabled={!aiImageConfig.previewUrl || aiImageConfig.loading}
               onClick={() => {
                 if (aiImageConfig.previewUrl) {
-                  const newMedia = [...uploadedMedia, { id: `ai-img-${Date.now()}`, type: "image" as const, name: "AI Generated Image", url: aiImageConfig.previewUrl }];
+                  const scope = scopeForNewMedia();
+                  const newMedia = [...uploadedMedia, { id: `ai-img-${Date.now()}`, type: "image" as const, name: "AI Generated Image", url: aiImageConfig.previewUrl, targetPlatforms: scope }];
                   setUploadedMedia(newMedia);
                   onImageCountChange?.(newMedia.length);
                 }

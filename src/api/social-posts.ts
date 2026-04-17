@@ -43,9 +43,11 @@ export interface CreatePostData {
 	    Shape is read by the platform handlers (see TikTokVideoHandler::extractTikTokOptions). */
 	platform_options?: Record<string, Record<string, unknown>>;
 	/** Per-platform content overrides when Customize channel is on.
-	    Shape: `{ facebook: "custom text for FB", instagram: "..." }`. Publishers read
-	    this from SocialPostingService and substitute for `content` per platform. */
-	platform_overrides?: Record<string, string>;
+	    Legacy shape: `{ facebook: "custom text for FB" }` (text only).
+	    Extended shape: `{ facebook: { content?: string; media_urls?: string[] } }` —
+	    lets each platform have its own media subset too. Publishers read this
+	    from SocialPostingService and substitute for content/media per platform. */
+	platform_overrides?: Record<string, string | { content?: string; media_urls?: string[] }>;
 }
 
 export function useCreatePost() {
