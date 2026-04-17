@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { useState, useMemo } from "react";
-import { Monitor, Smartphone, MoreHorizontal, ThumbsUp, MessageCircle, Share2, Heart, Bookmark, Send, Repeat2, ArrowUp, ArrowDown, Eye, Music, MapPin, ChevronLeft, ChevronRight, FileText, Play } from "lucide-react";
+import { Monitor, Smartphone, MoreHorizontal, ThumbsUp, ThumbsDown, MessageCircle, Share2, Heart, Bookmark, Send, Repeat2, ArrowUp, ArrowDown, Eye, Music, MapPin, ChevronLeft, ChevronRight, FileText, Play } from "lucide-react";
 import { PLATFORM_BRANDS, PlatformIcon } from "./PlatformIcons";
 import { cn } from "@/lib/cn";
 
@@ -244,7 +243,7 @@ function GridCell({ mediaUrl, mediaType, label, aspect, className }: { mediaUrl?
 }
 
 // Platform-specific multi-image carousel/grid layouts
-function MultiImageGrid({ platform, device, imageCount, spec, mediaUrls }: { platform: string; device: Device; imageCount: number; spec: { imageAspect: string; imageLabel: string }; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
+function MultiImageGrid({ platform, imageCount, spec, mediaUrls }: { platform: string; device: Device; imageCount: number; spec: { imageAspect: string; imageLabel: string }; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
   const [carouselIndex, setCarouselIndex] = useState(0);
   const capped = Math.min(imageCount, 10);
   const mediaAt = (i: number) => mediaUrls?.[i];
@@ -510,7 +509,7 @@ function InstagramPreview({ content, device, imageCount = 1, mediaUrls, accountI
   );
 }
 
-function TwitterPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
+function TwitterPreview({ content, device, imageCount = 1, mediaUrls, accountInfo }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border p-3">
       <div className="flex gap-2">
@@ -524,7 +523,7 @@ function TwitterPreview({ content, device, imageCount = 1, accountInfo }: { cont
             <TruncatedText text={content} placeholder="Your post preview will appear here..." />
           </div>
           <div className="rounded-xl mt-2 overflow-hidden">
-            <ImagePlaceholder platform="twitter" device={device} imageCount={imageCount} />
+            <ImagePlaceholder platform="twitter" device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
           </div>
           <div className="flex items-center gap-8 mt-3 text-muted-foreground">
             {[MessageCircle, Repeat2, Heart, Share2].map((Icon, i) => (
@@ -537,7 +536,7 @@ function TwitterPreview({ content, device, imageCount = 1, accountInfo }: { cont
   );
 }
 
-function LinkedInPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
+function LinkedInPreview({ content, device, imageCount = 1, mediaUrls, accountInfo }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-3 flex items-center gap-2">
@@ -550,7 +549,7 @@ function LinkedInPreview({ content, device, imageCount = 1, accountInfo }: { con
       <div className="px-3 pb-3">
         <TruncatedText text={content} placeholder="Your post preview will appear here..." />
       </div>
-      <ImagePlaceholder platform="linkedin" device={device} imageCount={imageCount} />
+      <ImagePlaceholder platform="linkedin" device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
       <div className="border-t border-border flex">
         {[{ icon: ThumbsUp, l: "Like" }, { icon: MessageCircle, l: "Comment" }, { icon: Repeat2, l: "Repost" }, { icon: Send, l: "Send" }].map((a) => (
           <button key={a.l} className="flex-1 flex items-center justify-center gap-1 py-2.5 text-xs text-muted-foreground hover:bg-muted transition-colors">
@@ -635,11 +634,11 @@ function LinkedInDocumentPreview({ content, device }: { content: string; device:
   );
 }
 
-function YouTubePreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
+function YouTubePreview({ content, device, imageCount = 1, mediaUrls, accountInfo }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="relative">
-        <ImagePlaceholder platform="youtube" device={device} imageCount={imageCount} />
+        <ImagePlaceholder platform="youtube" device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
         <div className="absolute bottom-2 right-2 bg-foreground/80 text-card text-[10px] px-1 rounded">0:00</div>
       </div>
       <div className="p-3">
@@ -699,10 +698,10 @@ function TikTokPreview({ content, device, accountInfo }: { content: string; devi
   );
 }
 
-function PinterestPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
+function PinterestPreview({ content, device, imageCount = 1, mediaUrls, accountInfo }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-2xl border border-border overflow-hidden mx-auto" style={{ maxWidth: 240 }}>
-      <ImagePlaceholder platform="pinterest" device={device} imageCount={imageCount} />
+      <ImagePlaceholder platform="pinterest" device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
       <div className="p-3">
         <p className="text-sm font-semibold text-foreground line-clamp-2">{content || "Pin title..."}</p>
         <div className="flex items-center gap-1.5 mt-2">
@@ -714,7 +713,7 @@ function PinterestPreview({ content, device, imageCount = 1, accountInfo }: { co
   );
 }
 
-function RedditPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
+function RedditPreview({ content, device, imageCount = 1, mediaUrls, accountInfo }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="flex">
@@ -727,7 +726,7 @@ function RedditPreview({ content, device, imageCount = 1, accountInfo }: { conte
           <p className="text-xs text-muted-foreground">r/subreddit · Posted by u/{accountInfo?.username || accountInfo?.name || "you"} · just now</p>
           <p className="text-sm font-semibold text-foreground mt-1">{content || "Post title here..."}</p>
           <div className="rounded mt-2 overflow-hidden">
-            <ImagePlaceholder platform="reddit" device={device} imageCount={imageCount} />
+            <ImagePlaceholder platform="reddit" device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
           </div>
           <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
             <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" /> 0 Comments</span>
@@ -739,7 +738,7 @@ function RedditPreview({ content, device, imageCount = 1, accountInfo }: { conte
   );
 }
 
-function ThreadsPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
+function ThreadsPreview({ content, device, imageCount = 1, mediaUrls, accountInfo }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border p-3">
       <div className="flex gap-3">
@@ -754,7 +753,7 @@ function ThreadsPreview({ content, device, imageCount = 1, accountInfo }: { cont
           </div>
           <p className="text-sm text-foreground mt-1 whitespace-pre-wrap">{content || "Your post preview..."}</p>
           <div className="rounded-lg mt-2 overflow-hidden">
-            <ImagePlaceholder platform="threads" device={device} imageCount={imageCount} />
+            <ImagePlaceholder platform="threads" device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
           </div>
           <div className="flex items-center gap-4 mt-3 text-muted-foreground">
             {[Heart, MessageCircle, Repeat2, Send].map((Icon, i) => (
@@ -767,7 +766,7 @@ function ThreadsPreview({ content, device, imageCount = 1, accountInfo }: { cont
   );
 }
 
-function BlueskyPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
+function BlueskyPreview({ content, device, imageCount = 1, mediaUrls, accountInfo }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border p-3">
       <div className="flex gap-2">
@@ -779,7 +778,7 @@ function BlueskyPreview({ content, device, imageCount = 1, accountInfo }: { cont
           </div>
           <p className="text-sm text-foreground mt-1 whitespace-pre-wrap">{content || "Your post preview..."}</p>
           <div className="rounded-lg mt-2 overflow-hidden">
-            <ImagePlaceholder platform="bluesky" device={device} imageCount={imageCount} />
+            <ImagePlaceholder platform="bluesky" device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
           </div>
           <div className="flex items-center gap-6 mt-3 text-muted-foreground">
             {[MessageCircle, Repeat2, Heart].map((Icon, i) => (
@@ -792,7 +791,7 @@ function BlueskyPreview({ content, device, imageCount = 1, accountInfo }: { cont
   );
 }
 
-function MastodonPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
+function MastodonPreview({ content, device, imageCount = 1, mediaUrls, accountInfo }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border p-3">
       <div className="flex gap-2">
@@ -804,7 +803,7 @@ function MastodonPreview({ content, device, imageCount = 1, accountInfo }: { con
           </div>
           <p className="text-sm text-foreground mt-1 whitespace-pre-wrap">{content || "Your post preview..."}</p>
           <div className="rounded-lg mt-2 overflow-hidden">
-            <ImagePlaceholder platform="mastodon" device={device} imageCount={imageCount} />
+            <ImagePlaceholder platform="mastodon" device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
           </div>
           <div className="flex items-center gap-6 mt-3 text-muted-foreground">
             {[MessageCircle, Repeat2, Heart, Bookmark].map((Icon, i) => (
@@ -817,7 +816,7 @@ function MastodonPreview({ content, device, imageCount = 1, accountInfo }: { con
   );
 }
 
-function TelegramPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
+function TelegramPreview({ content, device, imageCount = 1, mediaUrls, accountInfo }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-3 flex items-center gap-2 border-b border-border">
@@ -827,7 +826,7 @@ function TelegramPreview({ content, device, imageCount = 1, accountInfo }: { con
       <div className="p-3">
         <p className="text-sm text-foreground whitespace-pre-wrap">{content || "Your message preview..."}</p>
         <div className="rounded mt-2 overflow-hidden">
-          <ImagePlaceholder platform="telegram" device={device} imageCount={imageCount} />
+          <ImagePlaceholder platform="telegram" device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
         </div>
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-2">
@@ -841,7 +840,7 @@ function TelegramPreview({ content, device, imageCount = 1, accountInfo }: { con
   );
 }
 
-function GooglePreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
+function GooglePreview({ content, device, imageCount = 1, mediaUrls, accountInfo }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-3 flex items-center gap-2">
@@ -852,7 +851,7 @@ function GooglePreview({ content, device, imageCount = 1, accountInfo }: { conte
         </div>
       </div>
       <p className="px-3 pb-3 text-sm text-foreground whitespace-pre-wrap">{content || "Your update preview..."}</p>
-      <ImagePlaceholder platform="google" device={device} imageCount={imageCount} />
+      <ImagePlaceholder platform="google" device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
       <div className="p-3">
         <button className="w-full py-2 border border-primary text-primary text-sm font-medium rounded hover:bg-primary/5 transition-colors">Learn more</button>
       </div>
@@ -860,14 +859,14 @@ function GooglePreview({ content, device, imageCount = 1, accountInfo }: { conte
   );
 }
 
-function TumblrPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
+function TumblrPreview({ content, device, imageCount = 1, mediaUrls, accountInfo }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-3 flex items-center gap-2">
         <AccountAvatar avatar={accountInfo?.avatar} name={accountInfo?.name} size={8} />
         <p className="text-sm font-semibold text-foreground">{accountInfo?.name || "yourblog"}</p>
       </div>
-      <ImagePlaceholder platform="tumblr" device={device} imageCount={imageCount} />
+      <ImagePlaceholder platform="tumblr" device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
       <div className="p-3">
         <p className="text-sm text-foreground whitespace-pre-wrap">{content || "Your post preview..."}</p>
         <div className="flex items-center gap-4 mt-3 text-muted-foreground">
@@ -880,7 +879,7 @@ function TumblrPreview({ content, device, imageCount = 1, accountInfo }: { conte
   );
 }
 
-function WordPressPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
+function WordPressPreview({ content, device, imageCount = 1, mediaUrls, accountInfo }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-3 border-b border-border flex items-center gap-2">
@@ -890,7 +889,7 @@ function WordPressPreview({ content, device, imageCount = 1, accountInfo }: { co
           <p className="text-xs text-muted-foreground">Draft</p>
         </div>
       </div>
-      <ImagePlaceholder platform="wordpress" device={device} imageCount={imageCount} />
+      <ImagePlaceholder platform="wordpress" device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
       <div className="p-3">
         <p className="text-sm text-foreground whitespace-pre-wrap">{content || "Your blog post content..."}</p>
         <div className="flex items-center gap-2 mt-3">
@@ -902,7 +901,7 @@ function WordPressPreview({ content, device, imageCount = 1, accountInfo }: { co
   );
 }
 
-function WhatsAppPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
+function WhatsAppPreview({ content, device, imageCount = 1, mediaUrls, accountInfo }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-[hsl(140,20%,90%)] rounded-lg overflow-hidden">
       <div className="p-3 bg-[hsl(142,70%,35%)] flex items-center gap-2">
@@ -912,7 +911,7 @@ function WhatsAppPreview({ content, device, imageCount = 1, accountInfo }: { con
       <div className="p-3 min-h-[120px]">
         <div className="inline-block bg-card rounded-lg p-2.5 shadow-sm max-w-[85%]">
           <div className="rounded overflow-hidden mb-2">
-            <ImagePlaceholder platform="whatsapp" device={device} imageCount={imageCount} />
+            <ImagePlaceholder platform="whatsapp" device={device} imageCount={imageCount} mediaUrls={mediaUrls} />
           </div>
           <p className="text-sm text-foreground whitespace-pre-wrap">{content || "Your message preview..."}</p>
           <span className="text-[10px] text-muted-foreground float-right mt-1 ml-2">12:00 ✓✓</span>
@@ -923,51 +922,6 @@ function WhatsAppPreview({ content, device, imageCount = 1, accountInfo }: { con
 }
 
 // Story/Reel preview components (9:16 vertical)
-function InstagramStoryPreview({ content, accountInfo }: { content: string; accountInfo?: { name: string; avatar: string; username?: string } }) {
-  const displayName = accountInfo?.username || accountInfo?.name || "your_page";
-  return (
-    <div className="relative rounded-2xl overflow-hidden bg-foreground mx-auto" style={{ aspectRatio: "9/16", maxHeight: 520, maxWidth: 280 }}>
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-card/30 gap-1">
-        <span className="text-xs">Story / Reel preview</span>
-        <span className="text-[10px]">1080 × 1920px (9:16)</span>
-      </div>
-      {/* Progress bars */}
-      <div className="absolute top-2 left-3 right-3 flex gap-1">
-        <div className="flex-1 h-0.5 bg-card/40 rounded-full overflow-hidden">
-          <div className="h-full w-1/3 bg-card rounded-full" />
-        </div>
-        <div className="flex-1 h-0.5 bg-card/20 rounded-full" />
-        <div className="flex-1 h-0.5 bg-card/20 rounded-full" />
-      </div>
-      {/* Header */}
-      <div className="absolute top-5 left-3 right-3 flex items-center gap-2">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[hsl(45,100%,60%)] via-[hsl(var(--instagram))] to-[hsl(280,70%,55%)] p-0.5">
-          {accountInfo?.avatar ? (
-            <img src={accountInfo.avatar} alt="" className="w-full h-full rounded-full object-cover" />
-          ) : (
-            <div className="w-full h-full rounded-full bg-foreground" />
-          )}
-        </div>
-        <span className="text-card text-xs font-semibold">{displayName}</span>
-        <span className="text-card/60 text-[10px]">1h</span>
-      </div>
-      {/* Bottom caption */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-foreground/80 to-transparent">
-        <p className="text-card text-xs line-clamp-3">{content || "Your story caption here..."}</p>
-        <div className="flex items-center justify-between mt-3">
-          <div className="flex-1 border border-card/40 rounded-full px-3 py-1.5">
-            <span className="text-card/50 text-[10px]">Send message</span>
-          </div>
-          <div className="flex items-center gap-3 ml-3">
-            <Heart className="w-5 h-5 text-card" />
-            <Send className="w-5 h-5 text-card" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function InstagramReelsPreview({ content, mediaUrls, accountInfo }: { content: string; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   const firstMedia = mediaUrls?.[0];
   const displayName = accountInfo?.username || accountInfo?.name || "your_page";
@@ -1155,8 +1109,10 @@ function TikTokStoryPreview({ content, mediaUrls }: { content: string; mediaUrls
   );
 }
 
-function YouTubeShortPreview({ content, mediaUrls }: { content: string; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
+function YouTubeShortPreview({ content, mediaUrls, accountInfo }: { content: string; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   const firstMedia = mediaUrls?.[0];
+  const rawHandle = accountInfo?.username || accountInfo?.name || "yourchannel";
+  const handle = rawHandle.startsWith("@") ? rawHandle : `@${rawHandle}`;
   return (
     <div className="flex justify-center">
       <div className="relative rounded-[2rem] overflow-hidden border-[6px] border-foreground mx-auto" style={{ aspectRatio: "9/16", maxHeight: 560, width: 300 }}>
@@ -1176,47 +1132,51 @@ function YouTubeShortPreview({ content, mediaUrls }: { content: string; mediaUrl
             </div>
           )}
 
-          {/* Right side actions */}
-          <div className="absolute right-3 bottom-32 flex flex-col items-center gap-4">
+          {/* Right side actions — compact spacing, sits clear of top edge */}
+          <div className="absolute right-2 bottom-24 flex flex-col items-center gap-2.5">
             <div className="flex flex-col items-center">
-              <div className="w-10 h-10 rounded-full bg-card/15 flex items-center justify-center">
-                <ThumbsUp className="w-5 h-5 text-card" />
+              <div className="w-9 h-9 rounded-full bg-card/15 flex items-center justify-center">
+                <ThumbsUp className="w-4 h-4 text-card" />
               </div>
-              <span className="text-card text-[10px] mt-1">0</span>
+              <span className="text-card text-[9px] mt-0.5">0</span>
             </div>
             <div className="flex flex-col items-center">
-              <div className="w-10 h-10 rounded-full bg-card/15 flex items-center justify-center">
-                <svg className="w-5 h-5 text-card" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M7.5 15l4.5-4.5L7.5 6" strokeLinecap="round" strokeLinejoin="round" transform="rotate(180 12 12)" /><path d="M2 12a10 10 0 1020 0 10 10 0 00-20 0z" /></svg>
+              <div className="w-9 h-9 rounded-full bg-card/15 flex items-center justify-center">
+                <ThumbsDown className="w-4 h-4 text-card" />
               </div>
-              <span className="text-card text-[10px] mt-1">Dislike</span>
+              <span className="text-card text-[9px] mt-0.5">Dislike</span>
             </div>
             <div className="flex flex-col items-center">
-              <div className="w-10 h-10 rounded-full bg-card/15 flex items-center justify-center">
-                <MessageCircle className="w-5 h-5 text-card" />
+              <div className="w-9 h-9 rounded-full bg-card/15 flex items-center justify-center">
+                <MessageCircle className="w-4 h-4 text-card" />
               </div>
-              <span className="text-card text-[10px] mt-1">0</span>
+              <span className="text-card text-[9px] mt-0.5">0</span>
             </div>
             <div className="flex flex-col items-center">
-              <div className="w-10 h-10 rounded-full bg-card/15 flex items-center justify-center">
-                <Share2 className="w-5 h-5 text-card" />
+              <div className="w-9 h-9 rounded-full bg-card/15 flex items-center justify-center">
+                <Share2 className="w-4 h-4 text-card" />
               </div>
-              <span className="text-card text-[10px] mt-1">Share</span>
+              <span className="text-card text-[9px] mt-0.5">Share</span>
             </div>
             <div className="flex flex-col items-center">
-              <div className="w-10 h-10 rounded-full bg-card/15 flex items-center justify-center">
-                <Repeat2 className="w-5 h-5 text-card" />
+              <div className="w-9 h-9 rounded-full bg-card/15 flex items-center justify-center">
+                <Repeat2 className="w-4 h-4 text-card" />
               </div>
-              <span className="text-card text-[10px] mt-1">Remix</span>
+              <span className="text-card text-[9px] mt-0.5">Remix</span>
             </div>
-            <div className="w-9 h-9 rounded-full bg-card/20 border-2 border-card overflow-hidden" />
+            <div className="w-8 h-8 rounded-full bg-card/20 border-2 border-card overflow-hidden" />
           </div>
 
           {/* Bottom content */}
-          <div className="absolute bottom-0 left-0 right-16 p-4 bg-gradient-to-t from-foreground/60 to-transparent pt-12">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-card/20 border border-card/40" />
-              <span className="text-card text-xs font-semibold">@Motivation</span>
-              <button className="bg-card text-foreground text-[10px] font-bold px-3 py-1 rounded-full">Subscribe</button>
+          <div className="absolute bottom-0 left-0 right-14 p-3 bg-gradient-to-t from-foreground/60 to-transparent pt-10">
+            <div className="flex items-center gap-2 min-w-0">
+              {accountInfo?.avatar ? (
+                <img src={accountInfo.avatar} alt="" className="w-7 h-7 rounded-full object-cover shrink-0 border border-card/40" />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-card/20 border border-card/40 shrink-0" />
+              )}
+              <span className="text-card text-xs font-semibold truncate">{handle}</span>
+              <button className="bg-card text-foreground text-[10px] font-bold px-2.5 py-0.5 rounded-full shrink-0">Subscribe</button>
             </div>
             <p className="text-card/90 text-xs mt-2 line-clamp-2">{content || "Your Short title here..."}</p>
             <div className="flex items-center gap-2 mt-2">
@@ -1304,7 +1264,7 @@ const STORY_PREVIEW_MAP: Record<string, React.FC<{ content: string; mediaUrls?: 
   snapchat: SnapchatStoryPreview,
 };
 
-const PREVIEW_MAP: Record<string, React.FC<{ content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[] }>> = {
+const PREVIEW_MAP: Record<string, React.FC<{ content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }>> = {
   facebook: FacebookPreview,
   instagram: InstagramPreview,
   twitter: TwitterPreview,
@@ -1329,7 +1289,7 @@ export default function PostPreview({ selectedPlatforms, content, platformConten
   const platforms = selectedPlatforms.length > 0 ? selectedPlatforms : ["facebook"];
   const [activePreview, setActivePreview] = useState<string | null>(null);
 
-  const currentPreview = activePreview && platforms.includes(activePreview) ? activePreview : platforms[0];
+  const currentPreview = activePreview && platforms.includes(activePreview) ? activePreview : (platforms[0] ?? "facebook");
 
   // Derive account info for the currently active platform preview
   const currentAccountInfo = useMemo(() => {
