@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, MessageSquare, Send, Search, Archive, Mail } from "lucide-react";
-import { useSocialInbox, useInboxThread } from "@/api/social";
+import { useSocialInbox, useInboxThread, useInboxSync } from "@/api/social";
 import { useInboxReply } from "@/api/social-posts";
 import { useSocialAccounts } from "@/api/social-reports";
 import { PlatformIcon } from "./platform-icon";
@@ -20,6 +20,13 @@ export function InboxPage() {
 	const { data: accountsData, isLoading: accountsLoading } = useSocialAccounts();
 	const { data: thread, isLoading: threadLoading } = useInboxThread(activeConvId);
 	const replyMut = useInboxReply();
+	const syncMut = useInboxSync();
+	const handleRefresh = () => {
+		syncMut.mutate(undefined, {
+			onSuccess: (r) => { toast.success(r.message ?? "Inbox synced."); refetch(); },
+			onError: (err) => toast.error((err as Error).message || "Sync failed."),
+		});
+	};
 	const [reply, setReply] = useState("");
 	const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -28,11 +35,10 @@ export function InboxPage() {
 	}, [thread?.messages?.length]);
 
 	const accounts = accountsData?.accounts ?? [];
-	const activeAccount = accountId ? accounts.find(a => a.id === accountId) : null;
 
 	const conversations = (data?.conversations ?? []).filter((c) => {
 		if (platform && c.platform !== platform) return false;
-		if (activeAccount && c.platform !== activeAccount.platform) return false;
+		if (accountId !== null && c.social_account_id !== accountId) return false;
 		if (search.trim() && !(c.participant_name.toLowerCase().includes(search.toLowerCase()) || c.snippet.toLowerCase().includes(search.toLowerCase()))) return false;
 		return true;
 	});
@@ -57,8 +63,8 @@ export function InboxPage() {
 				needsReconnectCount={accountsData?.needs_reconnect_count ?? 0}
 				onPlatformChange={setPlatform}
 				onAccountChange={setAccountId}
-				onRefresh={() => refetch()}
-				isRefreshing={isFetching}
+				onRefresh={handleRefresh}
+				isRefreshing={isFetching || syncMut.isPending}
 			/>
 
 			<Card className="flex flex-col overflow-hidden">

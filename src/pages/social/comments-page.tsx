@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, MessageCircle, Send, CheckCircle, MessageSquare } from "lucide-react";
-import { useSocialComments } from "@/api/social";
+import { useSocialComments, useCommentsSync } from "@/api/social";
 import { useReplyComment } from "@/api/social-posts";
 import { useSocialAccounts } from "@/api/social-reports";
 import { PlatformIcon } from "./platform-icon";
@@ -19,6 +19,13 @@ export function CommentsPage() {
 	const { data, isLoading, refetch, isFetching } = useSocialComments(filter || undefined, page);
 	const { data: accountsData, isLoading: accountsLoading } = useSocialAccounts();
 	const replyMut = useReplyComment();
+	const syncMut = useCommentsSync();
+	const handleRefresh = () => {
+		syncMut.mutate(undefined, {
+			onSuccess: (r) => { toast.success(r.message ?? "Comments synced."); refetch(); },
+			onError: (err) => toast.error((err as Error).message || "Sync failed."),
+		});
+	};
 	const [reply, setReply] = useState("");
 
 	const accounts = accountsData?.accounts ?? [];
@@ -57,8 +64,8 @@ export function CommentsPage() {
 				needsReconnectCount={accountsData?.needs_reconnect_count ?? 0}
 				onPlatformChange={setPlatform}
 				onAccountChange={setAccountId}
-				onRefresh={() => refetch()}
-				isRefreshing={isFetching}
+				onRefresh={handleRefresh}
+				isRefreshing={isFetching || syncMut.isPending}
 			/>
 
 			<Card className="flex flex-col overflow-hidden">

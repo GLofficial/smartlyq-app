@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 
 export interface SocialAccount {
@@ -153,6 +153,18 @@ export interface InboxThread {
 	messages: InboxMessage[];
 }
 
+export function useInboxSync() {
+	return useMutation({
+		mutationFn: () => apiClient.post<{ message: string; synced: number }>("/api/spa/social/inbox/sync", {}),
+	});
+}
+
+export function useCommentsSync() {
+	return useMutation({
+		mutationFn: () => apiClient.post<{ message: string; synced: number }>("/api/spa/social/comments/sync", {}),
+	});
+}
+
 export function useInboxThread(conversationId: number | null) {
 	return useQuery({
 		queryKey: ["social", "inbox", "thread", conversationId],
@@ -172,11 +184,15 @@ export function useSocialComments(filter?: string, page = 1) {
 			apiClient.get<{ comments: Comment[]; total: number; page: number; pages: number }>(
 				`/api/spa/social/comments?${params.toString()}`,
 			),
+		// Near-real-time: refetch every 30s while the tab is active
+		refetchInterval: 30_000,
+		refetchOnWindowFocus: true,
 	});
 }
 
 export interface Conversation {
 	id: number;
+	social_account_id: number;
 	participant_name: string;
 	participant_avatar: string;
 	platform: string;
@@ -195,6 +211,9 @@ export function useSocialInbox(page = 1) {
 				page: number;
 				pages: number;
 			}>(`/api/spa/social/inbox?page=${page}`),
+		// Near-real-time: refetch every 30s while the tab is active
+		refetchInterval: 30_000,
+		refetchOnWindowFocus: true,
 	});
 }
 
