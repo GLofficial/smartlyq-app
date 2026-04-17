@@ -125,9 +125,9 @@ interface DemoPost {
   content: string;
   date: string;
   time: string;
-  platforms: { id: string; name: string; status: "published" | "scheduled" | "draft" | "failed" }[];
+  platforms: { id: string; name: string; status: "published" | "scheduled" | "draft" | "failed" | "processing" }[];
   thumbnail?: string;
-  status: "published" | "scheduled" | "draft" | "failed" | "partial";
+  status: "published" | "scheduled" | "draft" | "failed" | "partial" | "processing";
   mediaUrls?: string[];
   postUrls?: Record<string, string | string[]>;
   errorMessage?: string;
@@ -264,17 +264,21 @@ function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; classes: string }> = {
     published: { label: "PUBLISHED", classes: "bg-success/10 text-success border-success/20" },
     scheduled: { label: "SCHEDULED", classes: "bg-primary/10 text-primary border-primary/20" },
+    processing: { label: "PUBLISHING…", classes: "bg-primary/15 text-primary border-primary/30" },
     draft: { label: "DRAFT", classes: "bg-warning/10 text-warning border-warning/20" },
     failed: { label: "FAILED", classes: "bg-destructive/10 text-destructive border-destructive/20" },
     partial: { label: "PARTIAL", classes: "bg-warning/10 text-warning border-warning/20" },
+    partially_published: { label: "PARTIAL", classes: "bg-warning/10 text-warning border-warning/20" },
   };
   const c = config[status] || config.draft;
+  const isProcessing = status === "processing";
   return (
     <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border", c.classes)}>
       {status === "published" && <CheckCircle2 className="w-3 h-3" />}
-      {status === "partial" && <AlertTriangle className="w-3 h-3" />}
+      {(status === "partial" || status === "partially_published") && <AlertTriangle className="w-3 h-3" />}
       {status === "draft" && <PenLine className="w-3 h-3" />}
       {status === "scheduled" && <Clock className="w-3 h-3" />}
+      {isProcessing && <Clock className="w-3 h-3 animate-spin" />}
       {c.label}
     </span>
   );
@@ -338,7 +342,11 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
       const ep = ev.extendedProps || {};
       const startStr = ev.start ?? "";
       const { date: datePart, time: timePart } = splitLocal(startStr);
-      const postStatus = ((ep.status as string) || "scheduled") as DemoPost["status"];
+      // Normalize backend status strings to the SPA's enum:
+      //   "partially_published" → "partial" (frontend legacy),
+      //   "processing" kept as-is (post currently being sent to the platform API)
+      const rawStatus = (ep.status as string) || "scheduled";
+      const postStatus = (rawStatus === "partially_published" ? "partial" : rawStatus) as DemoPost["status"];
       const platformIds = Array.isArray(ep.platforms) ? (ep.platforms as string[]) : [];
       const platformAccounts = (ep.platformAccounts && typeof ep.platformAccounts === "object" && !Array.isArray(ep.platformAccounts)) ? ep.platformAccounts as Record<string, string> : {};
       const platformSucceeded = (ep.platformSucceeded && typeof ep.platformSucceeded === "object" && !Array.isArray(ep.platformSucceeded)) ? ep.platformSucceeded as Record<string, boolean> : {};
