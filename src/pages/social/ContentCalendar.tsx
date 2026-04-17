@@ -286,12 +286,24 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function PlatformIcons({ platforms }: { platforms: { id: string }[] }) {
+function PlatformIcons({ platforms, maxVisible = 3, size = 18 }: { platforms: { id: string }[]; maxVisible?: number; size?: number }) {
+  // Cap visible icons + show "+N" for extras. Prevents overflow on narrow calendar cards.
+  const visible = platforms.slice(0, maxVisible);
+  const extra = platforms.length - visible.length;
   return (
-    <div className="flex items-center gap-0.5">
-      {platforms.map((p, i) => (
-        <PlatformBadge key={i} platformId={p.id} size={18} />
+    <div className="flex items-center gap-0.5 min-w-0">
+      {visible.map((p, i) => (
+        <PlatformBadge key={i} platformId={p.id} size={size} />
       ))}
+      {extra > 0 && (
+        <span
+          className="inline-flex items-center justify-center rounded-full bg-muted text-muted-foreground text-[9px] font-bold shrink-0"
+          style={{ width: size, height: size }}
+          title={platforms.slice(maxVisible).map(p => p.id).join(", ")}
+        >
+          +{extra}
+        </span>
+      )}
     </div>
   );
 }
@@ -636,9 +648,9 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                         )}
                         <p className="text-[10px] font-semibold text-foreground line-clamp-1">{post.title}</p>
                         <p className="text-[9px] text-muted-foreground line-clamp-1 mt-0.5">{post.content}</p>
-                        <div className="flex items-center justify-between mt-1">
-                          <PlatformIcons platforms={post.platforms} />
-                          <StatusBadge status={post.status} />
+                        <div className="flex items-center justify-between gap-1 mt-1 min-w-0">
+                          <PlatformIcons platforms={post.platforms} maxVisible={3} size={16} />
+                          <div className="shrink-0 scale-90 origin-right"><StatusBadge status={post.status} /></div>
                         </div>
                       </div>
                     </div>
