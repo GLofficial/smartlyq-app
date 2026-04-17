@@ -826,7 +826,9 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                 {(selectedPost.status === "scheduled" || selectedPost.status === "draft") && (
                   <Button className="gap-1.5" onClick={() => {
                     setSelectedPost(null);
-                    navigate(createPostPath, {
+                    // Use ?edit=id so the create-post page fetches the full post data
+                    // (content + platforms + accounts + media + post type) from the backend.
+                    navigate(`${createPostPath}?edit=${selectedPost.id}`, {
                       state: {
                         editPost: {
                           content: selectedPost.content,
