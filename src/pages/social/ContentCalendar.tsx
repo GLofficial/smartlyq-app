@@ -655,8 +655,9 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                     <span className="text-sm font-semibold text-foreground">{selectedPost.platforms[0]?.name}</span>
                   </div>
                   {(() => {
-                    const urls = selectedPost.postUrls ? Object.entries(selectedPost.postUrls).filter(([, u]) => u && typeof u === "string" && u.startsWith("http")) : [];
-                    if (urls.length === 0) return null;
+                    const urls = selectedPost.postUrls
+                      ? Object.entries(selectedPost.postUrls).filter(([k, u]) => !k.startsWith("_") && u && typeof u === "string" && u.startsWith("http"))
+                      : [];
                     if (urls.length === 1) {
                       return (
                         <Button variant="outline" size="sm" className="gap-1.5 text-primary" onClick={() => window.open(urls[0]![1], "_blank", "noopener,noreferrer")}>
@@ -664,27 +665,41 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                         </Button>
                       );
                     }
+                    if (urls.length > 1) {
+                      return (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className="gap-1.5 text-primary">
+                              <ExternalLink className="w-3.5 h-3.5" /> View Post
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent align="end" className="w-64 p-1">
+                            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide px-2 py-1.5">Open on platform</p>
+                            {urls.map(([platformKey, url]) => (
+                              <button
+                                key={platformKey}
+                                onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
+                                className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm hover:bg-muted transition-colors"
+                              >
+                                <PlatformBadge platformId={platformKey} size={18} />
+                                <span className="capitalize">{platformKey}</span>
+                                <ExternalLink className="w-3 h-3 ml-auto text-muted-foreground" />
+                              </button>
+                            ))}
+                          </PopoverContent>
+                        </Popover>
+                      );
+                    }
+                    // No URLs available — show the button but disabled with explanation
+                    const hintText = selectedPost.status === "published"
+                      ? "Post URL not yet available. Resync your accounts to pull it."
+                      : selectedPost.status === "scheduled" || selectedPost.status === "draft"
+                      ? "Post hasn't been published yet."
+                      : "No post URL available for this post.";
                     return (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" size="sm" className="gap-1.5 text-primary">
-                            <ExternalLink className="w-3.5 h-3.5" /> View Post
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent align="end" className="w-56 p-1">
-                          {urls.map(([platformKey, url]) => (
-                            <button
-                              key={platformKey}
-                              onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
-                              className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm hover:bg-muted transition-colors"
-                            >
-                              <PlatformBadge platformId={platformKey} size={18} />
-                              <span className="capitalize">{platformKey}</span>
-                              <ExternalLink className="w-3 h-3 ml-auto text-muted-foreground" />
-                            </button>
-                          ))}
-                        </PopoverContent>
-                      </Popover>
+                      <Button variant="outline" size="sm" className="gap-1.5 text-primary/50" disabled title={hintText}>
+                        <ExternalLink className="w-3.5 h-3.5" /> View Post
+                      </Button>
                     );
                   })()}
                 </div>
