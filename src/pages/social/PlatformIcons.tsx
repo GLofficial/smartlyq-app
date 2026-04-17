@@ -58,10 +58,10 @@ export function PlatformBadge({ platformId, size = 18 }: { platformId: string; s
   const brand = PLATFORM_BRANDS[platformId];
   if (!brand) return null;
   const IconComp = brand.Icon;
-  const iconSize = Math.max(Math.round(size * 0.55), 8);
+  const iconSize = Math.max(Math.round(size * 0.6), 8);
   return (
     <span
-      className="inline-flex items-center justify-center rounded-full shrink-0 text-white"
+      className="inline-flex items-center justify-center rounded-full shrink-0 leading-none text-white"
       style={{ width: size, height: size, backgroundColor: brand.brandColor }}
     >
       <IconComp size={iconSize} style={{ display: "block" }} />

@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState, useRef, useCallback, useMemo } from "react";
-import { PlatformIcon } from "./PlatformIcons";
+import { PlatformIcon, PlatformBadge } from "./PlatformIcons";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -1203,9 +1203,7 @@ export default function PostComposer({
                   className="w-full flex items-center justify-between px-5 py-3 hover:bg-muted/30 transition-colors"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-primary-foreground", platform?.color)}>
-                      <PlatformIcon platformId={platformId} size={13} />
-                    </div>
+                    <PlatformBadge platformId={platformId} size={24} />
                     <span className="text-sm font-medium text-foreground">{opts.label}</span>
                   </div>
                   {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
