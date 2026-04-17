@@ -692,25 +692,28 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                 );
               })()}
 
-              {/* Platform tabs — clickable, per-platform status */}
+              {/* Platform tabs — clickable, per-platform status. Chip shows channel/account name; platform icon makes the platform clear. */}
               <div className="flex flex-wrap gap-2 mt-3">
                 {selectedPost.platforms.map((p) => {
-                  const label = PLATFORM_BRANDS[p.id]?.label || p.id;
+                  const brandLabel = PLATFORM_BRANDS[p.id]?.label || p.id;
+                  const accountName = selectedPost.platformAccounts?.[p.id];
+                  const chipLabel = accountName || brandLabel;
                   const isActive = p.id === activePid;
                   return (
                     <button
                       key={p.id}
                       onClick={() => setActivePlatformId(p.id)}
+                      title={accountName ? `${accountName} · ${brandLabel}` : brandLabel}
                       className={cn(
                         "flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors",
                         isActive ? "bg-primary/10 border-primary/40 text-foreground" : "border-border text-muted-foreground hover:bg-muted/50"
                       )}
                     >
                       <PlatformBadge platformId={p.id} size={18} />
-                      <span>{label}</span>
-                      {p.status === "published" && <CheckCircle2 className="w-4 h-4 text-success" />}
-                      {p.status === "failed" && <X className="w-4 h-4 text-destructive" />}
-                      {p.status === "scheduled" && <Clock className="w-4 h-4 text-primary" />}
+                      <span className="max-w-[140px] truncate">{chipLabel}</span>
+                      {p.status === "published" && <CheckCircle2 className="w-4 h-4 text-success shrink-0" />}
+                      {p.status === "failed" && <X className="w-4 h-4 text-destructive shrink-0" />}
+                      {p.status === "scheduled" && <Clock className="w-4 h-4 text-primary shrink-0" />}
                     </button>
                   );
                 })}
@@ -722,8 +725,8 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                   <div className="flex items-center gap-2 min-w-0">
                     {activePid && <PlatformBadge platformId={activePid} size={24} />}
                     <div className="flex flex-col min-w-0">
-                      <span className="text-sm font-semibold text-foreground truncate">{activeLabel}</span>
-                      {activeAccount && <span className="text-xs text-muted-foreground truncate">{activeAccount}</span>}
+                      <span className="text-sm font-semibold text-foreground truncate">{activeAccount || activeLabel}</span>
+                      {activeAccount && <span className="text-xs text-muted-foreground truncate">{activeLabel}</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -881,9 +884,17 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                   onClick={() => { setDayDetailDate(null); setSelectedPost(post); }}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <PlatformIcons platforms={post.platforms} />
-                      <span className="text-sm font-semibold text-foreground">{post.platforms[0]?.name}</span>
+                      <span className="text-sm font-semibold text-foreground truncate">
+                        {(() => {
+                          const first = post.platforms[0];
+                          if (!first) return "";
+                          const acct = post.platformAccounts?.[first.id];
+                          const brandLabel = PLATFORM_BRANDS[first.id]?.label ?? first.id;
+                          return acct ? `${acct} · ${brandLabel}` : brandLabel;
+                        })()}
+                      </span>
                     </div>
                     <StatusBadge status={post.status} />
                   </div>

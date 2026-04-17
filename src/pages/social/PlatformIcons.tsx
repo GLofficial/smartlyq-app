@@ -55,26 +55,29 @@ export function PlatformIcon({ platformId, size = 16, className }: { platformId:
 
 // Per-brand optical adjustments (fractional translate of icon relative to its own size)
 // Values are in "icon-pixels"; tuned so glyphs like Facebook's "f", LinkedIn "in", Pinterest "P" sit visually centered.
-const ICON_NUDGE: Record<string, { x?: number; y?: number }> = {
-  facebook: { x: 0.5 },
-  facebook_page: { x: 0.5 },
-  linkedin: { x: 0.5 },
-  linkedin_page: { x: 0.5 },
-  pinterest: { x: 0.5 },
-  tumblr: { x: 0.5 },
-  twitter: { y: 0.5 },
-  instagram: { y: 0.25 },
-  tiktok: { x: 0.5 },
-  youtube: { x: 0.25 },
-  reddit: { y: 0.5 },
-  bluesky: { y: 0.25 },
-  mastodon: {},
-  telegram: { x: -0.5 },
-  whatsapp: { y: 0.25 },
-  snapchat: {},
-  google: { x: 0.25 },
-  wordpress: {},
-  threads: { x: 0.5 },
+// Per-brand optical adjustments as a FRACTION of the badge size (so they scale with the badge).
+// Tuned empirically because many brand SVGs aren't geometrically centered in their viewbox.
+// Negative x = nudge LEFT, positive = RIGHT. Positive y = DOWN.
+const ICON_NUDGE_FRACTION: Record<string, { x?: number; y?: number }> = {
+  facebook:      { x:  0.04 }, // "f" glyph's right curve makes it look left-heavy → nudge right
+  facebook_page: { x:  0.04 },
+  linkedin:      { x:  0.02 },
+  linkedin_page: { x:  0.02 },
+  pinterest:     { x: -0.03 }, // "P" bowl is top-right; pulls visual centre right → nudge left
+  tumblr:        { x:  0.00 },
+  twitter:       { y:  0.00 },
+  instagram:     { y:  0.00 },
+  tiktok:        { x: -0.03 }, // note has swoosh on the right
+  youtube:       { y:  0.02 }, // play triangle is vertically asymmetric
+  reddit:        { y:  0.02 },
+  bluesky:       { y:  0.00 },
+  mastodon:      {},
+  telegram:      { x: -0.04 }, // paper-plane tail sits right
+  whatsapp:      {},
+  snapchat:      {},
+  google:        {},
+  wordpress:     {},
+  threads:       { x:  0.02 },
 };
 
 /** Colored circle badge with platform icon inside — use for small badges on calendar cards, account strips, etc. */
@@ -83,8 +86,10 @@ export function PlatformBadge({ platformId, size = 18 }: { platformId: string; s
   if (!brand) return null;
   const IconComp = brand.Icon;
   const iconSize = Math.max(Math.round(size * 0.6), 8);
-  const nudge = ICON_NUDGE[platformId];
-  const transform = nudge ? `translate(${nudge.x ?? 0}px, ${nudge.y ?? 0}px)` : undefined;
+  const nudge = ICON_NUDGE_FRACTION[platformId];
+  const dx = nudge?.x ? size * nudge.x : 0;
+  const dy = nudge?.y ? size * nudge.y : 0;
+  const transform = (dx || dy) ? `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px)` : undefined;
   return (
     <span
       className="inline-grid place-items-center rounded-full shrink-0 leading-none text-white"
