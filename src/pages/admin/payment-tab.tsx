@@ -55,6 +55,13 @@ function GatewaySection({ gateway }: { gateway: Gateway }) {
 				className="flex w-full items-center justify-between px-6 py-4 text-left"
 			>
 				<div className="flex items-center gap-3">
+					<img
+						src={`/assets/img/payment/${gateway.provider.toLowerCase()}.png`}
+						alt={gateway.name}
+						width={36}
+						height={36}
+						className="rounded object-contain"
+					/>
 					<span className="text-base font-semibold">{gateway.name} API Credential</span>
 					<span className={cn(
 						"rounded-full px-2 py-0.5 text-xs font-medium",
