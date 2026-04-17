@@ -52,13 +52,12 @@ export function PostAccountSelector({ accounts, selectedIds, onSelectionChange }
         onClick={() => setShowDropdown(!showDropdown)}
         className="w-full flex items-center justify-between border-2 border-primary/30 rounded-lg px-4 py-2.5 hover:border-primary/50 transition-colors"
       >
-        <div className="flex items-center gap-1 overflow-hidden">
+        <div className="flex items-center gap-1 flex-1 min-w-0">
           {selectedIds.length > 0 ? (
-            <div className="flex -space-x-1.5 overflow-x-auto">
+            <div className="flex -space-x-1.5 flex-wrap gap-y-2 py-1">
               {selectedIds.map((accId) => {
                 const acc = safeAccounts.find((a) => a.id === accId);
                 if (!acc) return null;
-                const brand = PLATFORM_BRANDS[acc.platform];
                 return (
                   <div key={accId} className="relative shrink-0">
                     <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-sm font-bold border-2 border-card overflow-hidden">
@@ -68,14 +67,11 @@ export function PostAccountSelector({ accounts, selectedIds, onSelectionChange }
                         (acc.name ?? "?").charAt(0).toUpperCase()
                       )}
                     </div>
-                    <div
-                      className={cn(
-                        "absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-primary-foreground border border-card",
-                        brand?.color ?? "bg-muted",
-                      )}
-                    >
-                      <PlatformBrandIcon platformId={acc.platform} size={8} />
-                    </div>
+                    <PlatformBrandIcon
+                      platformId={acc.platform}
+                      size={10}
+                      className="absolute -bottom-0.5 -right-0.5 border-2 border-card"
+                    />
                   </div>
                 );
               })}
