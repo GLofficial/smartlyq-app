@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 const TABS = [
 	{ key: "", label: "Queued Posts", countKey: "queued" },
-	{ key: "unscheduled", label: "Unscheduled", countKey: "unscheduled" },
+	{ key: "unscheduled", label: "Drafts", countKey: "unscheduled" },
 	{ key: "error", label: "Error", countKey: "error" },
 	{ key: "published", label: "Published", countKey: "published" },
 	{ key: "pending_review", label: "Pending Review", countKey: "pending_review" },
@@ -152,6 +152,36 @@ export function ManagePostsPage() {
 										<p className="text-sm font-semibold text-[var(--foreground)] truncate">{(post.title && String(post.title).trim() !== "" && String(post.title) !== "0") ? post.title : (post.content || "Untitled post")}</p>
 										<p className="text-xs text-[var(--muted-foreground)] truncate mt-0.5">{post.content}</p>
 										{post.error_message && <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><XCircle size={10} /> {post.error_message}</p>}
+										{/* Derive per-platform success/fail from post_urls — shown on failed/partial posts so the user knows exactly which platform broke. */}
+										{(post.status === "failed" || post.status === "partially_published") && (() => {
+											const pu = (post.post_urls && typeof post.post_urls === "object" && !Array.isArray(post.post_urls)) ? post.post_urls as Record<string, unknown> : {};
+											const urlErrors = (pu._errors && typeof pu._errors === "object") ? pu._errors as Record<string, string> : {};
+											const succeeded: string[] = [];
+											const failed: string[] = [];
+											const platforms: string[] = Array.isArray(post.platforms) ? post.platforms : [];
+											for (const p of platforms) {
+												const v = pu[p];
+												const hasUrl = (typeof v === "string" && v.startsWith("http"))
+													|| (Array.isArray(v) && v.some((x: unknown) => typeof x === "string" && (x as string).startsWith("http")));
+												if (hasUrl) succeeded.push(p); else failed.push(p);
+											}
+											if (failed.length === 0 && Object.keys(urlErrors).length === 0) return null;
+											const failPlatforms = failed.length > 0 ? failed : Object.keys(urlErrors);
+											return (
+												<div className="flex flex-wrap items-center gap-1 mt-1">
+													{succeeded.map((p) => (
+														<span key={`ok-${p}`} className="inline-flex items-center gap-1 rounded-full bg-green-50 text-green-700 px-1.5 py-0.5 text-[10px] font-medium capitalize">
+															<PlatformIcon platform={p} size={10} /> {p} ✓
+														</span>
+													))}
+													{failPlatforms.map((p) => (
+														<span key={`fail-${p}`} className="inline-flex items-center gap-1 rounded-full bg-red-50 text-red-700 px-1.5 py-0.5 text-[10px] font-medium capitalize" title={urlErrors[p] || "Failed to publish"}>
+															<PlatformIcon platform={p} size={10} /> {p} ✗
+														</span>
+													))}
+												</div>
+											);
+										})()}
 										<span className={`inline-flex items-center gap-1 mt-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${sc?.bg} ${sc?.text}`}>
 											{sc?.emoji} {sc?.label}
 										</span>
@@ -209,10 +239,10 @@ export function ManagePostsPage() {
 													</Button>
 												);
 											})()}
-											{/* Edit is only meaningful for posts that can still be changed. Published/failed posts can't be edited. */}
-											{(post.status === "draft" || post.status === "scheduled" || post.status === "pending_review") && (
+											{/* Edit is meaningful for posts that can still be changed OR that failed and need fixing before retry. */}
+											{(post.status === "draft" || post.status === "scheduled" || post.status === "pending_review" || post.status === "failed" || post.status === "partially_published") && (
 												<Link to={editPath(post.id)}>
-													<Button variant="outline" size="sm" className="h-7 w-7 p-0" title="Edit"><Pencil size={13} /></Button>
+													<Button variant="outline" size="sm" className="h-7 w-7 p-0" title={post.status === "failed" || post.status === "partially_published" ? "Edit and retry" : "Edit"}><Pencil size={13} /></Button>
 												</Link>
 											)}
 											<Button variant="outline" size="sm" className="h-7 w-7 p-0" title="Duplicate"
