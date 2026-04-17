@@ -10,6 +10,7 @@ import { ModelSelectField, type ModelOption } from "./model-select-field";
 import { toast } from "sonner";
 import { cn } from "@/lib/cn";
 import { SocialOAuthTab } from "./social-oauth/social-oauth-tab";
+import { AiCrudPanel } from "./ai-crud-panel";
 
 const TABS = [
 	{ key: "general", label: "General" },
@@ -99,6 +100,7 @@ export function AdminSettingsPage() {
 					{activeTab === "social_oauth" ? (
 						<SocialOAuthTab />
 					) : (
+					<>
 					<Card>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2 text-lg">
@@ -155,6 +157,12 @@ export function AdminSettingsPage() {
 							)}
 						</CardContent>
 					</Card>
+					{activeTab === "openai" && (
+						<div className="mt-4">
+							<AiCrudPanel />
+						</div>
+					)}
+					</>
 					)}
 				</div>
 			</div>
