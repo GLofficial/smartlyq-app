@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/cn";
 import { SocialOAuthTab } from "./social-oauth/social-oauth-tab";
 import { AiCrudPanel } from "./ai-crud-panel";
+import { PaymentTab } from "./payment-tab";
 
 const TABS = [
 	{ key: "general", label: "General" },
@@ -99,6 +100,8 @@ export function AdminSettingsPage() {
 				<div className="flex-1 min-w-0">
 					{activeTab === "social_oauth" ? (
 						<SocialOAuthTab />
+					) : activeTab === "payment" ? (
+						<PaymentTab />
 					) : (
 					<>
 					<Card>
