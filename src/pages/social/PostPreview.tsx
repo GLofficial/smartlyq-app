@@ -164,8 +164,7 @@ function SingleImagePlaceholder({ aspect, label, mediaUrl, mediaType }: { aspect
   if (mediaUrl && mediaType === "video") {
     return (
       <div
-        className="relative cursor-pointer"
-        style={{ aspectRatio: aspect }}
+        className="relative cursor-pointer bg-foreground"
         onClick={() => {
           const vid = videoRef[0];
           if (vid) {
@@ -174,7 +173,7 @@ function SingleImagePlaceholder({ aspect, label, mediaUrl, mediaType }: { aspect
           }
         }}
       >
-        <video ref={(el) => { videoRef[0] = el; }} src={mediaUrl} className="w-full h-full object-cover" muted playsInline loop />
+        <video ref={(el) => { videoRef[0] = el; }} src={mediaUrl} className="w-full h-auto block max-h-[600px] object-contain mx-auto" muted playsInline loop />
         {!playing && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center">
@@ -186,7 +185,7 @@ function SingleImagePlaceholder({ aspect, label, mediaUrl, mediaType }: { aspect
     );
   }
   if (mediaUrl) {
-    return <img src={mediaUrl} alt="Preview" className="w-full object-cover" style={{ aspectRatio: aspect }} />;
+    return <img src={mediaUrl} alt="Preview" className="w-full h-auto block max-h-[600px] object-contain mx-auto bg-foreground" />;
   }
   return (
     <div className="bg-muted flex flex-col items-center justify-center text-muted-foreground gap-1" style={{ aspectRatio: aspect }}>
