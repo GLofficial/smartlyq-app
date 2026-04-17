@@ -149,7 +149,7 @@ export function InboxPage() {
 								<button
 									key={conv.id}
 									onClick={() => setActiveConvId(conv.id)}
-									className={`w-full flex items-center gap-3 px-3 py-3 text-left border-b border-[var(--border)] hover:bg-[var(--muted)]/30 transition-colors ${isActive ? "bg-[var(--muted)]/50" : ""}`}
+									className={`w-full flex items-center gap-3 px-3 py-3 text-left border-b border-[var(--border)] transition-colors ${isActive ? "bg-[var(--sq-primary)]/10 border-l-4 border-l-[var(--sq-primary)] pl-2" : "hover:bg-[var(--muted)]/30"}`}
 								>
 									<div className="relative shrink-0">
 										{conv.participant_avatar ? (

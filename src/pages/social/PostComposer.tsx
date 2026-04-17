@@ -387,24 +387,31 @@ interface PostComposerProps {
   initialUploadedMedia?: { id: string; type: "image" | "video"; name: string; url?: string }[];
   /** One-time seed for per-platform post type (e.g. Instagram → "Reel"). */
   initialPlatformPostType?: Record<string, string>;
+  /** Callback when per-platform option settings change (e.g. TikTok privacy + allow_comments + branded_content).
+      Shape is normalized for the backend: `{ tiktok: { visibility, allow_comments, ... } }`. */
+  onPlatformOptionsChange?: (options: Record<string, Record<string, unknown>>) => void;
 }
 
 function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
+  // Container: 40×22 with 3px inner padding; knob: 16×16 slides between left and right edges.
+  // Using inset positioning (not transforms) keeps the knob from overflowing in narrow layouts.
   return (
-    <div
+    <button
+      type="button"
       onClick={onToggle}
+      aria-pressed={enabled}
       className={cn(
-        "w-9 h-5 rounded-full relative transition-colors cursor-pointer",
+        "relative inline-flex shrink-0 w-10 h-[22px] rounded-full transition-colors cursor-pointer",
         enabled ? "bg-primary" : "bg-muted"
       )}
     >
-      <div
+      <span
         className={cn(
-          "absolute top-0.5 w-4 h-4 rounded-full bg-card shadow transition-transform",
-          enabled ? "translate-x-4" : "translate-x-0.5"
+          "absolute top-[3px] w-4 h-4 rounded-full bg-card shadow transition-all",
+          enabled ? "left-[21px]" : "left-[3px]"
         )}
       />
-    </div>
+    </button>
   );
 }
 
@@ -439,6 +446,7 @@ export default function PostComposer({
   onUploadedMediaChange,
   initialUploadedMedia,
   initialPlatformPostType,
+  onPlatformOptionsChange,
 }: PostComposerProps) {
   // Map real accounts to the internal format used by the UI
   // When realAccounts is provided (even empty), never show demo data
@@ -473,8 +481,10 @@ export default function PostComposer({
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const [platformSettings, setPlatformSettings] = useState<Record<string, Record<string, string>>>({});
   const [activeCustomizeTab, setActiveCustomizeTab] = useState<string | null>(null);
-  const [tiktokAllowOptions, setTiktokAllowOptions] = useState<Record<string, boolean>>({ Comment: true, Duet: true, Stitch: true });
+  // TikTok requires explicit user choice — do NOT preselect. Empty means "not yet chosen".
+  const [tiktokAllowOptions, setTiktokAllowOptions] = useState<Record<string, boolean>>({});
   const [discloseContent, setDiscloseContent] = useState<Record<string, boolean>>({});
+  const [discloseKind, setDiscloseKind] = useState<Record<string, "your_brand" | "branded_content" | null>>({});
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [thumbnailPickerOpen, setThumbnailPickerOpen] = useState(false);
@@ -664,6 +674,34 @@ export default function PostComposer({
     onPostTypeChange?.(initialPlatformPostType);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPlatformPostType]);
+
+  // Transform TikTok UI state into the backend-expected shape under `platform_options.tiktok`
+  // and push up to the parent whenever any sub-setting changes.
+  // Keys match extractTikTokOptions() in app/Service/SocialPlatform/TikTok/TikTokVideoHandler.php.
+  useEffect(() => {
+    if (!onPlatformOptionsChange) return;
+    const VIS_MAP: Record<string, "public" | "friends" | "private"> = {
+      "Everyone": "public",
+      "Friends": "friends",
+      "Only Me": "private",
+    };
+    const out: Record<string, Record<string, unknown>> = {};
+    const tiktokSettings = platformSettings["tiktok"];
+    if (tiktokSettings?.whoCanView && VIS_MAP[tiktokSettings.whoCanView]) {
+      const kind = discloseKind["tiktok"] ?? null;
+      out.tiktok = {
+        visibility: VIS_MAP[tiktokSettings.whoCanView],
+        allow_comments: !!tiktokAllowOptions.Comment,
+        allow_duet: !!tiktokAllowOptions.Duet,
+        allow_stitch: !!tiktokAllowOptions.Stitch,
+        disclose_content: !!discloseContent["tiktok"],
+        your_brand: kind === "your_brand",
+        branded_content: kind === "branded_content",
+      };
+    }
+    onPlatformOptionsChange(out);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [platformSettings, tiktokAllowOptions, discloseContent, discloseKind]);
 
   const toggleAccount = (accId: string) => {
     const acc = ACCOUNTS.find(a => a.id === accId);
@@ -1607,10 +1645,12 @@ export default function PostComposer({
                       </div>
                     )}
 
-                    {/* Who can view (TikTok) */}
+                    {/* Who can view (TikTok) — MUST be explicit user choice. TikTok's API
+                        defaults unselected posts to SELF_ONLY, which is why posts weren't
+                        appearing on the profile. */}
                     {opts.hasWhoCanView && (
                       <div>
-                        <span className="text-sm font-medium text-foreground block mb-2">Who can view this video</span>
+                        <span className="text-sm font-medium text-foreground block mb-1">Who can view this video</span>
                         <p className="text-xs text-muted-foreground mb-2">This applies to your post on TikTok</p>
                         <div className="flex flex-wrap gap-2">
                           {opts.hasWhoCanView.map((opt) => (
@@ -1622,7 +1662,7 @@ export default function PostComposer({
                               }))}
                               className={cn(
                                 "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-                                (settings.whoCanView || opts.hasWhoCanView[0]) === opt
+                                settings.whoCanView === opt
                                   ? "border-primary bg-primary/10 text-primary"
                                   : "border-border text-muted-foreground hover:border-primary/40"
                               )}
@@ -1631,6 +1671,9 @@ export default function PostComposer({
                             </button>
                           ))}
                         </div>
+                        {!settings.whoCanView && (
+                          <p className="text-[11px] text-amber-600 mt-1.5">Select a privacy level before posting.</p>
+                        )}
                       </div>
                     )}
 
@@ -1657,22 +1700,68 @@ export default function PostComposer({
                       </div>
                     )}
 
-                    {/* Disclose content (TikTok) */}
-                    {opts.hasDiscloseContent && (
-                      <div className="flex items-start gap-3">
-                        <Toggle
-                          enabled={discloseContent[platformId] ?? false}
-                          onToggle={() => setDiscloseContent(prev => ({ ...prev, [platformId]: !prev[platformId] }))}
-                        />
+                    {/* Disclose content (TikTok) — when ON, user MUST pick Your brand or Branded content.
+                        Wording matches TikTok's own commercial content guidelines. */}
+                    {opts.hasDiscloseContent && (() => {
+                      const isOn = discloseContent[platformId] ?? false;
+                      const kind = discloseKind[platformId] ?? null;
+                      return (
                         <div>
-                          <span className="text-sm font-medium text-foreground">Disclose video content</span>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            By turning this option on, you confirm the video promotes goods or services in exchange for 
-                            something of value. Your video could promote yourself, a third party, or both.
-                          </p>
+                          <div className="flex items-start gap-3">
+                            <Toggle
+                              enabled={isOn}
+                              onToggle={() => {
+                                setDiscloseContent(prev => ({ ...prev, [platformId]: !prev[platformId] }));
+                                if (isOn) setDiscloseKind(prev => ({ ...prev, [platformId]: null }));
+                              }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm font-medium text-foreground">Disclose video content</span>
+                              <p className="text-xs text-muted-foreground mt-0.5">Turn on if this video promotes goods or services.</p>
+                            </div>
+                          </div>
+
+                          {isOn && (
+                            <>
+                              <div className="mt-3 rounded-md bg-amber-50 border border-amber-200 p-3 text-xs">
+                                <p className="font-semibold text-amber-700">Your video will be labeled "Promotional content".</p>
+                                <p className="text-amber-700/80 mt-0.5">This cannot be changed once your video is posted.</p>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-3 mb-2">Turn on to disclose that this video promotes goods or services in exchange for something of value.</p>
+                              <div className="space-y-2">
+                                <label className="flex items-start gap-2.5 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={kind === "your_brand"}
+                                    onChange={() => setDiscloseKind(prev => ({ ...prev, [platformId]: kind === "your_brand" ? null : "your_brand" }))}
+                                    className="mt-0.5 h-4 w-4 rounded border-border"
+                                  />
+                                  <div>
+                                    <p className="text-sm font-medium text-foreground">Your brand</p>
+                                    <p className="text-xs text-muted-foreground">Your photo/video will be labeled as 'Promotional content'.</p>
+                                  </div>
+                                </label>
+                                <label className="flex items-start gap-2.5 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={kind === "branded_content"}
+                                    onChange={() => setDiscloseKind(prev => ({ ...prev, [platformId]: kind === "branded_content" ? null : "branded_content" }))}
+                                    className="mt-0.5 h-4 w-4 rounded border-border"
+                                  />
+                                  <div>
+                                    <p className="text-sm font-medium text-foreground">Branded content</p>
+                                    <p className="text-xs text-muted-foreground">Your photo/video will be labeled as 'Paid partnership'.</p>
+                                  </div>
+                                </label>
+                              </div>
+                              {!kind && (
+                                <p className="text-[11px] text-amber-600 mt-2">Pick Your brand or Branded content to continue.</p>
+                              )}
+                            </>
+                          )}
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Share to Story (Instagram) */}
                     {opts.hasShareToStory && (

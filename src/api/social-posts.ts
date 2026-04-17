@@ -39,6 +39,13 @@ export interface CreatePostData {
 	media_urls: string[];
 	/** IANA timezone (e.g. "Europe/Athens"). Required for scheduled posts — backend uses this to convert to UTC. */
 	timezone?: string;
+	/** Per-platform options keyed by platform (e.g. `{ tiktok: { visibility, allow_comments, ... } }`).
+	    Shape is read by the platform handlers (see TikTokVideoHandler::extractTikTokOptions). */
+	platform_options?: Record<string, Record<string, unknown>>;
+	/** Per-platform content overrides when Customize channel is on.
+	    Shape: `{ facebook: "custom text for FB", instagram: "..." }`. Publishers read
+	    this from SocialPostingService and substitute for `content` per platform. */
+	platform_overrides?: Record<string, string>;
 }
 
 export function useCreatePost() {

@@ -47,6 +47,7 @@ export function CreatePostPage() {
   const [customizeChannel, setCustomizeChannel] = useState(false);
   const [imageCount, setImageCount] = useState(0);
   const [platformPostType, setPlatformPostType] = useState<Record<string, string>>({});
+  const [platformOptions, setPlatformOptions] = useState<Record<string, Record<string, unknown>>>({});
   const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [previewMedia, setPreviewMedia] = useState<{ url: string; type: "image" | "video" }[]>([]);
@@ -142,6 +143,20 @@ export function CreatePostPage() {
           return false;
         }
       }
+
+      // TikTok requires explicit privacy selection — TikTok's API defaults unsubmitted
+      // privacy to SELF_ONLY which is why test posts never surfaced on the profile.
+      if (selectedPlatforms.includes("tiktok")) {
+        const tk = platformOptions.tiktok as Record<string, unknown> | undefined;
+        if (!tk || !tk.visibility) {
+          toast.error("Select who can view your TikTok video (Everyone, Friends, or Only Me).");
+          return false;
+        }
+        if (tk.disclose_content && !tk.your_brand && !tk.branded_content) {
+          toast.error("Pick Your brand or Branded content when Disclose video content is on.");
+          return false;
+        }
+      }
     }
 
     // Schedule in past check
@@ -174,7 +189,7 @@ export function CreatePostPage() {
       return false;
     }
     return true;
-  }, [selectedAccountIds, content, selectedPlatforms, platformPostType, previewMedia, limits]);
+  }, [selectedAccountIds, content, selectedPlatforms, platformPostType, platformOptions, previewMedia, limits]);
 
   const handleSubmit = useCallback(
     (action: CreatePostData["action"], scheduledTime?: string) => {
@@ -182,6 +197,18 @@ export function CreatePostPage() {
       // Always send the user's IANA timezone so the backend can convert local → UTC correctly.
       // Avoids the classic "scheduled Friday post lands on Saturday" bug from manual offset math.
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      // Per-platform content overrides — only if Customize channel is on AND the
+      // platform has a non-empty override that actually differs from the shared content.
+      const overrides: Record<string, string> = {};
+      if (customizeChannel) {
+        for (const pid of selectedPlatforms) {
+          const v = platformContent[pid];
+          if (typeof v === "string" && v.trim() !== "" && v !== content) {
+            overrides[pid] = v;
+          }
+        }
+      }
+
       createPost.mutate(
         {
           title: "",
@@ -192,6 +219,8 @@ export function CreatePostPage() {
           scheduled_time: scheduledTime ?? null,
           media_urls: mediaUrls,
           timezone: userTimezone,
+          platform_options: platformOptions,
+          platform_overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
         },
         {
           onSuccess: () => {
@@ -325,6 +354,7 @@ export function CreatePostPage() {
             onPostTypeChange={setPlatformPostType}
             initialUploadedMedia={initialUploadedMedia}
             initialPlatformPostType={initialPlatformPostType}
+            onPlatformOptionsChange={setPlatformOptions}
             initialScheduledDate={state?.prefillDate || state?.editPost?.date}
             initialScheduledTime={state?.prefillTime || state?.editPost?.time}
             realAccounts={accounts}
