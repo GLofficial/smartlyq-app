@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useState, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 import type { EventDropArg } from "@fullcalendar/core";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -214,6 +215,8 @@ interface CalendarProps {
 
 export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost, onReschedulePost }: CalendarProps = {}) {
   const navigate = useNavigate();
+  const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
+  const createPostPath = wsHash ? `/w/${wsHash}/social-media/create-post` : "/social-media/create-post";
   // toast imported from sonner at top
   const calendarRef = useRef<FullCalendar>(null);
 
@@ -427,7 +430,7 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                   const api = calendarRef.current?.getApi();
                   const currentDate = api?.getDate();
                   const dateStr = currentDate ? currentDate.toISOString().split("T")[0] : undefined;
-                  navigate("/", { state: { prefillDate: dateStr } });
+                  navigate(createPostPath, { state: { prefillDate: dateStr } });
                 }}>
                   <Plus className="w-4 h-4" /> Create Post
                 </Button>
@@ -572,7 +575,7 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                 {(selectedPost.status === "scheduled" || selectedPost.status === "draft") && (
                   <Button className="gap-1.5" onClick={() => {
                     setSelectedPost(null);
-                    navigate("/", {
+                    navigate(createPostPath, {
                       state: {
                         editPost: {
                           content: selectedPost.content,
@@ -660,7 +663,7 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
           )}
 
           <div className="mt-4 flex justify-center">
-            <Button className="gap-1.5" onClick={() => { setDayDetailDate(null); navigate("/", { state: { prefillDate: dayDetailDate } }); }}>
+            <Button className="gap-1.5" onClick={() => { setDayDetailDate(null); navigate(createPostPath, { state: { prefillDate: dayDetailDate } }); }}>
               <Plus className="w-4 h-4" /> Add New Post
             </Button>
           </div>

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 import {
 	Calendar,
 	CheckCircle,
@@ -16,13 +17,15 @@ import { PlatformIcon } from "./platform-icon";
 
 export function SocialDashboardPage() {
 	const { data, isLoading } = useSocialHub();
+	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
+	const createPostPath = wsHash ? `/w/${wsHash}/social-media/create-post` : "/social-media/create-post";
 
 	return (
 		<div className="space-y-6">
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<h1 className="text-2xl font-bold">Social Media</h1>
-				<Link to="../social-media/create-post">
+				<Link to={createPostPath}>
 					<Button>
 						<Plus size={16} />
 						Create Post
