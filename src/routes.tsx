@@ -45,6 +45,7 @@ const HistoryPage = lazy(() => import("@/pages/history/history-page").then((m) =
 const AgencyPage = lazy(() => import("@/pages/agency/agency-page").then((m) => ({ default: m.AgencyPage })));
 const LabelsPage = lazy(() => import("@/pages/social/labels-page").then((m) => ({ default: m.LabelsPage })));
 const QueuesPage = lazy(() => import("@/pages/social/queues-page").then((m) => ({ default: m.QueuesPage })));
+const BulkSchedulerPage = lazy(() => import("@/pages/social/bulk-scheduler-page").then((m) => ({ default: m.BulkSchedulerPage })));
 const ReportsPage = lazy(() => import("@/pages/analyze/reports-page").then((m) => ({ default: m.ReportsPage })));
 const ScheduledReportsPage = lazy(() => import("@/pages/analyze/scheduled-reports-page").then((m) => ({ default: m.ScheduledReportsPage })));
 const UrlShortenerPage = lazy(() => import("@/pages/connect/url-shortener-page").then((m) => ({ default: m.UrlShortenerPage })));
@@ -236,7 +237,7 @@ export const router = createBrowserRouter([
 					{ path: "url-shortener", element: <S><UrlShortenerPage /></S> },
 					{ path: "canva", element: <S><IntegrationsPage /></S> },
 					{ path: "developer", element: <S><DeveloperPage /></S> },
-					{ path: "bulk-scheduler", element: <S><QueuesPage /></S> },
+					{ path: "bulk-scheduler", element: <S><BulkSchedulerPage /></S> },
 
 					/* Workspace extras */
 					{ path: "brands", element: <S><BrandsPage /></S> },

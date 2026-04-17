@@ -17,14 +17,25 @@ export function CommentsPage() {
 		<div className="space-y-6">
 			<h1 className="text-2xl font-bold">Comments</h1>
 
-			<div className="flex gap-2">
-				<Button variant={filter === "" ? "default" : "outline"} size="sm" onClick={() => { setFilter(""); setPage(1); }}>
-					All
-				</Button>
-				<Button variant={filter === "unreplied" ? "default" : "outline"} size="sm" onClick={() => { setFilter("unreplied"); setPage(1); }}>
-					Unreplied
-				</Button>
-			</div>
+			{(() => {
+				const all = data?.comments ?? [];
+				const repliedCount = all.filter(c => c.has_reply).length;
+				const unrepliedCount = all.length - repliedCount;
+				const totalShown = data?.total ?? 0;
+				return (
+					<div className="flex gap-2 flex-wrap">
+						<Button variant={filter === "" ? "default" : "outline"} size="sm" onClick={() => { setFilter(""); setPage(1); }}>
+							All <span className="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-[var(--muted)] text-[10px] font-bold px-1.5">{totalShown}</span>
+						</Button>
+						<Button variant={filter === "replied" ? "default" : "outline"} size="sm" onClick={() => { setFilter("replied"); setPage(1); }}>
+							Replied <span className="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-green-100 text-green-700 text-[10px] font-bold px-1.5">{filter === "replied" ? totalShown : repliedCount}</span>
+						</Button>
+						<Button variant={filter === "unreplied" ? "default" : "outline"} size="sm" onClick={() => { setFilter("unreplied"); setPage(1); }}>
+							Unreplied <span className="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-red-100 text-red-700 text-[10px] font-bold px-1.5">{filter === "unreplied" ? totalShown : unrepliedCount}</span>
+						</Button>
+					</div>
+				);
+			})()}
 
 			<Card>
 				<CardHeader>

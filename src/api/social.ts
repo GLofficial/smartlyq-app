@@ -140,6 +140,27 @@ export interface Comment {
 	post_title: string;
 }
 
+export interface InboxMessage {
+	id: number;
+	sender_type: "us" | "them" | string;
+	content: string;
+	sent_at: string | null;
+	media_url: string;
+}
+
+export interface InboxThread {
+	conversation: { id: number; participant_name: string; participant_avatar: string; platform: string };
+	messages: InboxMessage[];
+}
+
+export function useInboxThread(conversationId: number | null) {
+	return useQuery({
+		queryKey: ["social", "inbox", "thread", conversationId],
+		queryFn: () => apiClient.get<InboxThread>(`/api/spa/social/inbox/thread?conversation_id=${conversationId}`),
+		enabled: conversationId !== null && conversationId > 0,
+	});
+}
+
 export function useSocialComments(filter?: string, page = 1) {
 	const params = new URLSearchParams();
 	if (filter) params.set("filter", filter);
