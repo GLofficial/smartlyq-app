@@ -65,6 +65,38 @@ export function CreatePostPage() {
       toast.error("Please write some content");
       return false;
     }
+
+    // Per-platform media-type rules (skip validation on drafts so users can save partial work).
+    if (action !== "save_draft") {
+      const hasVideo = previewMedia.some(m => m.type === "video");
+      const hasImage = previewMedia.some(m => m.type === "image");
+      // Post-type shorthand labels that always require a video source
+      const VIDEO_ONLY_TYPES: Record<string, string[]> = {
+        instagram: ["Reel"],
+        facebook: ["Reel"],
+        facebook_page: ["Reel"],
+        tiktok: ["Video"],
+        youtube: ["Video", "Short"],
+        pinterest: ["Video"],
+      };
+      for (const pid of selectedPlatforms) {
+        const type = platformPostType[pid];
+        if (!type) continue;
+        const videoOnly = VIDEO_ONLY_TYPES[pid] || [];
+        if (videoOnly.includes(type) && !hasVideo) {
+          const brand = pid.charAt(0).toUpperCase() + pid.slice(1).replace(/_page$/, "");
+          toast.error(`${brand} ${type} requires a video. Upload a video or switch post type.`);
+          return false;
+        }
+        // Pinterest Photo / YouTube Photo / TikTok Photo rules — if labeled Photo must have an image
+        if (type === "Photo" && !hasImage) {
+          const brand = pid.charAt(0).toUpperCase() + pid.slice(1).replace(/_page$/, "");
+          toast.error(`${brand} ${type} requires an image.`);
+          return false;
+        }
+      }
+    }
+
     // Schedule in past check
     if (action === "scheduled" && scheduledTime) {
       const schedDate = new Date(scheduledTime);
@@ -95,7 +127,7 @@ export function CreatePostPage() {
       return false;
     }
     return true;
-  }, [selectedAccountIds, content, selectedPlatforms, limits]);
+  }, [selectedAccountIds, content, selectedPlatforms, platformPostType, previewMedia, limits]);
 
   const handleSubmit = useCallback(
     (action: CreatePostData["action"], scheduledTime?: string) => {

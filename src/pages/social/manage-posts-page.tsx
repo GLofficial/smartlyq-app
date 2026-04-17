@@ -124,11 +124,22 @@ export function ManagePostsPage() {
 							const sc = STATUS_COLORS[post.status] ?? STATUS_COLORS.draft;
 							return (
 								<div key={post.id} className="flex items-center gap-4 px-4 py-3 border-b border-[var(--border)] last:border-0 hover:bg-[var(--muted)]/20 transition-colors group">
-									{/* Thumbnail */}
+									{/* Thumbnail (image or video with play overlay) */}
 									<div className="shrink-0">
 										{post.thumbnail ? (
-											<img src={post.thumbnail} alt="" className="h-14 w-14 rounded-lg object-cover border border-[var(--border)]"
-												onError={(e) => { e.currentTarget.style.display = "none"; }} />
+											/\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(post.thumbnail) ? (
+												<div className="relative h-14 w-14 rounded-lg overflow-hidden border border-[var(--border)] bg-[var(--muted)]">
+													<video src={post.thumbnail} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+													<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+														<div className="w-5 h-5 rounded-full bg-black/55 flex items-center justify-center">
+															<div className="w-0 h-0 border-t-[3px] border-t-transparent border-b-[3px] border-b-transparent border-l-[5px] border-l-white ml-0.5" />
+														</div>
+													</div>
+												</div>
+											) : (
+												<img src={post.thumbnail} alt="" className="h-14 w-14 rounded-lg object-cover border border-[var(--border)]"
+													onError={(e) => { e.currentTarget.style.display = "none"; }} />
+											)
 										) : (
 											<div className="h-14 w-14 rounded-lg bg-[var(--muted)] flex items-center justify-center">
 												<Calendar size={20} className="text-[var(--muted-foreground)]/30" />
@@ -165,9 +176,12 @@ export function ManagePostsPage() {
 										</p>
 										{/* Action buttons — below date, appear on hover */}
 										<div className="flex items-center justify-end gap-0.5 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-											<Link to={editPath(post.id)}>
-												<Button variant="outline" size="sm" className="h-7 w-7 p-0" title="Edit"><Pencil size={13} /></Button>
-											</Link>
+											{/* Edit is only meaningful for posts that can still be changed. Published/failed posts can't be edited. */}
+											{(post.status === "draft" || post.status === "scheduled" || post.status === "pending_review") && (
+												<Link to={editPath(post.id)}>
+													<Button variant="outline" size="sm" className="h-7 w-7 p-0" title="Edit"><Pencil size={13} /></Button>
+												</Link>
+											)}
 											<Button variant="outline" size="sm" className="h-7 w-7 p-0" title="Duplicate"
 												onClick={() => duplicateMut.mutate(post.id, { onSuccess: () => toast.success("Post duplicated as draft") })}>
 												<Copy size={13} />
