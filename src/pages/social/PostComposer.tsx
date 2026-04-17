@@ -675,22 +675,24 @@ export default function PostComposer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPlatformPostType]);
 
-  // Transform TikTok UI state into the backend-expected shape under `platform_options.tiktok`
-  // and push up to the parent whenever any sub-setting changes.
-  // Keys match extractTikTokOptions() in app/Service/SocialPlatform/TikTok/TikTokVideoHandler.php.
+  // Transform per-platform UI state into the backend-expected shape under `platform_options`
+  // and push up to the parent whenever any sub-setting changes. Every platform that collects
+  // settings (TikTok privacy, YouTube title/visibility, etc.) emits its own sub-object.
   useEffect(() => {
     if (!onPlatformOptionsChange) return;
-    const VIS_MAP: Record<string, "public" | "friends" | "private"> = {
-      "Everyone": "public",
-      "Friends": "friends",
-      "Only Me": "private",
+    const TIKTOK_VIS: Record<string, "public" | "friends" | "private"> = {
+      "Everyone": "public", "Friends": "friends", "Only Me": "private",
+    };
+    const YOUTUBE_VIS: Record<string, "public" | "unlisted" | "private"> = {
+      "Public": "public", "Unlisted": "unlisted", "Private": "private",
     };
     const out: Record<string, Record<string, unknown>> = {};
+
     const tiktokSettings = platformSettings["tiktok"];
-    if (tiktokSettings?.whoCanView && VIS_MAP[tiktokSettings.whoCanView]) {
+    if (tiktokSettings?.whoCanView && TIKTOK_VIS[tiktokSettings.whoCanView]) {
       const kind = discloseKind["tiktok"] ?? null;
       out.tiktok = {
-        visibility: VIS_MAP[tiktokSettings.whoCanView],
+        visibility: TIKTOK_VIS[tiktokSettings.whoCanView],
         allow_comments: !!tiktokAllowOptions.Comment,
         allow_duet: !!tiktokAllowOptions.Duet,
         allow_stitch: !!tiktokAllowOptions.Stitch,
@@ -699,6 +701,38 @@ export default function PostComposer({
         branded_content: kind === "branded_content",
       };
     }
+
+    // YouTube — title is required by the platform; backend handler reads platform_options.youtube.title.
+    const youtubeSettings = platformSettings["youtube"];
+    if (youtubeSettings) {
+      const y: Record<string, unknown> = {};
+      if (youtubeSettings.title) y.title = youtubeSettings.title;
+      if (youtubeSettings.visibility && YOUTUBE_VIS[youtubeSettings.visibility]) y.visibility = YOUTUBE_VIS[youtubeSettings.visibility];
+      if (youtubeSettings.category) y.category = youtubeSettings.category;
+      if (youtubeSettings.tags) y.tags = youtubeSettings.tags;
+      if (Object.keys(y).length > 0) out.youtube = y;
+    }
+
+    // Pinterest — pin title/description/board
+    const pinterestSettings = platformSettings["pinterest"];
+    if (pinterestSettings) {
+      const p: Record<string, unknown> = {};
+      if (pinterestSettings.title) p.title = pinterestSettings.title;
+      if (pinterestSettings.description) p.description = pinterestSettings.description;
+      if (pinterestSettings.board) p.board = pinterestSettings.board;
+      if (pinterestSettings.link) p.link = pinterestSettings.link;
+      if (Object.keys(p).length > 0) out.pinterest = p;
+    }
+
+    // Instagram — share-to-story toggle + first comment
+    const igSettings = platformSettings["instagram"];
+    if (igSettings) {
+      const ig: Record<string, unknown> = {};
+      if (igSettings.shareToStory === "true") ig.share_to_story = true;
+      if (igSettings.firstComment) ig.first_comment = igSettings.firstComment;
+      if (Object.keys(ig).length > 0) out.instagram = ig;
+    }
+
     onPlatformOptionsChange(out);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [platformSettings, tiktokAllowOptions, discloseContent, discloseKind]);

@@ -127,8 +127,14 @@ export function CreatePostPage() {
         youtube: ["Video", "Short"],
         pinterest: ["Video"],
       };
+      // Default post type for each platform (what the UI shows as active before the user
+      // touches anything) — validation has to use this effective type, not `undefined`.
+      const DEFAULT_POST_TYPE: Record<string, string> = {
+        youtube: "Video", tiktok: "Video", instagram: "Post", facebook: "Post",
+        facebook_page: "Post", pinterest: "Pin", linkedin: "Post", twitter: "Post",
+      };
       for (const pid of selectedPlatforms) {
-        const type = platformPostType[pid];
+        const type = platformPostType[pid] ?? DEFAULT_POST_TYPE[pid] ?? "";
         if (!type) continue;
         const videoOnly = VIDEO_ONLY_TYPES[pid] || [];
         if (videoOnly.includes(type) && !hasVideo) {
@@ -140,6 +146,17 @@ export function CreatePostPage() {
         if (type === "Photo" && !hasImage) {
           const brand = pid.charAt(0).toUpperCase() + pid.slice(1).replace(/_page$/, "");
           toast.error(`${brand} ${type} requires an image.`);
+          return false;
+        }
+      }
+
+      // YouTube requires a non-empty title. Without it the video lands on the channel
+      // with the literal title "0" (because social_posts.title column casts empty string → 0).
+      if (selectedPlatforms.includes("youtube")) {
+        const yt = platformOptions.youtube as Record<string, unknown> | undefined;
+        const ytTitle = (typeof yt?.title === "string" ? yt.title : "").trim();
+        if (!ytTitle) {
+          toast.error("YouTube requires a title. Enter one in YouTube Options.");
           return false;
         }
       }
@@ -209,9 +226,21 @@ export function CreatePostPage() {
         }
       }
 
+      // Derive a sensible post title — never send an empty string, because the
+      // social_posts.title column appears to coerce empty to "0" somewhere downstream,
+      // which then leaks into platform APIs (saw a YouTube upload land as title "0").
+      // Priority: YouTube title override → Pinterest title → first line of content.
+      const ytTitle = (platformOptions.youtube as Record<string, unknown> | undefined)?.title;
+      const pinTitle = (platformOptions.pinterest as Record<string, unknown> | undefined)?.title;
+      const firstLine = content.split("\n").find((l) => l.trim() !== "")?.slice(0, 200) ?? "";
+      const derivedTitle = (typeof ytTitle === "string" && ytTitle.trim())
+        || (typeof pinTitle === "string" && pinTitle.trim())
+        || firstLine
+        || "Untitled";
+
       createPost.mutate(
         {
-          title: "",
+          title: typeof derivedTitle === "string" ? derivedTitle : "Untitled",
           content,
           platforms: selectedPlatforms,
           selected_accounts: selectedAccountIds,
