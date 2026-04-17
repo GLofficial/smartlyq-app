@@ -138,7 +138,7 @@ export function ManagePostsPage() {
 
 									{/* Content */}
 									<div className="flex-1 min-w-0">
-										<p className="text-sm font-semibold text-[var(--foreground)] truncate">{post.title || post.content || "Untitled post"}</p>
+										<p className="text-sm font-semibold text-[var(--foreground)] truncate">{(post.title && String(post.title).trim() !== "" && String(post.title) !== "0") ? post.title : (post.content || "Untitled post")}</p>
 										<p className="text-xs text-[var(--muted-foreground)] truncate mt-0.5">{post.content}</p>
 										{post.error_message && <p className="text-xs text-red-500 mt-0.5 flex items-center gap-1"><XCircle size={10} /> {post.error_message}</p>}
 										<span className={`inline-flex items-center gap-1 mt-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${sc?.bg} ${sc?.text}`}>

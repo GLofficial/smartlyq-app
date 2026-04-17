@@ -247,7 +247,28 @@ export function CreatePostPage() {
             onSelectedAccountIdsChange={setSelectedAccountIds}
             onSaveDraft={() => handleSubmit("save_draft")}
             onPostNow={() => handleSubmit("post_now")}
-            onSchedulePost={(date, time) => handleSubmit("scheduled", `${date}T${time}:00`)}
+            onSchedulePost={(date, time) => {
+              // Normalize time to 24-hour "HH:MM" (accept "02:05 PM", "14:05", "2:05pm", etc.)
+              const raw = (time || "").trim();
+              const ampmMatch = raw.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i);
+              let h24: number;
+              let min: number;
+              if (ampmMatch) {
+                const h = parseInt(ampmMatch[1]!, 10);
+                min = parseInt(ampmMatch[2]!, 10);
+                const isPm = ampmMatch[3]!.toLowerCase() === "pm";
+                h24 = h % 12 + (isPm ? 12 : 0);
+              } else {
+                const m24 = raw.match(/^(\d{1,2}):(\d{2})$/);
+                if (!m24) { toast.error("Invalid time format. Use HH:MM AM/PM or 24-hour HH:MM."); return; }
+                h24 = parseInt(m24[1]!, 10);
+                min = parseInt(m24[2]!, 10);
+              }
+              if (isNaN(h24) || isNaN(min) || h24 > 23 || min > 59) { toast.error("Invalid time."); return; }
+              const hh = String(h24).padStart(2, "0");
+              const mm = String(min).padStart(2, "0");
+              handleSubmit("scheduled", `${date}T${hh}:${mm}:00`);
+            }}
             isSubmitting={createPost.isPending}
             onAiGenerateText={handleAiText}
             onAiGenerateImage={handleAiImage}
