@@ -652,17 +652,26 @@ function YouTubePreview({ content, device, imageCount = 1, mediaUrls, accountInf
   );
 }
 
-function TikTokPreview({ content, device, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
+function TikTokPreview({ content, device, mediaUrls, accountInfo }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
+  const firstMedia = mediaUrls?.[0];
   return (
     <div className="flex justify-center">
       <div className="relative rounded-[2rem] overflow-hidden border-[6px] border-foreground mx-auto" style={{ aspectRatio: "9/16", maxHeight: device === "mobile" ? 520 : 420, width: device === "mobile" ? 300 : 240 }}>
         <div className="absolute inset-0 bg-foreground">
-          {/* Play button */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-12 h-12 rounded-full bg-card/20 flex items-center justify-center backdrop-blur-sm">
-              <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-card/80 ml-1" />
+          {/* Media fill — image stays, video autoplays muted to match TikTok feed behavior */}
+          {firstMedia ? (
+            firstMedia.type === "video" ? (
+              <video src={firstMedia.url} className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline />
+            ) : (
+              <img src={firstMedia.url} alt="TikTok" className="absolute inset-0 w-full h-full object-cover" />
+            )
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-card/20 flex items-center justify-center backdrop-blur-sm">
+                <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-card/80 ml-1" />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Right side actions */}
           <div className="absolute right-2 bottom-28 flex flex-col items-center gap-4">
