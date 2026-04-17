@@ -22,8 +22,11 @@ export function CalendarPage() {
   const retryPost = useRetryPost();
 
   const handleReschedule = useCallback((postId: number, newDate: string, newTime: string) => {
+    // newDate/newTime are in the user's browser-local timezone (from FullCalendar drag-drop).
+    // Pass the timezone so the backend converts to UTC using the same zone the user sees.
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
     editPost.mutate(
-      { post_id: postId, scheduled_time: `${newDate}T${newTime}:00` },
+      { post_id: postId, scheduled_time: `${newDate}T${newTime}:00`, timezone: userTimezone },
       {
         onSuccess: () => toast.success("Post rescheduled"),
         onError: (err) => toast.error((err as Error).message || "Reschedule failed"),

@@ -14,6 +14,8 @@ export interface CreatePostData {
 	action: "save_draft" | "scheduled" | "post_now";
 	scheduled_time: string | null;
 	media_urls: string[];
+	/** IANA timezone (e.g. "Europe/Athens"). Required for scheduled posts — backend uses this to convert to UTC. */
+	timezone?: string;
 }
 
 export function useCreatePost() {
@@ -26,7 +28,7 @@ export function useCreatePost() {
 
 export function useEditPost() {
 	return useMutation({
-		mutationFn: (data: { post_id: number; content?: string; platforms?: string[]; scheduled_time?: string; account_ids?: number[]; media_urls?: string[] }) =>
+		mutationFn: (data: { post_id: number; content?: string; platforms?: string[]; scheduled_time?: string; timezone?: string; account_ids?: number[]; media_urls?: string[] }) =>
 			apiClient.post<{ message: string; post: Record<string, unknown> }>("/api/spa/social/posts/edit", data),
 		onSuccess: invalidatePosts,
 	});

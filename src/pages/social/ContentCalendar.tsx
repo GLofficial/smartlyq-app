@@ -131,6 +131,8 @@ interface DemoPost {
   mediaUrls?: string[];
   postUrls?: Record<string, string | string[]>;
   errorMessage?: string;
+  /** Original ISO-UTC datetime from API (e.g. "2026-04-17T12:05:00Z"). Use this, not the split date/time parts, when you need to format for display. */
+  startIso?: string;
 }
 
 const today = new Date();
@@ -312,10 +314,26 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
   const apiPosts: DemoPost[] = useMemo(() => {
     if (!realEvents?.length) return [];
     const isMeaningfulTitle = (t: unknown): t is string => typeof t === "string" && t.trim() !== "" && t.trim() !== "0";
+    // Parse backend UTC datetime into user-local date/time parts via JS Date (no manual math).
+    const splitLocal = (iso: string): { date: string; time: string } => {
+      if (!iso) return { date: "", time: "00:00" };
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) {
+        // Fallback to string split if parsing fails
+        const [dp, tp] = iso.split("T");
+        return { date: dp || "", time: tp ? tp.slice(0, 5) : "00:00" };
+      }
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      return { date: `${year}-${month}-${day}`, time: `${hh}:${mm}` };
+    };
     return realEvents.map(ev => {
       const ep = ev.extendedProps || {};
       const startStr = ev.start ?? "";
-      const [datePart, timePart] = startStr.split("T");
+      const { date: datePart, time: timePart } = splitLocal(startStr);
       return {
         id: String(ev.id),
         title: isMeaningfulTitle(ev.title) ? ev.title : ((ep.content as string || "").slice(0, 50) || "Untitled"),
@@ -332,6 +350,7 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
         mediaUrls: Array.isArray(ep.mediaUrls) ? (ep.mediaUrls as string[]) : undefined,
         postUrls: (ep.postUrls && typeof ep.postUrls === "object" && !Array.isArray(ep.postUrls)) ? ep.postUrls as Record<string, string | string[]> : undefined,
         errorMessage: (ep.errorMessage as string) || undefined,
+        startIso: startStr,
       };
     });
   }, [realEvents]);

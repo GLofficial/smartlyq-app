@@ -100,6 +100,9 @@ export function CreatePostPage() {
   const handleSubmit = useCallback(
     (action: CreatePostData["action"], scheduledTime?: string) => {
       if (!validatePost(action, scheduledTime)) return;
+      // Always send the user's IANA timezone so the backend can convert local → UTC correctly.
+      // Avoids the classic "scheduled Friday post lands on Saturday" bug from manual offset math.
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
       createPost.mutate(
         {
           title: "",
@@ -109,6 +112,7 @@ export function CreatePostPage() {
           action,
           scheduled_time: scheduledTime ?? null,
           media_urls: mediaUrls,
+          timezone: userTimezone,
         },
         {
           onSuccess: () => {
