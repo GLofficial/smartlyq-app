@@ -58,7 +58,7 @@ export function ManagePostsPage() {
 	const total = data?.total ?? 0;
 	const pages = data?.pages ?? 1;
 
-	const editPath = (id: number) => wsHash ? `/w/${wsHash}/social-media/create?edit=${id}` : `/social-media/create?edit=${id}`;
+	const editPath = (id: number) => wsHash ? `/w/${wsHash}/social-media/create-post?edit=${id}` : `/social-media/create-post?edit=${id}`;
 	const createPath = wsHash ? `/w/${wsHash}/social-media/create-post` : "/social-media/create-post";
 
 	return (

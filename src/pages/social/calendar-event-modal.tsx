@@ -49,7 +49,7 @@ export function CalendarEventModal({ event, onClose }: { event: CalendarEventDat
 	const postUrls = ep.postUrls ?? {};
 	const mediaUrls = ep.mediaUrls ?? [];
 	const isFailed = status === "failed" || status === "partially_published";
-	const editPath = wsHash ? `/w/${wsHash}/social-media/create?edit=${ep.postId}` : `/social-media/create?edit=${ep.postId}`;
+	const editPath = wsHash ? `/w/${wsHash}/social-media/create-post?edit=${ep.postId}` : `/social-media/create-post?edit=${ep.postId}`;
 
 	// Per-platform status: if postUrls has a URL for the platform, it succeeded
 	const platformStatus = platforms.map((p) => ({
