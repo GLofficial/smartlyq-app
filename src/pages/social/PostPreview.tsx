@@ -208,14 +208,31 @@ function ImagePlaceholder({ platform, device, imageCount = 1, mediaUrls }: { pla
   return <MultiImageGrid platform={platform} device={device} imageCount={imageCount} spec={spec} mediaUrls={mediaUrls} />;
 }
 
+// Grid cell: renders actual image/video if provided, else a labeled placeholder
+function GridCell({ mediaUrl, mediaType, label, aspect, className }: { mediaUrl?: string; mediaType?: "image" | "video"; label: string; aspect?: string; className?: string }) {
+  const style = aspect ? { aspectRatio: aspect } : undefined;
+  if (mediaUrl) {
+    if (mediaType === "video") {
+      return <video src={mediaUrl} className={cn("w-full h-full object-cover", className)} style={style} muted playsInline />;
+    }
+    return <img src={mediaUrl} alt="" className={cn("w-full h-full object-cover", className)} style={style} />;
+  }
+  return (
+    <div className={cn("bg-muted flex items-center justify-center text-muted-foreground", className)} style={style}>
+      <span className="text-[10px]">{label}</span>
+    </div>
+  );
+}
+
 // Platform-specific multi-image carousel/grid layouts
 function MultiImageGrid({ platform, device, imageCount, spec, mediaUrls }: { platform: string; device: Device; imageCount: number; spec: { imageAspect: string; imageLabel: string }; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
   const [carouselIndex, setCarouselIndex] = useState(0);
   const capped = Math.min(imageCount, 10);
+  const mediaAt = (i: number) => mediaUrls?.[i];
 
   // Instagram & Threads: swipeable carousel with dots
   if (platform === "instagram" || platform === "threads") {
-    const currentMedia = mediaUrls?.[carouselIndex];
+    const currentMedia = mediaAt(carouselIndex);
     return (
       <div className="relative">
         <SingleImagePlaceholder aspect={spec.imageAspect} label={`Image ${carouselIndex + 1} of ${capped}`} mediaUrl={currentMedia?.url} mediaType={currentMedia?.type} />
@@ -246,41 +263,41 @@ function MultiImageGrid({ platform, device, imageCount, spec, mediaUrls }: { pla
     if (capped === 2) {
       return (
         <div className="grid grid-cols-2 gap-0.5">
-          {[0, 1].map(i => (
-            <div key={i} className="bg-muted flex items-center justify-center text-muted-foreground" style={{ aspectRatio: "1/1" }}>
-              <span className="text-[10px]">Image {i + 1}</span>
-            </div>
-          ))}
+          {[0, 1].map(i => {
+            const m = mediaAt(i);
+            return <GridCell key={i} mediaUrl={m?.url} mediaType={m?.type} label={`Image ${i + 1}`} aspect="1/1" />;
+          })}
         </div>
       );
     }
     if (capped === 3) {
+      const m0 = mediaAt(0);
       return (
         <div className="grid grid-cols-2 gap-0.5">
-          <div className="row-span-2 bg-muted flex items-center justify-center text-muted-foreground" style={{ aspectRatio: "1/2" }}>
-            <span className="text-[10px]">Image 1</span>
-          </div>
-          {[1, 2].map(i => (
-            <div key={i} className="bg-muted flex items-center justify-center text-muted-foreground" style={{ aspectRatio: "1/1" }}>
-              <span className="text-[10px]">Image {i + 1}</span>
-            </div>
-          ))}
+          <GridCell mediaUrl={m0?.url} mediaType={m0?.type} label="Image 1" aspect="1/2" className="row-span-2" />
+          {[1, 2].map(i => {
+            const m = mediaAt(i);
+            return <GridCell key={i} mediaUrl={m?.url} mediaType={m?.type} label={`Image ${i + 1}`} aspect="1/1" />;
+          })}
         </div>
       );
     }
     // 4+ images: 2x2 grid with +N overlay
     return (
       <div className="grid grid-cols-2 gap-0.5">
-        {[0, 1, 2, 3].map(i => (
-          <div key={i} className="relative bg-muted flex items-center justify-center text-muted-foreground" style={{ aspectRatio: "1/1" }}>
-            <span className="text-[10px]">Image {i + 1}</span>
-            {i === 3 && capped > 4 && (
-              <div className="absolute inset-0 bg-foreground/50 flex items-center justify-center">
-                <span className="text-card text-lg font-bold">+{capped - 4}</span>
-              </div>
-            )}
-          </div>
-        ))}
+        {[0, 1, 2, 3].map(i => {
+          const m = mediaAt(i);
+          return (
+            <div key={i} className="relative" style={{ aspectRatio: "1/1" }}>
+              <GridCell mediaUrl={m?.url} mediaType={m?.type} label={`Image ${i + 1}`} aspect="1/1" />
+              {i === 3 && capped > 4 && (
+                <div className="absolute inset-0 bg-foreground/50 flex items-center justify-center">
+                  <span className="text-card text-lg font-bold">+{capped - 4}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -291,37 +308,30 @@ function MultiImageGrid({ platform, device, imageCount, spec, mediaUrls }: { pla
     if (count === 2) {
       return (
         <div className="rounded-xl overflow-hidden grid grid-cols-2 gap-0.5">
-          {[0, 1].map(i => (
-            <div key={i} className="bg-muted flex items-center justify-center text-muted-foreground" style={{ aspectRatio: "4/5" }}>
-              <span className="text-[10px]">Image {i + 1}</span>
-            </div>
-          ))}
+          {[0, 1].map(i => {
+            const m = mediaAt(i);
+            return <GridCell key={i} mediaUrl={m?.url} mediaType={m?.type} label={`Image ${i + 1}`} aspect="4/5" />;
+          })}
         </div>
       );
     }
     if (count === 3) {
+      const m0 = mediaAt(0), m1 = mediaAt(1), m2 = mediaAt(2);
       return (
         <div className="rounded-xl overflow-hidden grid grid-cols-2 gap-0.5" style={{ aspectRatio: "16/9" }}>
-          <div className="row-span-2 bg-muted flex items-center justify-center text-muted-foreground">
-            <span className="text-[10px]">Image 1</span>
-          </div>
-          <div className="bg-muted flex items-center justify-center text-muted-foreground">
-            <span className="text-[10px]">Image 2</span>
-          </div>
-          <div className="bg-muted flex items-center justify-center text-muted-foreground">
-            <span className="text-[10px]">Image 3</span>
-          </div>
+          <GridCell mediaUrl={m0?.url} mediaType={m0?.type} label="Image 1" className="row-span-2" />
+          <GridCell mediaUrl={m1?.url} mediaType={m1?.type} label="Image 2" />
+          <GridCell mediaUrl={m2?.url} mediaType={m2?.type} label="Image 3" />
         </div>
       );
     }
     if (count >= 4) {
       return (
         <div className="rounded-xl overflow-hidden grid grid-cols-2 grid-rows-2 gap-0.5" style={{ aspectRatio: "16/9" }}>
-          {[0, 1, 2, 3].map(i => (
-            <div key={i} className="bg-muted flex items-center justify-center text-muted-foreground">
-              <span className="text-[10px]">Image {i + 1}</span>
-            </div>
-          ))}
+          {[0, 1, 2, 3].map(i => {
+            const m = mediaAt(i);
+            return <GridCell key={i} mediaUrl={m?.url} mediaType={m?.type} label={`Image ${i + 1}`} />;
+          })}
         </div>
       );
     }
@@ -333,30 +343,29 @@ function MultiImageGrid({ platform, device, imageCount, spec, mediaUrls }: { pla
     if (count === 2) {
       return (
         <div className="rounded-lg overflow-hidden grid grid-cols-2 gap-0.5">
-          {[0, 1].map(i => (
-            <div key={i} className="bg-muted flex items-center justify-center text-muted-foreground" style={{ aspectRatio: "1/1" }}>
-              <span className="text-[10px]">Image {i + 1}</span>
-            </div>
-          ))}
+          {[0, 1].map(i => {
+            const m = mediaAt(i);
+            return <GridCell key={i} mediaUrl={m?.url} mediaType={m?.type} label={`Image ${i + 1}`} aspect="1/1" />;
+          })}
         </div>
       );
     }
     return (
       <div className="rounded-lg overflow-hidden grid grid-cols-2 grid-rows-2 gap-0.5" style={{ aspectRatio: "16/9" }}>
-        {Array.from({ length: count }).map((_, i) => (
-          <div key={i} className={cn("bg-muted flex items-center justify-center text-muted-foreground", count === 3 && i === 0 && "row-span-2")}>
-            <span className="text-[10px]">Image {i + 1}</span>
-          </div>
-        ))}
+        {Array.from({ length: count }).map((_, i) => {
+          const m = mediaAt(i);
+          return <GridCell key={i} mediaUrl={m?.url} mediaType={m?.type} label={`Image ${i + 1}`} className={count === 3 && i === 0 ? "row-span-2" : undefined} />;
+        })}
       </div>
     );
   }
 
   // Reddit: gallery with counter
   if (platform === "reddit") {
+    const currentMedia = mediaAt(carouselIndex);
     return (
       <div className="relative">
-        <SingleImagePlaceholder aspect={spec.imageAspect} label={`Image ${carouselIndex + 1} of ${capped}`} />
+        <SingleImagePlaceholder aspect={spec.imageAspect} label={`Image ${carouselIndex + 1} of ${capped}`} mediaUrl={currentMedia?.url} mediaType={currentMedia?.type} />
         {carouselIndex > 0 && (
           <button onClick={() => setCarouselIndex(i => i - 1)} className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-card/80 shadow flex items-center justify-center">
             <ChevronLeft className="w-3.5 h-3.5 text-foreground" />
@@ -377,39 +386,51 @@ function MultiImageGrid({ platform, device, imageCount, spec, mediaUrls }: { pla
     if (capped === 2) {
       return (
         <div className="grid grid-cols-2 gap-0.5">
-          {[0, 1].map(i => (
-            <div key={i} className="bg-muted flex items-center justify-center text-muted-foreground" style={{ aspectRatio: "1/1" }}>
-              <span className="text-[10px]">Image {i + 1}</span>
-            </div>
-          ))}
+          {[0, 1].map(i => {
+            const m = mediaAt(i);
+            return <GridCell key={i} mediaUrl={m?.url} mediaType={m?.type} label={`Image ${i + 1}`} aspect="1/1" />;
+          })}
         </div>
       );
     }
+    const m0 = mediaAt(0);
     return (
       <div className="grid grid-cols-2 gap-0.5">
-        <div className="col-span-2 bg-muted flex items-center justify-center text-muted-foreground" style={{ aspectRatio: "16/9" }}>
-          <span className="text-[10px]">Image 1</span>
-        </div>
-        {Array.from({ length: Math.min(capped - 1, 3) }).map((_, i) => (
-          <div key={i} className="relative bg-muted flex items-center justify-center text-muted-foreground" style={{ aspectRatio: "1/1" }}>
-            <span className="text-[10px]">Image {i + 2}</span>
-            {i === 2 && capped > 4 && (
-              <div className="absolute inset-0 bg-foreground/50 flex items-center justify-center">
-                <span className="text-card text-lg font-bold">+{capped - 4}</span>
-              </div>
-            )}
-          </div>
-        ))}
+        <GridCell mediaUrl={m0?.url} mediaType={m0?.type} label="Image 1" aspect="16/9" className="col-span-2" />
+        {Array.from({ length: Math.min(capped - 1, 3) }).map((_, i) => {
+          const m = mediaAt(i + 1);
+          return (
+            <div key={i} className="relative" style={{ aspectRatio: "1/1" }}>
+              <GridCell mediaUrl={m?.url} mediaType={m?.type} label={`Image ${i + 2}`} aspect="1/1" />
+              {i === 2 && capped > 4 && (
+                <div className="absolute inset-0 bg-foreground/50 flex items-center justify-center">
+                  <span className="text-card text-lg font-bold">+{capped - 4}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }
 
-  // Default: generic grid for Pinterest, Google, Tumblr, WordPress, YouTube, TikTok
+  // Default: generic carousel for Pinterest, Google, Tumblr, WordPress, YouTube, TikTok
+  const currentMedia = mediaAt(carouselIndex);
   return (
     <div className="relative">
-      <SingleImagePlaceholder aspect={spec.imageAspect} label={`Image 1 of ${capped}`} />
+      <SingleImagePlaceholder aspect={spec.imageAspect} label={`Image ${carouselIndex + 1} of ${capped}`} mediaUrl={currentMedia?.url} mediaType={currentMedia?.type} />
+      {carouselIndex > 0 && (
+        <button onClick={() => setCarouselIndex(i => i - 1)} className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-card/80 shadow flex items-center justify-center">
+          <ChevronLeft className="w-3.5 h-3.5 text-foreground" />
+        </button>
+      )}
+      {carouselIndex < capped - 1 && (
+        <button onClick={() => setCarouselIndex(i => i + 1)} className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-card/80 shadow flex items-center justify-center">
+          <ChevronRight className="w-3.5 h-3.5 text-foreground" />
+        </button>
+      )}
       <div className="absolute top-2 right-2 bg-foreground/70 text-card text-[10px] px-2 py-0.5 rounded-full">
-        1/{capped} images
+        {carouselIndex + 1}/{capped} images
       </div>
     </div>
   );
