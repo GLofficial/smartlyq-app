@@ -311,13 +311,14 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
   // Convert real API events to DemoPost format
   const apiPosts: DemoPost[] = useMemo(() => {
     if (!realEvents?.length) return [];
+    const isMeaningfulTitle = (t: unknown): t is string => typeof t === "string" && t.trim() !== "" && t.trim() !== "0";
     return realEvents.map(ev => {
       const ep = ev.extendedProps || {};
       const startStr = ev.start ?? "";
       const [datePart, timePart] = startStr.split("T");
       return {
         id: String(ev.id),
-        title: ev.title || (ep.content as string || "").slice(0, 50) || "Untitled",
+        title: isMeaningfulTitle(ev.title) ? ev.title : ((ep.content as string || "").slice(0, 50) || "Untitled"),
         content: (ep.content as string) || "",
         date: datePart || "",
         time: timePart ? timePart.slice(0, 5) : "00:00",
@@ -558,12 +559,24 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                 }}
                 eventContent={(arg) => {
                   const post = arg.event.extendedProps.post as DemoPost;
+                  const isVideoThumb = !!post.thumbnail && /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(post.thumbnail);
                   return (
                     <div className="w-full px-1.5 py-1 cursor-pointer group">
                       <div className="bg-card border border-border rounded-md p-1.5 shadow-sm hover:shadow-md transition-shadow">
                         {post.thumbnail && post.thumbnail.startsWith("http") && (
-                          <div className="w-full h-12 bg-muted rounded mb-1 overflow-hidden">
-                            <img src={post.thumbnail} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          <div className="relative w-full h-12 bg-muted rounded mb-1 overflow-hidden">
+                            {isVideoThumb ? (
+                              <>
+                                <video src={post.thumbnail} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                  <div className="w-5 h-5 rounded-full bg-black/55 flex items-center justify-center">
+                                    <div className="w-0 h-0 border-t-[3px] border-t-transparent border-b-[3px] border-b-transparent border-l-[5px] border-l-white ml-0.5" />
+                                  </div>
+                                </div>
+                              </>
+                            ) : (
+                              <img src={post.thumbnail} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                            )}
                           </div>
                         )}
                         <p className="text-[10px] font-semibold text-foreground line-clamp-1">{post.title}</p>
@@ -794,8 +807,19 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                   </div>
                   <div className="flex gap-3 mt-2">
                     {post.thumbnail && post.thumbnail.startsWith("http") ? (
-                      <div className="w-20 h-20 rounded-lg bg-muted overflow-hidden shrink-0">
-                        <img src={post.thumbnail} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      <div className="relative w-20 h-20 rounded-lg bg-muted overflow-hidden shrink-0">
+                        {/\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(post.thumbnail) ? (
+                          <>
+                            <video src={post.thumbnail} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <div className="w-7 h-7 rounded-full bg-black/55 flex items-center justify-center">
+                                <div className="w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-l-[7px] border-l-white ml-0.5" />
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <img src={post.thumbnail} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        )}
                       </div>
                     ) : (
                       <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center shrink-0">
