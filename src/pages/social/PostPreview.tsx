@@ -422,7 +422,7 @@ function FacebookPreview({ content, device, imageCount = 1, mediaUrls, accountIn
         <AccountAvatar avatar={accountInfo?.avatar} name={accountInfo?.name} size={10} />
         <div>
           <p className="text-sm font-semibold text-foreground">{accountInfo?.name || "Your Page"}</p>
-          <p className="text-xs text-muted-foreground">Just now · 🌐</p>
+          <p className="text-xs text-muted-foreground">Just now</p>
         </div>
         <MoreHorizontal className="w-5 h-5 text-muted-foreground ml-auto" />
       </div>
