@@ -76,31 +76,6 @@ const PLATFORMS = [
 ] as const;
 
 // Demo accounts for each platform (simulating connected accounts)
-const DEMO_ACCOUNTS = [
-  { id: "acc-1", platformId: "bluesky", name: "stavroswebnet.bsky.social", avatar: "🦋" },
-  { id: "acc-2", platformId: "facebook", name: "George Liontos", avatar: "f" },
-  { id: "acc-3", platformId: "facebook-page", name: "Stav Test page", avatar: "f" },
-  { id: "acc-4", platformId: "instagram", name: "stavroswebnet", avatar: "📷" },
-  { id: "acc-5", platformId: "instagram", name: "design_studio", avatar: "📷" },
-  { id: "acc-6", platformId: "linkedin", name: "Stavros Web", avatar: "in" },
-  { id: "acc-7", platformId: "linkedin-page", name: "SmartlyQ Page", avatar: "in" },
-  { id: "acc-8", platformId: "twitter", name: "@smartlyq", avatar: "𝕏" },
-  { id: "acc-9", platformId: "twitter", name: "@stavros_dev", avatar: "𝕏" },
-  { id: "acc-10", platformId: "pinterest", name: "SmartlyQ Pins", avatar: "P" },
-  { id: "acc-11", platformId: "tiktok", name: "@smartlyq", avatar: "♪" },
-  { id: "acc-12", platformId: "tiktok", name: "@stav_creates", avatar: "♪" },
-  { id: "acc-13", platformId: "tumblr", name: "smartlyq-blog", avatar: "t" },
-  { id: "acc-14", platformId: "youtube", name: "SmartlyQ Channel", avatar: "▶" },
-  { id: "acc-15", platformId: "youtube", name: "Stav Vlogs", avatar: "▶" },
-  { id: "acc-16", platformId: "reddit", name: "u/smartlyq", avatar: "R" },
-  { id: "acc-17", platformId: "threads", name: "@smartlyq", avatar: "@" },
-  { id: "acc-18", platformId: "mastodon", name: "@stav@mastodon.social", avatar: "M" },
-  { id: "acc-19", platformId: "telegram", name: "SmartlyQ Channel", avatar: "✈" },
-  { id: "acc-20", platformId: "google", name: "SmartlyQ Business", avatar: "G" },
-  { id: "acc-21", platformId: "wordpress", name: "smartlyq.com", avatar: "W" },
-  { id: "acc-22", platformId: "whatsapp", name: "+1 555 0123", avatar: "💬" },
-];
-
 interface PlatformOptionConfig {
   label: string;
   icon: string;
@@ -384,7 +359,7 @@ interface PostComposerProps {
   onPostTypeChange?: (postTypes: Record<string, string>) => void;
   initialScheduledDate?: string;
   initialScheduledTime?: string;
-  /** Real accounts from API — if provided, replaces DEMO_ACCOUNTS */
+  /** Real accounts from API */
   realAccounts?: RealAccount[];
   /** Callbacks for real posting actions */
   onSaveDraft?: () => void;
@@ -460,9 +435,10 @@ export default function PostComposer({
   onUploadedMediaChange,
 }: PostComposerProps) {
   // Map real accounts to the internal format used by the UI
-  const useRealAccounts = Array.isArray(realAccounts) && realAccounts.length > 0;
+  // When realAccounts is provided (even empty), never show demo data
+  const realAccountsProvided = Array.isArray(realAccounts);
   const ACCOUNTS = useMemo(() => {
-    if (!useRealAccounts) return DEMO_ACCOUNTS;
+    if (!realAccountsProvided) return [];
     return realAccounts!.map(a => ({
       id: `real-${a.id}`,
       platformId: a.platform ?? "",
@@ -472,7 +448,7 @@ export default function PostComposer({
       realId: a.id,
       tokenStatus: a.token_status,
     }));
-  }, [useRealAccounts, realAccounts]);
+  }, [realAccountsProvided, realAccounts]);
 
   const [expandedOptions, setExpandedOptions] = useState<Record<string, boolean>>({});
   const [uploadedMedia, setUploadedMediaRaw] = useState<{ id: string; type: "image" | "video"; name: string; url?: string }[]>([]);
@@ -634,7 +610,7 @@ export default function PostComposer({
   )];
 
   const syncRealIds = (ids: string[]) => {
-    if (useRealAccounts && onSelectedAccountIdsChange) {
+    if (realAccountsProvided && onSelectedAccountIdsChange) {
       const realIds = ids.map(id => ACCOUNTS.find(a => a.id === id)?.realId).filter(Boolean) as number[];
       onSelectedAccountIdsChange(realIds);
     }
