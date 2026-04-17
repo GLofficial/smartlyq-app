@@ -999,8 +999,9 @@ function InstagramReelsPreview({ content, mediaUrls, accountInfo }: { content: s
   );
 }
 
-function FacebookStoryPreview({ content, mediaUrls }: { content: string; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
+function FacebookStoryPreview({ content, mediaUrls, accountInfo }: { content: string; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
   const firstMedia = mediaUrls?.[0];
+  const displayName = accountInfo?.name || "Your Page";
   return (
     <div className="relative rounded-2xl overflow-hidden bg-foreground mx-auto" style={{ aspectRatio: "9/16", maxHeight: 520, maxWidth: 280 }}>
       {firstMedia ? (
@@ -1024,10 +1025,14 @@ function FacebookStoryPreview({ content, mediaUrls }: { content: string; mediaUr
       </div>
       {/* Header */}
       <div className="absolute top-5 left-3 right-3 flex items-center gap-2">
-        <div className="w-8 h-8 rounded-full bg-[hsl(var(--facebook))] flex items-center justify-center text-card text-xs font-bold">f</div>
-        <span className="text-card text-xs font-semibold">George Liontos</span>
-        <span className="text-card/60 text-[10px]">2h</span>
-        <MoreHorizontal className="w-4 h-4 text-card/60 ml-auto" />
+        {accountInfo?.avatar ? (
+          <img src={accountInfo.avatar} alt="" className="w-8 h-8 rounded-full object-cover border border-card/30" />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-[hsl(var(--facebook))] flex items-center justify-center text-card text-xs font-bold">f</div>
+        )}
+        <span className="text-card text-xs font-semibold truncate">{displayName}</span>
+        <span className="text-card/60 text-[10px] shrink-0">2h</span>
+        <MoreHorizontal className="w-4 h-4 text-card/60 ml-auto shrink-0" />
       </div>
       {/* Bottom */}
       <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-foreground/80 to-transparent">

@@ -473,6 +473,12 @@ export default function PostComposer({
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [thumbnailPickerOpen, setThumbnailPickerOpen] = useState(false);
   const [selectedThumbnail, setSelectedThumbnail] = useState<number | null>(null);
+  const [frameThumbnails, setFrameThumbnails] = useState<string[]>([]);
+  const [customThumbnail, setCustomThumbnail] = useState<string | null>(null);
+  const [pendingCustomThumbnail, setPendingCustomThumbnail] = useState<string | null>(null);
+  const [pendingSelectedThumbnail, setPendingSelectedThumbnail] = useState<number | null>(null);
+  const thumbPickerVideoRef = useRef<HTMLVideoElement | null>(null);
+  const thumbPickerFileRef = useRef<HTMLInputElement | null>(null);
   const [selectedVideoIdx, setSelectedVideoIdx] = useState<number | null>(null);
   const [imagePickerOpen, setImagePickerOpen] = useState(false);
   const [videoPickerOpen, setVideoPickerOpen] = useState(false);
@@ -1096,92 +1102,216 @@ export default function PostComposer({
       )}
 
       {/* Video Thumbnail Picker (shown when video is uploaded) */}
-      {hasVideos && (
-        <div className="bg-card rounded-lg border border-border">
-          <div className="flex items-center justify-between px-5 py-3">
-            <div className="flex items-center gap-2">
-              <Film className="w-4 h-4 text-muted-foreground" />
-              <h3 className="text-sm font-medium text-foreground">Video Thumbnail</h3>
+      {hasVideos && (() => {
+        const firstVideo = uploadedMedia.find(m => m.type === "video" && !!m.url);
+        const videoUrl = firstVideo?.url;
+        const effectiveThumb = customThumbnail ?? (selectedThumbnail !== null ? frameThumbnails[selectedThumbnail] ?? null : null);
+        return (
+          <div className="bg-card rounded-lg border border-border">
+            <div className="flex items-center justify-between px-5 py-3">
+              <div className="flex items-center gap-2">
+                <Film className="w-4 h-4 text-muted-foreground" />
+                <h3 className="text-sm font-medium text-foreground">Video Thumbnail</h3>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                disabled={!videoUrl}
+                onClick={() => {
+                  setPendingSelectedThumbnail(selectedThumbnail);
+                  setPendingCustomThumbnail(customThumbnail);
+                  setThumbnailPickerOpen(true);
+                }}
+              >
+                <Play className="w-3 h-3" /> Pick thumbnail
+              </Button>
             </div>
-            <Button variant="outline" size="sm" className="text-xs" onClick={() => setThumbnailPickerOpen(true)}>
-              <Play className="w-3 h-3" /> Pick thumbnail
-            </Button>
-          </div>
-          <div className="px-5 pb-4">
-            <p className="text-xs text-muted-foreground mb-3">
-              {selectedThumbnail !== null ? `Frame ${selectedThumbnail + 1} selected` : "Auto-generated"}
-            </p>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {Array.from({ length: 10 }).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => { setSelectedThumbnail(i); setSelectedVideoIdx(0); }}
-                  className={cn(
-                    "shrink-0 w-16 h-10 rounded bg-muted flex items-center justify-center text-[9px] text-muted-foreground border-2 transition-colors",
-                    selectedThumbnail === i ? "border-primary" : "border-transparent hover:border-primary/30"
-                  )}
-                >
-                  0:{String((i + 1) * 4).padStart(2, "0")}
-                </button>
-              ))}
+            <div className="px-5 pb-4">
+              <p className="text-xs text-muted-foreground mb-3">
+                {customThumbnail ? "Custom thumbnail selected" : selectedThumbnail !== null ? `Frame ${selectedThumbnail + 1} selected` : "Auto-generated"}
+              </p>
+              {effectiveThumb ? (
+                <div className="w-48 aspect-video rounded overflow-hidden bg-muted">
+                  <img src={effectiveThumb} alt="Thumbnail" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">Open the picker to generate frame thumbnails from your video.</p>
+              )}
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Thumbnail Picker Dialog */}
-      <Dialog open={thumbnailPickerOpen} onOpenChange={setThumbnailPickerOpen}>
-        <DialogContent className="max-w-2xl">
+      <Dialog
+        open={thumbnailPickerOpen}
+        onOpenChange={(open) => {
+          setThumbnailPickerOpen(open);
+          if (!open) return;
+        }}
+      >
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Thumbnail picker</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-[250px_1fr] gap-6">
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-medium text-foreground mb-2">Custom thumbnail</h4>
-                <p className="text-xs text-muted-foreground mb-3">Upload your own thumbnail or select one from the video with the "Choose frame from video" button.</p>
-                <div className="space-y-2">
-                  <Button variant="outline" size="sm" className="w-full text-xs">Upload your own</Button>
-                  <Button variant="outline" size="sm" className="w-full text-xs">Select from Library</Button>
+          {(() => {
+            const firstVideo = uploadedMedia.find(m => m.type === "video" && !!m.url);
+            const videoUrl = firstVideo?.url;
+            if (!videoUrl) {
+              return (
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  No video available. Upload a video first.
                 </div>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium text-foreground mb-1">Choose frame from video</h4>
-                <p className="text-xs text-muted-foreground mb-3">Scroll through the video and then click the button to capture the selection.</p>
-                <Button className="w-full text-xs">📷 Capture current frame</Button>
-              </div>
-            </div>
-            <div>
-              {/* Video preview placeholder */}
-              <div className="bg-foreground rounded-lg flex items-center justify-center text-card/30" style={{ aspectRatio: "16/9" }}>
-                <div className="text-center">
-                  <Play className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                  <span className="text-xs">Video preview</span>
-                </div>
-              </div>
-              <div className="mt-3">
-                <p className="text-xs font-medium text-foreground mb-2">Custom thumbnail</p>
-                <div className="flex gap-2 flex-wrap">
-                  {Array.from({ length: 10 }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => { setSelectedThumbnail(i); }}
-                      className={cn(
-                        "w-16 h-10 rounded bg-muted flex items-center justify-center text-[9px] text-muted-foreground border-2 transition-colors",
-                        selectedThumbnail === i ? "border-primary" : "border-transparent hover:border-primary/30"
+              );
+            }
+
+            const captureFrameFromVideo = (time?: number): Promise<string | null> => {
+              return new Promise((resolve) => {
+                const vid = thumbPickerVideoRef.current;
+                if (!vid) { resolve(null); return; }
+                const doCapture = () => {
+                  try {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = vid.videoWidth || 640;
+                    canvas.height = vid.videoHeight || 360;
+                    const ctx = canvas.getContext("2d");
+                    if (!ctx) { resolve(null); return; }
+                    ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL("image/jpeg", 0.8));
+                  } catch {
+                    resolve(null);
+                  }
+                };
+                if (time === undefined) { doCapture(); return; }
+                const onSeeked = () => { vid.removeEventListener("seeked", onSeeked); doCapture(); };
+                vid.addEventListener("seeked", onSeeked);
+                vid.currentTime = time;
+              });
+            };
+
+            const generateFrameThumbnails = async () => {
+              const vid = thumbPickerVideoRef.current;
+              if (!vid || !vid.duration || !isFinite(vid.duration)) return;
+              const duration = vid.duration;
+              const count = 10;
+              const thumbs: string[] = [];
+              for (let i = 0; i < count; i++) {
+                const t = (duration * (i + 0.5)) / count;
+                // eslint-disable-next-line no-await-in-loop
+                const frame = await captureFrameFromVideo(t);
+                if (frame) thumbs.push(frame);
+              }
+              vid.currentTime = 0;
+              setFrameThumbnails(thumbs);
+            };
+
+            const handleCaptureCurrent = async () => {
+              const frame = await captureFrameFromVideo();
+              if (frame) {
+                setPendingCustomThumbnail(frame);
+                setPendingSelectedThumbnail(null);
+              }
+            };
+
+            const handleUploadOwn = (file: File) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                setPendingCustomThumbnail(typeof reader.result === "string" ? reader.result : null);
+                setPendingSelectedThumbnail(null);
+              };
+              reader.readAsDataURL(file);
+            };
+
+            const previewSrc = pendingCustomThumbnail ?? (pendingSelectedThumbnail !== null ? frameThumbnails[pendingSelectedThumbnail] ?? null : null);
+
+            return (
+              <>
+                <div className="grid grid-cols-[240px_1fr] gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-medium text-foreground mb-2">Custom thumbnail</h4>
+                      <p className="text-xs text-muted-foreground mb-3">Upload your own thumbnail image (JPG/PNG).</p>
+                      <input
+                        ref={thumbPickerFileRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleUploadOwn(f);
+                          e.target.value = "";
+                        }}
+                      />
+                      <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => thumbPickerFileRef.current?.click()}>
+                        Upload your own
+                      </Button>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-foreground mb-1">Choose frame from video</h4>
+                      <p className="text-xs text-muted-foreground mb-3">Scrub the video, then capture the current frame.</p>
+                      <Button className="w-full text-xs gap-1.5" onClick={handleCaptureCurrent}>
+                        <Film className="w-3.5 h-3.5" /> Capture current frame
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <video
+                      ref={thumbPickerVideoRef}
+                      src={videoUrl}
+                      className="w-full rounded-lg bg-foreground"
+                      style={{ aspectRatio: "16/9" }}
+                      controls
+                      crossOrigin="anonymous"
+                      onLoadedMetadata={generateFrameThumbnails}
+                    />
+                    {previewSrc && (
+                      <div className="mt-3">
+                        <p className="text-xs font-medium text-foreground mb-2">Selected thumbnail</p>
+                        <div className="w-40 aspect-video rounded overflow-hidden bg-muted">
+                          <img src={previewSrc} alt="Selected thumbnail" className="w-full h-full object-cover" />
+                        </div>
+                      </div>
+                    )}
+                    <div className="mt-3">
+                      <p className="text-xs font-medium text-foreground mb-2">Frames from video</p>
+                      {frameThumbnails.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Generating frames…</p>
+                      ) : (
+                        <div className="flex gap-2 flex-wrap">
+                          {frameThumbnails.map((thumb, i) => (
+                            <button
+                              key={i}
+                              onClick={() => { setPendingSelectedThumbnail(i); setPendingCustomThumbnail(null); }}
+                              className={cn(
+                                "w-20 aspect-video rounded overflow-hidden bg-muted border-2 transition-colors",
+                                pendingSelectedThumbnail === i && !pendingCustomThumbnail ? "border-primary" : "border-transparent hover:border-primary/40"
+                              )}
+                            >
+                              <img src={thumb} alt={`Frame ${i + 1}`} className="w-full h-full object-cover" />
+                            </button>
+                          ))}
+                        </div>
                       )}
-                    >
-                      0/{String((i + 1) * 4).padStart(2, "0")}
-                    </button>
-                  ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setThumbnailPickerOpen(false)}>Cancel</Button>
-            <Button onClick={() => setThumbnailPickerOpen(false)}>Save and update</Button>
-          </DialogFooter>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setThumbnailPickerOpen(false)}>Cancel</Button>
+                  <Button
+                    onClick={() => {
+                      setCustomThumbnail(pendingCustomThumbnail);
+                      setSelectedThumbnail(pendingCustomThumbnail ? null : pendingSelectedThumbnail);
+                      setThumbnailPickerOpen(false);
+                    }}
+                    disabled={!pendingCustomThumbnail && pendingSelectedThumbnail === null}
+                  >
+                    Save and update
+                  </Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
