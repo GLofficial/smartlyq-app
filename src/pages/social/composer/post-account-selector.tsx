@@ -54,24 +54,29 @@ export function PostAccountSelector({ accounts, selectedIds, onSelectionChange }
       >
         <div className="flex items-center gap-1 flex-1 min-w-0">
           {selectedIds.length > 0 ? (
-            <div className="flex -space-x-1.5 flex-wrap gap-y-2 py-1">
+            <div className="flex flex-wrap gap-x-2 gap-y-2 py-1 pr-1">
               {selectedIds.map((accId) => {
                 const acc = safeAccounts.find((a) => a.id === accId);
                 if (!acc) return null;
+                const brand = PLATFORM_BRANDS[acc.platform];
+                const Icon = brand?.Icon;
                 return (
                   <div key={accId} className="relative shrink-0">
-                    <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-sm font-bold border-2 border-card overflow-hidden">
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold overflow-hidden">
                       {acc.profile_pic ? (
                         <img src={acc.profile_pic} alt="" className="w-full h-full object-cover" />
                       ) : (
                         (acc.name ?? "?").charAt(0).toUpperCase()
                       )}
                     </div>
-                    <PlatformBrandIcon
-                      platformId={acc.platform}
-                      size={10}
-                      className="absolute -bottom-0.5 -right-0.5 border-2 border-card"
-                    />
+                    <div
+                      className={cn(
+                        "absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-white border-2 border-card",
+                        brand?.color ?? "bg-muted",
+                      )}
+                    >
+                      {Icon && <Icon size={10} />}
+                    </div>
                   </div>
                 );
               })}
