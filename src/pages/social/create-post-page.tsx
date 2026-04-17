@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSocialHub, usePostingLimits } from "@/api/social";
 import { useMediaList } from "@/api/media-library";
-import { useCreatePost, type CreatePostData } from "@/api/social-posts";
+import { useCreatePost, usePostForEdit, type CreatePostData } from "@/api/social-posts";
 import { useAiRewrite, useAiImage } from "@/api/ai-generate";
 import { useGenerateVideo } from "@/api/video-gen";
 import { apiClient } from "@/lib/api-client";
@@ -54,6 +54,30 @@ export function CreatePostPage() {
   useEffect(() => {
     if (state) window.history.replaceState({}, document.title);
   }, [state]);
+
+  // Edit mode: ?edit=123 loads an existing draft/scheduled post and prefills the composer.
+  const editId = (() => {
+    const p = new URLSearchParams(location.search).get("edit");
+    const n = p ? parseInt(p, 10) : 0;
+    return n > 0 ? n : null;
+  })();
+  const { data: editData } = usePostForEdit(editId);
+
+  useEffect(() => {
+    if (!editData?.post) return;
+    const p = editData.post;
+    setContent(p.content || "");
+    setSelectedPlatforms(Array.isArray(p.platforms) ? p.platforms : []);
+    setSelectedAccountIds(Array.isArray(p.selected_account_ids) ? p.selected_account_ids : []);
+    setMediaUrls(Array.isArray(p.media_urls) ? p.media_urls : []);
+    // Build previewMedia from URLs (detect type by extension)
+    const preview = (p.media_urls || []).map((url) => ({
+      url,
+      type: (/\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url) ? "video" : "image") as "image" | "video",
+    }));
+    setPreviewMedia(preview);
+    setImageCount(preview.length);
+  }, [editData]);
 
   // Validate before posting
   const validatePost = useCallback((action: string, scheduledTime?: string): boolean => {

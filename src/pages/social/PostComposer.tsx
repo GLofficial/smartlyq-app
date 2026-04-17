@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { PlatformIcon, PlatformBadge } from "./PlatformIcons";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -621,6 +621,24 @@ export default function PostComposer({
       onSelectedAccountIdsChange(realIds);
     }
   };
+
+  // When parent seeds selectedAccountIds (e.g. edit mode prefill), translate DB ids → composer ids.
+  // Only runs when the parent's set of ids actually differs from what we already have.
+  useEffect(() => {
+    if (!realAccountsProvided || !selectedAccountIds || ACCOUNTS.length === 0) return;
+    const parentIdsKey = [...selectedAccountIds].sort().join(",");
+    const currentRealIds = selectedAccounts
+      .map(id => ACCOUNTS.find(a => a.id === id)?.realId)
+      .filter(Boolean) as number[];
+    const currentKey = [...currentRealIds].sort().join(",");
+    if (parentIdsKey === currentKey) return;
+    const composerIds = selectedAccountIds
+      .map(rid => ACCOUNTS.find(a => a.realId === rid)?.id)
+      .filter(Boolean) as string[];
+    setSelectedAccounts(composerIds);
+    onPlatformsChange(derivePlatforms(composerIds));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAccountIds, realAccountsProvided, ACCOUNTS]);
 
   const toggleAccount = (accId: string) => {
     const acc = ACCOUNTS.find(a => a.id === accId);

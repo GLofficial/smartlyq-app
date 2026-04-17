@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, ChevronLeft, ChevronRight, Search, Pencil, Copy, Trash2, RotateCw, XCircle, SlidersHorizontal, Loader2, Calendar, Inbox as InboxIcon, Send, FileDown } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Search, Pencil, Copy, Trash2, RotateCw, XCircle, SlidersHorizontal, Loader2, Calendar, Inbox as InboxIcon, Send, FileDown, ExternalLink } from "lucide-react";
 import { useSocialPosts } from "@/api/social";
 import { useRetryPost, useDeletePost, useDuplicatePost, useMoveToDraft, useShareNow } from "@/api/social-posts";
 import { PlatformIcon } from "./platform-icon";
@@ -176,6 +176,39 @@ export function ManagePostsPage() {
 										</p>
 										{/* Action buttons — below date, appear on hover */}
 										<div className="flex items-center justify-end gap-0.5 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+											{/* View Post — available for published/partially_published posts with at least one live URL */}
+											{(() => {
+												if (post.status !== "published" && post.status !== "partially_published") return null;
+												const pickUrl = (v: any): string | null => {
+													if (!v) return null;
+													if (typeof v === "string") return v.startsWith("http") ? v : null;
+													if (Array.isArray(v)) return (v.find((x: any) => typeof x === "string" && x.startsWith("http")) as string | undefined) ?? null;
+													return null;
+												};
+												const urls: { platform: string; url: string }[] = [];
+												if (post.post_urls && typeof post.post_urls === "object" && !Array.isArray(post.post_urls)) {
+													for (const [k, v] of Object.entries(post.post_urls)) {
+														if (k.startsWith("_")) continue;
+														const u = pickUrl(v);
+														if (u) urls.push({ platform: k, url: u });
+													}
+												}
+												if (urls.length === 0) return null;
+												if (urls.length === 1) {
+													return (
+														<Button variant="outline" size="sm" className="h-7 w-7 p-0 text-[var(--sq-primary)]" title="View Post"
+															onClick={() => window.open(urls[0]!.url, "_blank", "noopener,noreferrer")}>
+															<ExternalLink size={13} />
+														</Button>
+													);
+												}
+												return (
+													<Button variant="outline" size="sm" className="h-7 w-7 p-0 text-[var(--sq-primary)]" title={`View on ${urls.map(u => u.platform).join(", ")}`}
+														onClick={() => urls.forEach(u => window.open(u.url, "_blank", "noopener,noreferrer"))}>
+														<ExternalLink size={13} />
+													</Button>
+												);
+											})()}
 											{/* Edit is only meaningful for posts that can still be changed. Published/failed posts can't be edited. */}
 											{(post.status === "draft" || post.status === "scheduled" || post.status === "pending_review") && (
 												<Link to={editPath(post.id)}>

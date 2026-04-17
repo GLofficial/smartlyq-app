@@ -1,6 +1,29 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { queryClient } from "@/lib/query-client";
+
+export interface EditablePost {
+	id: number;
+	title: string;
+	content: string;
+	platforms: string[];
+	selected_account_ids: number[];
+	accounts: { id: number; platform: string; account_name: string; account_username: string; profile_picture: string }[];
+	media_urls: string[];
+	platform_overrides: Record<string, unknown> | null;
+	status: string;
+	scheduled_time: string | null;
+	created_at: string | null;
+}
+
+export function usePostForEdit(postId: number | null) {
+	return useQuery({
+		queryKey: ["social", "post-edit", postId],
+		queryFn: () => apiClient.get<{ post: EditablePost }>(`/api/spa/social/posts/get?id=${postId}`),
+		enabled: postId !== null && postId > 0,
+		staleTime: 0,
+	});
+}
 
 const invalidatePosts = () => {
 	queryClient.invalidateQueries({ queryKey: ["social"] });
