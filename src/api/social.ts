@@ -198,8 +198,9 @@ export function useSocialComments(filter?: string, page = 1) {
 			apiClient.get<{ comments: Comment[]; total: number; page: number; pages: number }>(
 				`/api/spa/social/comments?${params.toString()}`,
 			),
-		// Near-real-time: refetch every 30s while the tab is active
-		refetchInterval: 30_000,
+		// Realtime socket is the primary path (see src/hooks/use-realtime.ts).
+		// Poll every 2 min as fallback for when the socket is down.
+		refetchInterval: 120_000,
 		refetchOnWindowFocus: true,
 	});
 }
@@ -227,8 +228,9 @@ export function useSocialInbox(page = 1, scope: "active" | "archived" = "active"
 				page: number;
 				pages: number;
 			}>(`/api/spa/social/inbox?page=${page}&scope=${scope}`),
-		// Near-real-time: refetch every 30s while the tab is active
-		refetchInterval: 30_000,
+		// Realtime socket is the primary path (see src/hooks/use-realtime.ts).
+		// Poll every 2 min as fallback for when the socket is down.
+		refetchInterval: 120_000,
 		refetchOnWindowFocus: true,
 	});
 }

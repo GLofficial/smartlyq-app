@@ -1,8 +1,12 @@
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "@/components/shell/sidebar";
 import { Header } from "@/components/shell/header";
+import { useRealtime } from "@/hooks/use-realtime";
 
 export function AppLayout() {
+	// One global realtime socket for the authenticated shell — pushes inbox/comment
+	// updates and invalidates the corresponding React Query caches.
+	useRealtime();
 	return (
 		<div className="flex h-screen overflow-hidden">
 			<Sidebar />

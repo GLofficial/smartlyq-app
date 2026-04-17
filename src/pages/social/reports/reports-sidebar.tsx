@@ -128,7 +128,7 @@ export function ReportsSidebar({ filters, onFiltersChange }: ReportsSidebarProps
 											<PlatformIcon platform={a.platform} size={14} />
 										</div>
 									)}
-									<div className="absolute -bottom-0.5 -right-0.5 ring-1 ring-[var(--card)] rounded-full">
+									<div className="absolute -bottom-0.5 -right-0.5">
 										<PlatformBadge platformId={a.platform} size={12} />
 									</div>
 								</div>
