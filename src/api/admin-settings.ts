@@ -21,6 +21,13 @@ export function useAdminModels() {
 	});
 }
 
+export function useSendTestMail() {
+	return useMutation({
+		mutationFn: () =>
+			apiClient.post<{ message: string }>("/api/spa/admin/settings/test-mail", {}),
+	});
+}
+
 export function useSaveAdminSettings() {
 	return useMutation({
 		mutationFn: (data: { tab: string; values: Record<string, string> }) =>

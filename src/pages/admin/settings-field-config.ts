@@ -111,17 +111,17 @@ export const TAB_FIELDS: Record<string, FieldDef[]> = {
 		  description: "Stored encrypted. Leave unchanged to keep current key." },
 	],
 	mail: [
+		{ key: "site_email", label: "Primary email address", type: "text", placeholder: "info@example.com" },
 		{ key: "smtp_connection", label: "Mail driver", type: "select", options: [
 			{ value: "0", label: "PHP Mail" }, { value: "1", label: "SMTP" },
 		] },
-		{ key: "smtp_host", label: "SMTP host", type: "text", placeholder: "smtp.gmail.com" },
+		{ key: "smtp_hostname", label: "SMTP host", type: "text", placeholder: "smtp.gmail.com" },
 		{ key: "smtp_port", label: "SMTP port", type: "text", placeholder: "587", half: true },
 		{ key: "smtp_encryption", label: "Encryption", type: "select", options: [
 			{ value: "tls", label: "TLS" }, { value: "ssl", label: "SSL" }, { value: "", label: "None" },
 		], half: true },
 		{ key: "smtp_username", label: "SMTP username", type: "text" },
 		{ key: "smtp_password", label: "SMTP password", type: "password" },
-		{ key: "smtp_from_name", label: "From name", type: "text" },
 	],
 	payment: [
 		{ key: "stripe_enabled", label: "Stripe enabled", type: "select", options: [

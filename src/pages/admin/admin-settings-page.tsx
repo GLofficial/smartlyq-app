@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Save, Settings } from "lucide-react";
-import { useAdminSettings, useSaveAdminSettings, useAdminModels } from "@/api/admin-settings";
+import { Save, Settings, Send } from "lucide-react";
+import { useAdminSettings, useSaveAdminSettings, useAdminModels, useSendTestMail } from "@/api/admin-settings";
 import { useAdminPlans } from "@/api/admin";
 import { TAB_FIELDS, type FieldDef } from "./settings-field-config";
 import { ModelSelectField, type ModelOption } from "./model-select-field";
@@ -37,6 +37,7 @@ export function AdminSettingsPage() {
 	const [activeTab, setActiveTab] = useState("general");
 	const { data, isLoading } = useAdminSettings(activeTab);
 	const saveMutation = useSaveAdminSettings();
+	const testMailMutation = useSendTestMail();
 	const [values, setValues] = useState<Record<string, string>>({});
 	const { data: plansData } = useAdminPlans();
 	const { data: modelsData } = useAdminModels();
@@ -153,9 +154,23 @@ export function AdminSettingsPage() {
 											</div>
 										))}
 									</div>
-									<Button onClick={handleSave} disabled={saveMutation.isPending}>
-										<Save size={16} /> {saveMutation.isPending ? "Saving..." : "Update details"}
-									</Button>
+									<div className="flex items-center gap-2">
+										<Button onClick={handleSave} disabled={saveMutation.isPending}>
+											<Save size={16} /> {saveMutation.isPending ? "Saving..." : "Update details"}
+										</Button>
+										{activeTab === "mail" && (
+											<Button
+												variant="outline"
+												onClick={() => testMailMutation.mutate(undefined, {
+													onSuccess: (d) => toast.success(d.message),
+													onError: (e: unknown) => toast.error((e as { message?: string })?.message ?? "Failed to send test mail."),
+												})}
+												disabled={testMailMutation.isPending}
+											>
+												<Send size={16} /> {testMailMutation.isPending ? "Sending..." : "Test mail"}
+											</Button>
+										)}
+									</div>
 								</div>
 							)}
 						</CardContent>
@@ -197,7 +212,6 @@ function SettingField({ field, value, onChange }: { field: FieldDef; value: stri
 				/>
 			) : (
 				<Input
-					type={field.type === "password" ? "password" : "text"}
 					value={value}
 					onChange={(e) => onChange(e.target.value)}
 					placeholder={field.placeholder}

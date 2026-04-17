@@ -124,7 +124,6 @@ export function ProviderCard({ config, data, apiVersion }: Props) {
 						)}
 						{field.key === "app_secret" && (
 							<Input
-								type="password"
 								value={appSecret}
 								onChange={(e) => setAppSecret(e.target.value)}
 							/>
