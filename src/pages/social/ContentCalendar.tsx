@@ -15,8 +15,85 @@ import { PLATFORM_BRANDS, PlatformIcon, PlatformBadge } from "./PlatformIcons";
 import { Bell, HelpCircle, Settings, Users, Search, ChevronLeft, ChevronRight, CalendarDays, Share2, Plus, X, ExternalLink, RotateCw, MinusCircle, Trash2, PenLine, AlertTriangle, Clock, CheckCircle2, FileEdit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useDeletePost } from "@/api/social-posts";
 import { toast } from "sonner";
 import { cn } from "@/lib/cn";
+
+// Renders real media (images + videos) as a responsive gallery
+function PostMediaGallery({ mediaUrls }: { mediaUrls: string[] }) {
+  const [lightbox, setLightbox] = useState<number | null>(null);
+  const isVideo = (url: string) => /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url);
+  const urls = mediaUrls.filter(Boolean);
+  if (urls.length === 0) return null;
+  const gridClass = urls.length === 1 ? "grid-cols-1" : urls.length === 2 ? "grid-cols-2" : urls.length === 3 ? "grid-cols-2" : "grid-cols-2";
+  return (
+    <>
+      <div className={cn("grid gap-1 mb-3", gridClass)}>
+        {urls.slice(0, 4).map((url, i) => {
+          const extra = i === 3 && urls.length > 4 ? urls.length - 4 : 0;
+          const spanFull = urls.length === 3 && i === 0;
+          return (
+            <button
+              key={i}
+              onClick={() => setLightbox(i)}
+              className={cn("relative bg-muted rounded-lg overflow-hidden aspect-video", spanFull && "row-span-2 aspect-auto")}
+              style={spanFull ? { aspectRatio: "1/2" } : undefined}
+            >
+              {isVideo(url) ? (
+                <>
+                  <video src={url} className="w-full h-full object-cover" muted playsInline />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
+                      <div className="w-0 h-0 border-t-[7px] border-t-transparent border-b-[7px] border-b-transparent border-l-[11px] border-l-white ml-0.5" />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <img src={url} alt="" className="w-full h-full object-cover" />
+              )}
+              {extra > 0 && (
+                <div className="absolute inset-0 bg-foreground/50 flex items-center justify-center">
+                  <span className="text-card text-lg font-bold">+{extra}</span>
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+      {lightbox !== null && urls[lightbox] && (
+        <Dialog open={true} onOpenChange={() => setLightbox(null)}>
+          <DialogContent className="max-w-4xl p-0 bg-foreground">
+            <button onClick={() => setLightbox(null)} className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-card/20 text-card flex items-center justify-center hover:bg-card/40" aria-label="Close">
+              <X className="w-4 h-4" />
+            </button>
+            {isVideo(urls[lightbox]!) ? (
+              <video src={urls[lightbox]!} className="w-full max-h-[80vh] object-contain" controls autoPlay />
+            ) : (
+              <img src={urls[lightbox]!} alt="" className="w-full max-h-[80vh] object-contain" />
+            )}
+            {urls.length > 1 && (
+              <>
+                {lightbox > 0 && (
+                  <button onClick={() => setLightbox(lightbox - 1)} className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-card/20 text-card flex items-center justify-center hover:bg-card/40">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                )}
+                {lightbox < urls.length - 1 && (
+                  <button onClick={() => setLightbox(lightbox + 1)} className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-card/20 text-card flex items-center justify-center hover:bg-card/40">
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                )}
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-card text-xs bg-black/50 rounded-full px-3 py-1">{lightbox + 1} / {urls.length}</div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
+  );
+}
 
 type CalendarView = "dayGridMonth" | "timeGridWeek" | "timeGridDay" | "listWeek";
 
@@ -51,6 +128,9 @@ interface DemoPost {
   platforms: { id: string; name: string; status: "published" | "scheduled" | "draft" | "failed" }[];
   thumbnail?: string;
   status: "published" | "scheduled" | "draft" | "failed" | "partial";
+  mediaUrls?: string[];
+  postUrls?: Record<string, string>;
+  errorMessage?: string;
 }
 
 const today = new Date();
@@ -217,8 +297,16 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
   const navigate = useNavigate();
   const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
   const createPostPath = wsHash ? `/w/${wsHash}/social-media/create-post` : "/social-media/create-post";
-  // toast imported from sonner at top
   const calendarRef = useRef<FullCalendar>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const deleteMutation = useDeletePost();
+  const handleDelete = (postId: number) => {
+    if (onDeletePost) { onDeletePost(postId); return; }
+    deleteMutation.mutate(postId, {
+      onSuccess: (r) => toast.success(r?.message || "Post deleted"),
+      onError: (e: Error) => toast.error(e.message || "Delete failed"),
+    });
+  };
 
   // Convert real API events to DemoPost format
   const apiPosts: DemoPost[] = useMemo(() => {
@@ -240,6 +328,9 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
         })) : [],
         thumbnail: (ep.thumbnail as string) || undefined,
         status: ((ep.status as string) || "scheduled") as DemoPost["status"],
+        mediaUrls: Array.isArray(ep.mediaUrls) ? (ep.mediaUrls as string[]) : undefined,
+        postUrls: (ep.postUrls && typeof ep.postUrls === "object") ? ep.postUrls as Record<string, string> : undefined,
+        errorMessage: (ep.errorMessage as string) || undefined,
       };
     });
   }, [realEvents]);
@@ -256,6 +347,11 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
   });
   const [selectedPost, setSelectedPost] = useState<DemoPost | null>(null);
   const [dayDetailDate, setDayDetailDate] = useState<string | null>(null);
+  const isPastDate = (dateStr: string | null) => {
+    if (!dateStr) return false;
+    const todayStr = new Date().toISOString().split("T")[0];
+    return dateStr < todayStr;
+  };
   const [shareOpen, setShareOpen] = useState(false);
   const [shareAccount, setShareAccount] = useState("All accounts");
   const [shareStart, setShareStart] = useState(() => {
@@ -310,6 +406,11 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
     const newStart = info.event.start;
     if (!newStart) { info.revert(); return; }
     const newDate = newStart.toISOString().split("T")[0];
+    if (isPastDate(newDate)) {
+      toast.error("Can't schedule posts in the past");
+      info.revert();
+      return;
+    }
     const newTime = `${String(newStart.getHours()).padStart(2, "0")}:${String(newStart.getMinutes()).padStart(2, "0")}`;
 
     const formatDate = (d: string) => {
@@ -498,16 +599,16 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                 </div>
               </DialogHeader>
 
-              {/* Error banner for partial */}
-              {selectedPost.status === "partial" && (
+              {/* Error banner for partial/failed */}
+              {(selectedPost.status === "partial" || selectedPost.status === "failed") && (
                 <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 mt-2">
                   <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                     <AlertTriangle className="w-4 h-4 text-warning" />
-                    Posting Partially Published. {selectedPost.platforms.filter(p => p.status === "published").length}/{selectedPost.platforms.length} platforms succeeded. {selectedPost.platforms.find(p => p.status === "failed")?.id && `${selectedPost.platforms.find(p => p.status === "failed")?.id.charAt(0).toUpperCase()}${selectedPost.platforms.find(p => p.status === "failed")?.id.slice(1)} failed.`}
+                    {selectedPost.status === "partial" ? "Partially Published." : "Failed to publish."} {selectedPost.platforms.filter(p => p.status === "published").length}/{selectedPost.platforms.length} platforms succeeded.
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    <span className="font-semibold">LinkedIn:</span> Media upload issue. Please check your file format and size.
-                  </p>
+                  {selectedPost.errorMessage && (
+                    <p className="text-xs text-muted-foreground mt-1">{selectedPost.errorMessage}</p>
+                  )}
                 </div>
               )}
 
@@ -540,20 +641,54 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                     {selectedPost.platforms[0]?.id && <PlatformBadge platformId={selectedPost.platforms[0].id} size={24} />}
                     <span className="text-sm font-semibold text-foreground">{selectedPost.platforms[0]?.name}</span>
                   </div>
-                  <Button variant="outline" size="sm" className="gap-1.5 text-primary">
-                    <ExternalLink className="w-3.5 h-3.5" /> View Post
-                  </Button>
+                  {(() => {
+                    const urls = selectedPost.postUrls ? Object.entries(selectedPost.postUrls).filter(([, u]) => u && typeof u === "string" && u.startsWith("http")) : [];
+                    if (urls.length === 0) return null;
+                    if (urls.length === 1) {
+                      return (
+                        <Button variant="outline" size="sm" className="gap-1.5 text-primary" onClick={() => window.open(urls[0]![1], "_blank", "noopener,noreferrer")}>
+                          <ExternalLink className="w-3.5 h-3.5" /> View Post
+                        </Button>
+                      );
+                    }
+                    return (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" className="gap-1.5 text-primary">
+                            <ExternalLink className="w-3.5 h-3.5" /> View Post
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="end" className="w-56 p-1">
+                          {urls.map(([platformKey, url]) => (
+                            <button
+                              key={platformKey}
+                              onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
+                              className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm hover:bg-muted transition-colors"
+                            >
+                              <PlatformBadge platformId={platformKey} size={18} />
+                              <span className="capitalize">{platformKey}</span>
+                              <ExternalLink className="w-3 h-3 ml-auto text-muted-foreground" />
+                            </button>
+                          ))}
+                        </PopoverContent>
+                      </Popover>
+                    );
+                  })()}
                 </div>
 
-                {/* Video/image placeholder */}
-                <div className="bg-muted rounded-lg aspect-video flex items-center justify-center text-muted-foreground mb-3">
-                  <div className="text-center">
-                    <div className="w-12 h-12 rounded-full bg-foreground/20 flex items-center justify-center mx-auto mb-2">
-                      <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-foreground/60 ml-1" />
+                {/* Real media, or placeholder if none */}
+                {selectedPost.mediaUrls && selectedPost.mediaUrls.length > 0 ? (
+                  <PostMediaGallery mediaUrls={selectedPost.mediaUrls} />
+                ) : (
+                  <div className="bg-muted rounded-lg aspect-video flex items-center justify-center text-muted-foreground mb-3">
+                    <div className="text-center">
+                      <div className="w-12 h-12 rounded-full bg-foreground/20 flex items-center justify-center mx-auto mb-2">
+                        <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-foreground/60 ml-1" />
+                      </div>
+                      <span className="text-xs">No media</span>
                     </div>
-                    <span className="text-xs">Media preview</span>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Content text */}
@@ -596,7 +731,7 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                   </>
                 )}
                 <Button variant="outline" className="gap-1.5"><Share2 className="w-4 h-4" /> Share</Button>
-                <Button variant="outline" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => { if (onDeletePost && selectedPost) { onDeletePost(Number(selectedPost.id)); setSelectedPost(null); } }}><Trash2 className="w-4 h-4" /> Delete</Button>
+                <Button variant="outline" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => { if (selectedPost) setDeleteConfirmId(Number(selectedPost.id)); }}><Trash2 className="w-4 h-4" /> Delete</Button>
                 {selectedPost.status === "partial" && (
                   <Button className="gap-1.5 bg-warning text-warning-foreground hover:bg-warning/90"><FileEdit className="w-4 h-4" /> Edit Failed</Button>
                 )}
@@ -605,6 +740,27 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={deleteConfirmId !== null} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this post?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The post will be removed from your calendar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (deleteConfirmId !== null) { handleDelete(deleteConfirmId); setDeleteConfirmId(null); setSelectedPost(null); } }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Day Detail Modal */}
       <Dialog open={!!dayDetailDate} onOpenChange={() => setDayDetailDate(null)}>
@@ -662,11 +818,13 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
             </div>
           )}
 
-          <div className="mt-4 flex justify-center">
-            <Button className="gap-1.5" onClick={() => { setDayDetailDate(null); navigate(createPostPath, { state: { prefillDate: dayDetailDate } }); }}>
-              <Plus className="w-4 h-4" /> Add New Post
-            </Button>
-          </div>
+          {!isPastDate(dayDetailDate) && (
+            <div className="mt-4 flex justify-center">
+              <Button className="gap-1.5" onClick={() => { setDayDetailDate(null); navigate(createPostPath, { state: { prefillDate: dayDetailDate } }); }}>
+                <Plus className="w-4 h-4" /> Add New Post
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

@@ -88,6 +88,7 @@ export interface CalendarEvent {
 		hasMedia?: boolean;
 		timeDisplay?: string;
 		bgColor?: string;
+		errorMessage?: string;
 	};
 	// Legacy fields (keep for backward compat)
 	date?: string | null;
