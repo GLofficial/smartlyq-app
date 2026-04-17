@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSocialHub, usePostingLimits } from "@/api/social";
 import { useMediaList } from "@/api/media-library";
@@ -169,18 +169,6 @@ export function CreatePostPage() {
     window.open(`/my/canva/connect?width=${width}&height=${height}`, "_blank", "width=1200,height=800");
   }, []);
 
-  // Derive account info for preview (first selected account)
-  const previewAccountInfo = useMemo(() => {
-    if (selectedAccountIds.length === 0 || accounts.length === 0) return undefined;
-    const acc = accounts.find(a => selectedAccountIds.includes(a.id));
-    if (!acc) return undefined;
-    return {
-      name: acc.account_name || acc.account_username || "Your Page",
-      avatar: acc.profile_picture || "",
-      username: acc.account_username || "",
-    };
-  }, [selectedAccountIds, accounts]);
-
   if (hubLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -281,7 +269,8 @@ export function CreatePostPage() {
             imageCount={imageCount}
             platformPostType={platformPostType}
             mediaUrls={previewMedia}
-            accountInfo={previewAccountInfo}
+            accounts={accounts}
+            selectedAccountIds={selectedAccountIds}
           />
         </div>
       </div>

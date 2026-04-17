@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Monitor, Smartphone, MoreHorizontal, ThumbsUp, MessageCircle, Share2, Heart, Bookmark, Send, Repeat2, ArrowUp, ArrowDown, Eye, Music, MapPin, ChevronLeft, ChevronRight, FileText, Play } from "lucide-react";
 import { PLATFORM_BRANDS, PlatformIcon } from "./PlatformIcons";
 import { cn } from "@/lib/cn";
@@ -13,6 +13,9 @@ interface PostPreviewProps {
   platformPostType?: Record<string, string>;
   mediaUrls?: { url: string; type: "image" | "video" }[];
   accountInfo?: { name: string; avatar: string; username?: string };
+  /** All connected accounts — preview picks the first matching one for the active platform */
+  accounts?: { id: number; platform: string; account_name: string; account_username: string; profile_picture: string }[];
+  selectedAccountIds?: number[];
 }
 
 type Device = "desktop" | "mobile";
@@ -467,15 +470,15 @@ function InstagramPreview({ content, device, imageCount = 1, mediaUrls, accountI
   );
 }
 
-function TwitterPreview({ content, device, imageCount = 1 }: { content: string; device: Device; imageCount?: number }) {
+function TwitterPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border p-3">
       <div className="flex gap-2">
-        <div className="w-10 h-10 rounded-full bg-muted shrink-0" />
+        <AccountAvatar avatar={accountInfo?.avatar} name={accountInfo?.name} size={10} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1">
-            <span className="text-sm font-bold text-foreground">Your Name</span>
-            <span className="text-sm text-muted-foreground">@handle · now</span>
+            <span className="text-sm font-bold text-foreground">{accountInfo?.name || "Your Name"}</span>
+            <span className="text-sm text-muted-foreground">@{accountInfo?.username || "handle"} · now</span>
           </div>
           <div className="mt-1">
             <TruncatedText text={content} placeholder="Your post preview will appear here..." />
@@ -494,14 +497,14 @@ function TwitterPreview({ content, device, imageCount = 1 }: { content: string; 
   );
 }
 
-function LinkedInPreview({ content, device, imageCount = 1 }: { content: string; device: Device; imageCount?: number }) {
+function LinkedInPreview({ content, device, imageCount = 1, accountInfo }: { content: string; device: Device; imageCount?: number; accountInfo?: { name: string; avatar: string; username?: string } }) {
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
       <div className="p-3 flex items-center gap-2">
-        <div className="w-10 h-10 rounded-full bg-muted" />
+        <AccountAvatar avatar={accountInfo?.avatar} name={accountInfo?.name} size={10} />
         <div>
-          <p className="text-sm font-semibold text-foreground">Your Name</p>
-          <p className="text-xs text-muted-foreground">Your headline · Just now</p>
+          <p className="text-sm font-semibold text-foreground">{accountInfo?.name || "Your Name"}</p>
+          <p className="text-xs text-muted-foreground">{accountInfo?.username || "Your headline"} · Just now</p>
         </div>
       </div>
       <div className="px-3 pb-3">
@@ -1268,13 +1271,33 @@ const PREVIEW_MAP: Record<string, React.FC<{ content: string; device: Device; im
   whatsapp: WhatsAppPreview,
 };
 
-export default function PostPreview({ selectedPlatforms, content, platformContent, customizeChannel, imageCount = 1, platformPostType = {}, mediaUrls, accountInfo }: PostPreviewProps) {
+export default function PostPreview({ selectedPlatforms, content, platformContent, customizeChannel, imageCount = 1, platformPostType = {}, mediaUrls, accountInfo, accounts, selectedAccountIds }: PostPreviewProps) {
   const [device, setDevice] = useState<Device>("desktop");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("feed");
   const platforms = selectedPlatforms.length > 0 ? selectedPlatforms : ["facebook"];
   const [activePreview, setActivePreview] = useState<string | null>(null);
 
   const currentPreview = activePreview && platforms.includes(activePreview) ? activePreview : platforms[0];
+
+  // Derive account info for the currently active platform preview
+  const currentAccountInfo = useMemo(() => {
+    // If accounts + selectedAccountIds provided, match by platform
+    if (accounts && accounts.length > 0 && selectedAccountIds && selectedAccountIds.length > 0) {
+      const platformVariants = [currentPreview, `${currentPreview}-page`, `${currentPreview}_page`];
+      const match = accounts.find(a =>
+        selectedAccountIds.includes(a.id) && platformVariants.includes(a.platform)
+      );
+      if (match) {
+        return {
+          name: match.account_name || match.account_username || "",
+          avatar: match.profile_picture || "",
+          username: match.account_username || "",
+        };
+      }
+    }
+    // Fallback to the single accountInfo prop
+    return accountInfo;
+  }, [accounts, selectedAccountIds, currentPreview, accountInfo]);
   const supportsStory = currentPreview in STORY_PLATFORMS;
   const storyInfo = STORY_PLATFORMS[currentPreview];
 
@@ -1371,7 +1394,7 @@ export default function PostPreview({ selectedPlatforms, content, platformConten
           effectiveMode === "feed" && device === "mobile" && "max-w-[320px] mx-auto"
         )}>
           {effectiveMode === "story" && supportsStory
-            ? (() => { const StoryComp = STORY_PREVIEW_MAP[currentPreview]; return StoryComp ? <StoryComp content={displayContent} mediaUrls={mediaUrls} accountInfo={accountInfo} /> : null; })()
+            ? (() => { const StoryComp = STORY_PREVIEW_MAP[currentPreview]; return StoryComp ? <StoryComp content={displayContent} mediaUrls={mediaUrls} accountInfo={currentAccountInfo} /> : null; })()
             : (() => {
                 // Check for LinkedIn Document post type
                 const postType = platformPostType[currentPreview] || platformPostType[currentPreview.replace("_page", "")] || "";
@@ -1379,7 +1402,7 @@ export default function PostPreview({ selectedPlatforms, content, platformConten
                   return <LinkedInDocumentPreview content={displayContent} device={device} />;
                 }
                 const FeedComp = PREVIEW_MAP[currentPreview];
-                return FeedComp ? <FeedComp content={displayContent} device={device} imageCount={imageCount} mediaUrls={mediaUrls} accountInfo={accountInfo} /> : <GenericPreview platform={currentPreview} content={displayContent} device={device} imageCount={imageCount} mediaUrls={mediaUrls} accountInfo={accountInfo} />;
+                return FeedComp ? <FeedComp content={displayContent} device={device} imageCount={imageCount} mediaUrls={mediaUrls} accountInfo={currentAccountInfo} /> : <GenericPreview platform={currentPreview} content={displayContent} device={device} imageCount={imageCount} mediaUrls={mediaUrls} accountInfo={currentAccountInfo} />;
               })()
           }
         </div>
