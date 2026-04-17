@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useSocialAccounts, type ReportFilters } from "@/api/social-reports";
 import { PlatformIcon } from "@/pages/social/platform-icon";
+import { PlatformBadge } from "@/pages/social/PlatformIcons";
 
 const PLATFORMS = [
 	{ id: "", label: "All platforms" },
@@ -119,13 +120,18 @@ export function ReportsSidebar({ filters, onFiltersChange }: ReportsSidebarProps
 								className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2.5 text-left transition-colors ${
 									filters.accountId === a.id ? "bg-[var(--sq-primary)]/10" : "hover:bg-[var(--muted)]"
 								}`}>
-								{a.profile_picture ? (
-									<img src={a.profile_picture} alt="" className="h-7 w-7 rounded-full object-cover shrink-0" />
-								) : (
-									<div className="h-7 w-7 rounded-full bg-[var(--muted)] flex items-center justify-center shrink-0">
-										<PlatformIcon platform={a.platform} size={14} />
+								<div className="relative shrink-0">
+									{a.profile_picture ? (
+										<img src={a.profile_picture} alt="" className="h-7 w-7 rounded-full object-cover" />
+									) : (
+										<div className="h-7 w-7 rounded-full bg-[var(--muted)] flex items-center justify-center">
+											<PlatformIcon platform={a.platform} size={14} />
+										</div>
+									)}
+									<div className="absolute -bottom-0.5 -right-0.5 ring-1 ring-[var(--card)] rounded-full">
+										<PlatformBadge platformId={a.platform} size={12} />
 									</div>
-								)}
+								</div>
 								<div className="flex-1 min-w-0">
 									<p className="text-xs font-medium text-[var(--foreground)] truncate">{a.account_name || a.account_username}</p>
 								</div>

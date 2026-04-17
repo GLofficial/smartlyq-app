@@ -149,8 +149,22 @@ export interface InboxMessage {
 }
 
 export interface InboxThread {
-	conversation: { id: number; participant_name: string; participant_avatar: string; platform: string };
+	conversation: { id: number; participant_name: string; participant_avatar: string; platform: string; last_inbound_at: string | null; status: string };
 	messages: InboxMessage[];
+}
+
+export function useInboxArchive() {
+	return useMutation({
+		mutationFn: (conversationId: number) =>
+			apiClient.post<{ message: string }>("/api/spa/social/inbox/archive", { conversation_id: conversationId }),
+	});
+}
+
+export function useInboxUnarchive() {
+	return useMutation({
+		mutationFn: (conversationId: number) =>
+			apiClient.post<{ message: string }>("/api/spa/social/inbox/unarchive", { conversation_id: conversationId }),
+	});
 }
 
 export function useInboxSync() {
@@ -196,21 +210,23 @@ export interface Conversation {
 	participant_name: string;
 	participant_avatar: string;
 	platform: string;
-	last_message_at: string;
+	last_message_at: string | null;
+	last_inbound_at: string | null;
 	unread_count: number;
+	status: string;
 	snippet: string;
 }
 
-export function useSocialInbox(page = 1) {
+export function useSocialInbox(page = 1, scope: "active" | "archived" = "active") {
 	return useQuery({
-		queryKey: ["social", "inbox", page],
+		queryKey: ["social", "inbox", page, scope],
 		queryFn: () =>
 			apiClient.get<{
 				conversations: Conversation[];
 				total: number;
 				page: number;
 				pages: number;
-			}>(`/api/spa/social/inbox?page=${page}`),
+			}>(`/api/spa/social/inbox?page=${page}&scope=${scope}`),
 		// Near-real-time: refetch every 30s while the tab is active
 		refetchInterval: 30_000,
 		refetchOnWindowFocus: true,

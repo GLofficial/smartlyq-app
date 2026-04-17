@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { PlatformIcon } from "./platform-icon";
+import { PlatformBadge } from "./PlatformIcons";
 
 export interface FilterSidebarAccount {
 	id: number;
@@ -148,13 +149,19 @@ export function SocialFilterSidebar({
 									accountId === a.id ? "bg-[var(--sq-primary)]/10" : "hover:bg-[var(--muted)]"
 								}`}
 							>
-								{a.profile_picture ? (
-									<img src={a.profile_picture} alt="" className="h-7 w-7 rounded-full object-cover shrink-0" />
-								) : (
-									<div className="h-7 w-7 rounded-full bg-[var(--muted)] flex items-center justify-center shrink-0">
-										<PlatformIcon platform={a.platform} size={14} />
+								{/* Avatar with platform badge overlay (same pattern as create-post account picker). */}
+								<div className="relative shrink-0">
+									{a.profile_picture ? (
+										<img src={a.profile_picture} alt="" className="h-7 w-7 rounded-full object-cover" />
+									) : (
+										<div className="h-7 w-7 rounded-full bg-[var(--muted)] flex items-center justify-center">
+											<PlatformIcon platform={a.platform} size={14} />
+										</div>
+									)}
+									<div className="absolute -bottom-0.5 -right-0.5 ring-1 ring-[var(--card)] rounded-full">
+										<PlatformBadge platformId={a.platform} size={12} />
 									</div>
-								)}
+								</div>
 								<div className="flex-1 min-w-0">
 									<p className="text-xs font-medium text-[var(--foreground)] truncate">{a.account_name || a.account_username}</p>
 								</div>

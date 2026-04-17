@@ -2,9 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, ChevronRight, MessageSquare, Send, Search, Archive, Mail } from "lucide-react";
-import { useSocialInbox, useInboxThread, useInboxSync } from "@/api/social";
+import { ChevronLeft, ChevronRight, MessageSquare, Send, Search, Archive, ArchiveRestore, Mail, AlertTriangle } from "lucide-react";
+import { useSocialInbox, useInboxThread, useInboxSync, useInboxArchive, useInboxUnarchive } from "@/api/social";
 import { useInboxReply } from "@/api/social-posts";
+import { queryClient } from "@/lib/query-client";
 import { useSocialAccounts } from "@/api/social-reports";
 import { PlatformIcon } from "./platform-icon";
 import { SocialFilterSidebar } from "./social-filter-sidebar";
@@ -16,16 +17,44 @@ export function InboxPage() {
 	const [accountId, setAccountId] = useState<number | null>(null);
 	const [activeConvId, setActiveConvId] = useState<number | null>(null);
 	const [search, setSearch] = useState("");
-	const { data, isLoading, refetch, isFetching } = useSocialInbox(page);
+	const [scope, setScope] = useState<"active" | "archived">("active");
+	const { data, isLoading, refetch, isFetching } = useSocialInbox(page, scope);
 	const { data: accountsData, isLoading: accountsLoading } = useSocialAccounts();
 	const { data: thread, isLoading: threadLoading } = useInboxThread(activeConvId);
 	const replyMut = useInboxReply();
 	const syncMut = useInboxSync();
+	const archiveMut = useInboxArchive();
+	const unarchiveMut = useInboxUnarchive();
 	const handleRefresh = () => {
 		syncMut.mutate(undefined, {
 			onSuccess: (r) => { toast.success(r.message ?? "Inbox synced."); refetch(); },
 			onError: (err) => toast.error((err as Error).message || "Sync failed."),
 		});
+	};
+	const handleArchive = () => {
+		if (!activeConvId) return;
+		if (scope === "archived") {
+			unarchiveMut.mutate(activeConvId, {
+				onSuccess: (r) => { toast.success(r.message ?? "Restored."); setActiveConvId(null); queryClient.invalidateQueries({ queryKey: ["social", "inbox"] }); },
+				onError: (err) => toast.error((err as Error).message || "Unarchive failed."),
+			});
+		} else {
+			archiveMut.mutate(activeConvId, {
+				onSuccess: (r) => { toast.success(r.message ?? "Archived."); setActiveConvId(null); queryClient.invalidateQueries({ queryKey: ["social", "inbox"] }); },
+				onError: (err) => toast.error((err as Error).message || "Archive failed."),
+			});
+		}
+	};
+
+	// 24h platform reply window: Instagram/Facebook/TikTok DMs can only be replied to within 24h of last inbound.
+	const WINDOW_PLATFORMS = new Set(["instagram", "facebook", "facebook_page", "tiktok"]);
+	const computeWindow = (lastInboundIso: string | null, platform: string): { expired: boolean; hoursLeft: number } | null => {
+		if (!lastInboundIso || !WINDOW_PLATFORMS.has(platform)) return null;
+		const lastMs = new Date(lastInboundIso).getTime();
+		if (isNaN(lastMs)) return null;
+		const deadline = lastMs + 24 * 60 * 60 * 1000;
+		const hoursLeft = (deadline - Date.now()) / (60 * 60 * 1000);
+		return { expired: hoursLeft <= 0, hoursLeft: Math.max(0, hoursLeft) };
 	};
 	const [reply, setReply] = useState("");
 	const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -33,6 +62,12 @@ export function InboxPage() {
 	useEffect(() => {
 		if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
 	}, [thread?.messages?.length]);
+
+	// Backend clears unread_count when the thread is fetched — invalidate list so the badge drops immediately.
+	useEffect(() => {
+		if (!activeConvId) return;
+		queryClient.invalidateQueries({ queryKey: ["social", "inbox"] });
+	}, [activeConvId]);
 
 	const accounts = accountsData?.accounts ?? [];
 
@@ -77,6 +112,20 @@ export function InboxPage() {
 								<Button variant="ghost" size="icon" className="h-7 w-7" disabled={page >= (data?.pages ?? 1)} onClick={() => setPage(p => p + 1)}><ChevronRight size={14} /></Button>
 							</div>
 						)}
+					</div>
+					<div className="flex gap-1.5">
+						<button
+							onClick={() => { setScope("active"); setActiveConvId(null); setPage(1); }}
+							className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${scope === "active" ? "bg-[var(--sq-primary)] text-white" : "bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--muted)]/70"}`}
+						>
+							Active
+						</button>
+						<button
+							onClick={() => { setScope("archived"); setActiveConvId(null); setPage(1); }}
+							className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${scope === "archived" ? "bg-[var(--sq-primary)] text-white" : "bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--muted)]/70"}`}
+						>
+							Archived
+						</button>
 					</div>
 					<div className="relative">
 						<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-foreground)]" />
@@ -162,8 +211,36 @@ export function InboxPage() {
 									<span>{thread?.conversation.platform}</span>
 								</div>
 							</div>
-							<Button variant="ghost" size="icon" className="h-8 w-8" title="Archive"><Archive size={14} /></Button>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-8 w-8"
+								title={thread?.conversation.status === "archived" ? "Restore from archive" : "Archive conversation"}
+								onClick={handleArchive}
+								disabled={archiveMut.isPending || unarchiveMut.isPending}
+							>
+								{thread?.conversation.status === "archived" ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+							</Button>
 						</div>
+						{(() => {
+							const win = thread ? computeWindow(thread.conversation.last_inbound_at, thread.conversation.platform) : null;
+							if (!win || (!win.expired && win.hoursLeft >= 6)) return null;
+							return (
+								<div className={`px-3 py-2 border-b border-[var(--border)] flex items-start gap-2 ${win.expired ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
+									<AlertTriangle size={14} className="shrink-0 mt-0.5" />
+									<div className="text-xs">
+										{win.expired ? (
+											<>
+												<p className="font-semibold">24-hour reply window has expired.</p>
+												<p className="mt-0.5">{thread?.conversation.platform === "instagram" ? "Instagram" : "The platform"} only allows replies within 24 hours of the last incoming message. Wait for them to message again.</p>
+											</>
+										) : (
+											<p><span className="font-semibold">{Math.round(win.hoursLeft)}h left</span> in the 24-hour reply window.</p>
+										)}
+									</div>
+								</div>
+							);
+						})()}
 						<div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-[var(--muted)]/20">
 							{(thread?.messages ?? []).length === 0 ? (
 								<p className="text-center text-sm text-[var(--muted-foreground)] py-8">No messages yet.</p>
@@ -184,18 +261,25 @@ export function InboxPage() {
 								})
 							)}
 						</div>
-						<div className="p-3 border-t border-[var(--border)] flex items-center gap-2">
-							<Input
-								value={reply}
-								onChange={(e) => setReply(e.target.value)}
-								onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendReply(); } }}
-								placeholder="Write a reply..."
-								className="flex-1"
-							/>
-							<Button onClick={handleSendReply} disabled={replyMut.isPending || !reply.trim()}>
-								<Send size={14} /> Send
-							</Button>
-						</div>
+						{(() => {
+							const win = thread ? computeWindow(thread.conversation.last_inbound_at, thread.conversation.platform) : null;
+							const windowExpired = !!win?.expired;
+							return (
+								<div className="p-3 border-t border-[var(--border)] flex items-center gap-2">
+									<Input
+										value={reply}
+										onChange={(e) => setReply(e.target.value)}
+										onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !windowExpired) { e.preventDefault(); handleSendReply(); } }}
+										placeholder={windowExpired ? "Reply window expired." : "Write a reply..."}
+										className="flex-1"
+										disabled={windowExpired}
+									/>
+									<Button onClick={handleSendReply} disabled={replyMut.isPending || !reply.trim() || windowExpired}>
+										<Send size={14} /> Send
+									</Button>
+								</div>
+							);
+						})()}
 					</>
 				)}
 			</Card>
