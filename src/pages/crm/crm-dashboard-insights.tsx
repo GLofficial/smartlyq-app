@@ -33,7 +33,7 @@ export function CrmDashboardInsights({ dashboard }: { dashboard?: ApiDashboardCr
                     <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false}
                       tickFormatter={(d: string) => { try { const dt = new Date(d); return `${dt.getDate()}/${dt.getMonth()+1}`; } catch { return d; } }} />
                     <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} allowDecimals={false} />
-                    <Tooltip contentStyle={{ backgroundColor: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 13 }} />
+                    <Tooltip cursor={false} contentStyle={{ backgroundColor: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 13 }} />
                     <Line type="monotone" dataKey="count" stroke="var(--primary)" strokeWidth={2.5} dot={{ r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -58,7 +58,7 @@ export function CrmDashboardInsights({ dashboard }: { dashboard?: ApiDashboardCr
                     <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
                     <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false}
                       tickFormatter={(v: number) => formatCurrency(v)} />
-                    <Tooltip formatter={(value: number) => [formatCurrency(value), "Revenue"]}
+                    <Tooltip cursor={false} formatter={(value: number) => [formatCurrency(value), "Revenue"]}
                       contentStyle={{ backgroundColor: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 13 }} />
                     <Bar dataKey="value" fill="#22c55e" radius={[3, 3, 0, 0]} maxBarSize={40} />
                   </BarChart>
@@ -84,7 +84,7 @@ export function CrmDashboardInsights({ dashboard }: { dashboard?: ApiDashboardCr
                     <XAxis type="number" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} allowDecimals={false} />
                     <YAxis type="category" dataKey="status" width={90}
                       tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ backgroundColor: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 13 }} />
+                    <Tooltip cursor={false} contentStyle={{ backgroundColor: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 13 }} />
                     <Bar dataKey="count" fill="var(--primary)" radius={[0, 3, 3, 0]} maxBarSize={22} />
                   </BarChart>
                 </ResponsiveContainer>
