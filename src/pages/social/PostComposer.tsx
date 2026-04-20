@@ -2314,11 +2314,11 @@ export default function PostComposer({
 
       {/* AI Content Generation Dialog */}
       <Dialog open={aiTextOpen} onOpenChange={setAiTextOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>AI Content Generation</DialogTitle>
           </DialogHeader>
-          <div className="space-y-5 flex-1 overflow-y-auto pr-1">
+          <div className="space-y-5">
             <div>
               <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Model</label>
               {textModels.length > 0 ? (
