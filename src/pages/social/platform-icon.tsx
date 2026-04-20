@@ -1,41 +1,13 @@
-import {
-	Facebook,
-	Instagram,
-	Linkedin,
-	Twitter,
-	Youtube,
-	Globe,
-	Music2,
-	Pin,
-} from "lucide-react";
+import { PlatformIcon as BrandIcon, PLATFORM_BRANDS } from "./PlatformIcons";
+import { Globe } from "lucide-react";
 
-const ICONS: Record<string, React.ElementType> = {
-	facebook: Facebook,
-	instagram: Instagram,
-	linkedin: Linkedin,
-	twitter: Twitter,
-	x: Twitter,
-	youtube: Youtube,
-	tiktok: Music2,
-	pinterest: Pin,
-	threads: Globe,
-	bluesky: Globe,
-	reddit: Globe,
-	tumblr: Globe,
-	google_business: Globe,
-};
-
-const COLORS: Record<string, string> = {
-	facebook: "text-blue-600",
-	instagram: "text-pink-500",
-	linkedin: "text-blue-700",
-	twitter: "text-sky-500",
-	x: "text-gray-900",
-	youtube: "text-red-600",
-	tiktok: "text-gray-900",
-	pinterest: "text-red-500",
-	threads: "text-gray-900",
-	bluesky: "text-blue-400",
+// Map account-page platform keys (which sometimes use legacy aliases) to the
+// canonical PLATFORM_BRANDS keys in PlatformIcons.tsx.
+const ALIAS: Record<string, string> = {
+	gmb: "google",
+	google_business: "google",
+	google_my_business: "google",
+	x: "twitter",
 };
 
 export function PlatformIcon({
@@ -45,7 +17,13 @@ export function PlatformIcon({
 	platform: string;
 	size?: number;
 }) {
-	const Icon = ICONS[platform.toLowerCase()] ?? Globe;
-	const color = COLORS[platform.toLowerCase()] ?? "text-gray-500";
-	return <Icon size={size} className={color} />;
+	const key = (platform || "").toLowerCase();
+	const mapped = ALIAS[key] ?? key;
+	const brand = PLATFORM_BRANDS[mapped];
+	if (!brand) return <Globe size={size} className="text-gray-500" />;
+	return (
+		<span style={{ color: brand.brandColor, display: "inline-flex", lineHeight: 0 }}>
+			<BrandIcon platformId={mapped} size={size} />
+		</span>
+	);
 }
