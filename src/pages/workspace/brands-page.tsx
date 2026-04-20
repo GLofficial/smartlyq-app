@@ -1,122 +1,165 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Briefcase, Plus, Trash2 } from "lucide-react";
-import { useBrands } from "@/api/brands";
-import { useMutation } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
-import { queryClient } from "@/lib/query-client";
+import { Briefcase, Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { useBrands, useBrandDelete, type Brand } from "@/api/brands";
 import { toast } from "sonner";
-
-interface Brand {
-	id: number;
-	name: string;
-	logo: string;
-	primary_color: string;
-	created_at: string;
-}
+import { BrandFormModal } from "./brand-form-modal";
 
 export function BrandsPage() {
 	const { data, isLoading } = useBrands();
-	const [confirmDelete, setConfirmDelete] = useState<Brand | null>(null);
+	const [search, setSearch] = useState("");
+	const [editing, setEditing] = useState<Brand | null>(null);
+	const [modalOpen, setModalOpen] = useState(false);
+	const delMut = useBrandDelete();
+
+	const brands = data?.brands ?? [];
+	const filtered = useMemo(() => {
+		if (!search.trim()) return brands;
+		const q = search.toLowerCase();
+		return brands.filter((b) =>
+			b.name.toLowerCase().includes(q) || (b.industry ?? "").toLowerCase().includes(q),
+		);
+	}, [brands, search]);
+
+	function openCreate() { setEditing(null); setModalOpen(true); }
+	function openEdit(b: Brand) { setEditing(b); setModalOpen(true); }
+
+	async function handleDelete(b: Brand) {
+		if (!confirm(`Delete brand "${b.name}"? This cannot be undone.`)) return;
+		try {
+			await delMut.mutateAsync(b.id);
+			toast.success(`Brand "${b.name}" deleted`);
+		} catch (e) {
+			toast.error((e as Error)?.message ?? "Failed to delete brand");
+		}
+	}
 
 	return (
 		<div className="space-y-6">
-			<div className="flex items-center justify-between">
-				<h1 className="text-2xl font-bold">Brands</h1>
-				<Button size="sm" disabled title="Brand creation coming soon">
-					<Plus size={16} className="mr-1" /> Create Brand
+			<div className="flex items-center justify-between flex-wrap gap-3">
+				<div>
+					<h1 className="text-2xl font-bold">My Brands</h1>
+					<p className="text-sm text-[var(--muted-foreground)]">Define tone, colors, and voice presets AI will use across your content.</p>
+				</div>
+				<Button onClick={openCreate} className="gap-1.5">
+					<Plus size={16} /> Add a Brand
 				</Button>
 			</div>
 
-			{confirmDelete && (
-				<DeleteConfirm brand={confirmDelete} onClose={() => setConfirmDelete(null)} />
-			)}
+			<div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2">
+				<Search size={16} className="text-[var(--muted-foreground)]" />
+				<input
+					type="text" placeholder="Search brands"
+					value={search} onChange={(e) => setSearch(e.target.value)}
+					className="flex-1 bg-transparent text-sm placeholder:text-[var(--muted-foreground)] focus:outline-none"
+				/>
+			</div>
 
 			{isLoading ? (
 				<Spinner />
-			) : !(data?.brands ?? []).length ? (
+			) : brands.length === 0 ? (
 				<Card>
-					<CardContent className="flex flex-col items-center gap-3 py-12">
+					<CardContent className="flex flex-col items-center gap-3 py-16">
 						<Briefcase size={48} className="text-[var(--muted-foreground)]" />
 						<p className="text-[var(--muted-foreground)]">No brand voices configured yet.</p>
-						<p className="text-sm text-[var(--muted-foreground)]">
+						<p className="text-sm text-[var(--muted-foreground)] text-center max-w-md">
 							Brand voices help AI generate content that matches your tone and style.
 						</p>
+						<Button onClick={openCreate} className="mt-2 gap-1.5"><Plus size={16} /> Add your first brand</Button>
 					</CardContent>
 				</Card>
 			) : (
-				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					{data?.brands.map((b) => (
-						<Card key={b.id}>
-							<CardContent className="flex items-center gap-3 p-4">
-								{b.logo ? (
-									<img src={b.logo} alt="" className="h-10 w-10 rounded-lg object-cover" />
-								) : (
-									<div
-										className="flex h-10 w-10 items-center justify-center rounded-lg text-white font-bold"
-										style={{ backgroundColor: b.primary_color || "var(--sq-primary)" }}
-									>
-										{b.name.charAt(0).toUpperCase()}
-									</div>
+				<Card className="overflow-hidden">
+					<div className="overflow-x-auto">
+						<table className="w-full text-sm">
+							<thead>
+								<tr className="border-b border-[var(--border)] bg-[var(--muted)]/30">
+									<Th>Brand Name</Th>
+									<Th>Industry</Th>
+									<Th>Colors</Th>
+									<Th align="right">Actions</Th>
+								</tr>
+							</thead>
+							<tbody>
+								{filtered.map((b) => (
+									<tr key={b.id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--muted)]/20">
+										<td className="px-4 py-3">
+											<div className="flex items-center gap-3 min-w-0">
+												<LogoTile brand={b} />
+												<div className="min-w-0">
+													<p className="font-medium truncate">{b.name}</p>
+													{b.tagline && <p className="text-[11px] text-[var(--muted-foreground)] truncate max-w-[320px]">{b.tagline}</p>}
+												</div>
+											</div>
+										</td>
+										<td className="px-4 py-3 text-[var(--muted-foreground)]">{b.industry || "—"}</td>
+										<td className="px-4 py-3">
+											<ColorSwatches primary={b.primary_color} secondary={b.secondary_color} accent={b.accent_color} />
+										</td>
+										<td className="px-4 py-3">
+											<div className="flex items-center gap-1 justify-end">
+												<Button variant="outline" size="icon" className="h-8 w-8 text-[var(--sq-primary)]"
+													title="Edit" onClick={() => openEdit(b)}>
+													<Pencil size={14} />
+												</Button>
+												<Button variant="outline" size="icon" className="h-8 w-8 text-red-500 border-red-200 hover:bg-red-50"
+													title="Delete" onClick={() => handleDelete(b)}>
+													<Trash2 size={14} />
+												</Button>
+											</div>
+										</td>
+									</tr>
+								))}
+								{filtered.length === 0 && (
+									<tr>
+										<td colSpan={4} className="px-4 py-8 text-center text-sm text-[var(--muted-foreground)]">
+											No brands match your search.
+										</td>
+									</tr>
 								)}
-								<div className="min-w-0 flex-1">
-									<p className="font-medium truncate">{b.name}</p>
-									<p className="text-xs text-[var(--muted-foreground)]">
-										{new Date(b.created_at).toLocaleDateString()}
-									</p>
-								</div>
-								{b.primary_color && (
-									<div className="h-4 w-4 rounded-full shrink-0" style={{ backgroundColor: b.primary_color }} />
-								)}
-								<Button
-									variant="ghost"
-									size="icon"
-									className="h-7 w-7 text-red-500 hover:text-red-600 shrink-0"
-									title="Delete brand"
-									onClick={() => setConfirmDelete(b)}
-								>
-									<Trash2 size={14} />
-								</Button>
-							</CardContent>
-						</Card>
-					))}
-				</div>
+							</tbody>
+						</table>
+					</div>
+				</Card>
 			)}
+
+			<BrandFormModal open={modalOpen} onClose={() => setModalOpen(false)} brand={editing} />
 		</div>
 	);
 }
 
-function DeleteConfirm({ brand, onClose }: { brand: Brand; onClose: () => void }) {
-	const mutation = useMutation({
-		mutationFn: () =>
-			apiClient.post<{ message: string }>("/api/spa/brands/delete", { id: brand.id }),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["brands"] });
-			toast.success(`Brand "${brand.name}" deleted`);
-			onClose();
-		},
-		onError: (err: { message?: string }) => {
-			toast.error(err.message ?? "Failed to delete brand");
-		},
-	});
-
+function Th({ children, align }: { children: React.ReactNode; align?: "right" }) {
 	return (
-		<Card className="border-red-200">
-			<CardContent className="flex items-center justify-between py-4">
-				<p className="text-sm">
-					Delete brand <strong>{brand.name}</strong>? This cannot be undone.
-				</p>
-				<div className="flex gap-2">
-					<Button variant="destructive" size="sm" onClick={() => mutation.mutate()} disabled={mutation.isPending}>
-						{mutation.isPending ? "Deleting..." : "Delete"}
-					</Button>
-					<Button variant="outline" size="sm" onClick={onClose}>
-						Cancel
-					</Button>
-				</div>
-			</CardContent>
-		</Card>
+		<th className={`px-4 py-3 text-[11px] font-semibold tracking-wider text-[var(--muted-foreground)] uppercase ${align === "right" ? "text-right" : "text-left"}`}>
+			{children}
+		</th>
+	);
+}
+
+function LogoTile({ brand }: { brand: Brand }) {
+	if (brand.logo) {
+		return <img src={brand.logo} alt="" className="h-9 w-9 rounded-lg object-cover border border-[var(--border)] shrink-0" />;
+	}
+	return (
+		<div
+			className="flex h-9 w-9 items-center justify-center rounded-lg text-white font-bold text-sm shrink-0"
+			style={{ backgroundColor: brand.primary_color || "var(--sq-primary)" }}
+		>
+			{brand.name.charAt(0).toUpperCase()}
+		</div>
+	);
+}
+
+function ColorSwatches({ primary, secondary, accent }: { primary: string; secondary: string; accent: string }) {
+	const colors = [primary, secondary, accent].filter(Boolean);
+	if (!colors.length) return <span className="text-[var(--muted-foreground)]">—</span>;
+	return (
+		<div className="flex items-center gap-1">
+			{colors.map((c, i) => (
+				<div key={i} className="h-4 w-4 rounded-full border border-[var(--border)]" style={{ backgroundColor: c }} title={c} />
+			))}
+		</div>
 	);
 }
 

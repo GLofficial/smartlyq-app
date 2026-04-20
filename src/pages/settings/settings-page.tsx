@@ -7,6 +7,8 @@ import { BillingSettingsTab } from "./tabs/billing-settings-tab";
 import { WorkspaceSettingsTab } from "./tabs/workspace-settings-tab";
 import { ActivitySettingsTab } from "./tabs/activity-settings-tab";
 import { DefaultsSettingsTab } from "./tabs/defaults-settings-tab";
+import { BusinessesPage } from "@/pages/workspace/businesses-page";
+import { BrandsPage } from "@/pages/workspace/brands-page";
 
 export function SettingsPage() {
 	const [params] = useSearchParams();
@@ -18,6 +20,8 @@ export function SettingsPage() {
 			{tab === "business-profile" && <BusinessProfileTab />}
 			{tab === "account" && <AccountSettingsTab />}
 			{tab === "workspace" && <WorkspaceSettingsTab />}
+			{tab === "businesses" && <BusinessesPage />}
+			{tab === "brands" && <BrandsPage />}
 			{tab === "members" && <MembersSettingsTab />}
 			{tab === "billing" && <BillingSettingsTab />}
 			{tab === "activity" && <ActivitySettingsTab />}

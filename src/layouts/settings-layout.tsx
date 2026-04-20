@@ -1,7 +1,7 @@
 import { Outlet, Link, useSearchParams } from "react-router-dom";
 import {
 	ArrowLeft, Building2, UserCog, Settings, Users, CreditCard,
-	Activity, Shield, FileCode2,
+	Activity, Shield, FileCode2, Briefcase, Palette,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
@@ -22,6 +22,8 @@ const SECTIONS = [
 		label: "WORKSPACE",
 		items: [
 			{ key: "workspace", label: "General", icon: Settings },
+			{ key: "businesses", label: "Businesses", icon: Briefcase },
+			{ key: "brands", label: "Brand Voice", icon: Palette },
 			{ key: "members", label: "My Staff", icon: Users },
 			{ key: "defaults", label: "Workspace Defaults", icon: Shield },
 			{ key: "activity", label: "Activity Log", icon: Activity },
