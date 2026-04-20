@@ -1016,9 +1016,7 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                       </div>
                     ) : (
                       <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        <div className="w-8 h-8 rounded-full bg-foreground/10 flex items-center justify-center">
-                          <div className="w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-l-[9px] border-l-foreground/30 ml-0.5" />
-                        </div>
+                        <PenLine size={28} className="text-muted-foreground/40" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
