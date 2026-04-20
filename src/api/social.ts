@@ -95,6 +95,10 @@ export interface CalendarEvent {
 		platformErrors?: Record<string, string>;
 		/** Platform → true if it successfully posted. */
 		platformSucceeded?: Record<string, boolean>;
+		/** Platform → post type label (Reel, Short, Video, etc.) */
+		platformPostTypes?: Record<string, string>;
+		/** Per-platform content/media overrides from Customize channel */
+		platformOverrides?: Record<string, string | { content?: string; media_urls?: string[] }>;
 	};
 	// Legacy fields (keep for backward compat)
 	date?: string | null;
