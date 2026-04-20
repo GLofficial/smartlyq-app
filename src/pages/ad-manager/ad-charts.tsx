@@ -1,7 +1,12 @@
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
+// Brand-accurate colors so each platform in the dashboard is visually tied to
+// its identity instead of generic chart palette swatches.
 const PLATFORM_COLORS: Record<string, string> = {
-	meta: "#3b82f6", google: "#22c55e", tiktok: "#ef4444", linkedin: "#6366f1",
+	meta: "#1877F2",    // Facebook / Meta blue
+	google: "#EA4335",  // Google red (first in the four-colour G mark)
+	tiktok: "#FF0050",  // TikTok pink/red
+	linkedin: "#0A66C2", // LinkedIn blue
 };
 
 // ── Ad Spend Overview (multi-platform area chart) ───────────────────────
