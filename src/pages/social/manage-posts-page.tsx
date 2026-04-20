@@ -2,10 +2,12 @@ import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Plus, ChevronLeft, ChevronRight, Search, Pencil, Copy, Trash2, RotateCw, XCircle, SlidersHorizontal, Loader2, Calendar, Inbox as InboxIcon, Send, FileDown, ExternalLink } from "lucide-react";
 import { useSocialPosts } from "@/api/social";
 import { useRetryPost, useDeletePost, useDuplicatePost, useMoveToDraft, useShareNow } from "@/api/social-posts";
 import { PlatformIcon } from "./platform-icon";
+import { PLATFORM_BRANDS } from "./PlatformIcons";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { toast } from "sonner";
 
@@ -233,10 +235,30 @@ export function ManagePostsPage() {
 													);
 												}
 												return (
-													<Button variant="outline" size="sm" className="h-7 w-7 p-0 text-[var(--sq-primary)]" title={`View on ${urls.map(u => u.platform).join(", ")}`}
-														onClick={() => urls.forEach(u => window.open(u.url, "_blank", "noopener,noreferrer"))}>
-														<ExternalLink size={13} />
-													</Button>
+													<Popover>
+														<PopoverTrigger asChild>
+															<Button variant="outline" size="sm" className="h-7 w-7 p-0 text-[var(--sq-primary)]" title="View on platform">
+																<ExternalLink size={13} />
+															</Button>
+														</PopoverTrigger>
+														<PopoverContent align="end" className="w-48 p-1.5">
+															<p className="text-[10px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wide px-2 py-1">View on platform</p>
+															{urls.map(({ platform, url }) => {
+																const brand = PLATFORM_BRANDS[platform] ?? PLATFORM_BRANDS[platform.toLowerCase()];
+																return (
+																	<button
+																		key={platform}
+																		onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
+																		className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-sm text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
+																	>
+																		<PlatformIcon platform={platform} size={14} />
+																		<span className="capitalize">{brand?.label ?? platform}</span>
+																		<ExternalLink size={11} className="ml-auto text-[var(--muted-foreground)]" />
+																	</button>
+																);
+															})}
+														</PopoverContent>
+													</Popover>
 												);
 											})()}
 											{/* Edit is meaningful for posts that can still be changed OR that failed and need fixing before retry. */}
