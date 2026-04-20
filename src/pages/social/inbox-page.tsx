@@ -46,15 +46,13 @@ export function InboxPage() {
 		}
 	};
 
-	// 24h platform reply window: Instagram/Facebook/TikTok DMs can only be replied to within 24h of last inbound.
-	const WINDOW_PLATFORMS = new Set(["instagram", "facebook", "facebook_page", "tiktok"]);
-	const computeWindow = (lastInboundIso: string | null, platform: string): { expired: boolean; hoursLeft: number } | null => {
-		if (!lastInboundIso || !WINDOW_PLATFORMS.has(platform)) return null;
-		const lastMs = new Date(lastInboundIso).getTime();
-		if (isNaN(lastMs)) return null;
-		const deadline = lastMs + 24 * 60 * 60 * 1000;
-		const hoursLeft = (deadline - Date.now()) / (60 * 60 * 1000);
-		return { expired: hoursLeft <= 0, hoursLeft: Math.max(0, hoursLeft) };
+	// 24h Meta messaging window — derived from meta_window returned by the thread API.
+	const getWindowState = (metaWindow: { open: boolean; expires_at: string | null } | null | undefined): { expired: boolean; hoursLeft: number } | null => {
+		if (!metaWindow) return null;
+		if (!metaWindow.open) return { expired: true, hoursLeft: 0 };
+		if (!metaWindow.expires_at) return null;
+		const hoursLeft = (new Date(metaWindow.expires_at).getTime() - Date.now()) / (60 * 60 * 1000);
+		return { expired: false, hoursLeft: Math.max(0, hoursLeft) };
 	};
 	const [reply, setReply] = useState("");
 	const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -223,7 +221,7 @@ export function InboxPage() {
 							</Button>
 						</div>
 						{(() => {
-							const win = thread ? computeWindow(thread.conversation.last_inbound_at, thread.conversation.platform) : null;
+							const win = thread ? getWindowState(thread.meta_window) : null;
 							if (!win || (!win.expired && win.hoursLeft >= 6)) return null;
 							return (
 								<div className={`px-3 py-2 border-b border-[var(--border)] flex items-start gap-2 ${win.expired ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
@@ -262,7 +260,7 @@ export function InboxPage() {
 							)}
 						</div>
 						{(() => {
-							const win = thread ? computeWindow(thread.conversation.last_inbound_at, thread.conversation.platform) : null;
+							const win = thread ? getWindowState(thread.meta_window) : null;
 							const windowExpired = !!win?.expired;
 							return (
 								<div className="p-3 border-t border-[var(--border)] flex items-center gap-2">

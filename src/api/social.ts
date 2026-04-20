@@ -153,8 +153,9 @@ export interface InboxMessage {
 }
 
 export interface InboxThread {
-	conversation: { id: number; participant_name: string; participant_avatar: string; platform: string; last_inbound_at: string | null; status: string };
+	conversation: { id: number; participant_name: string; participant_avatar: string; platform: string; status: string };
 	messages: InboxMessage[];
+	meta_window: { open: boolean; expires_at: string | null } | null;
 }
 
 export function useInboxArchive() {
