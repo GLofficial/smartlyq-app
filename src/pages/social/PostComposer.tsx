@@ -2314,11 +2314,11 @@ export default function PostComposer({
 
       {/* AI Content Generation Dialog */}
       <Dialog open={aiTextOpen} onOpenChange={setAiTextOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>AI Content Generation</DialogTitle>
           </DialogHeader>
-          <div className="space-y-5">
+          <div className="space-y-5 flex-1 overflow-y-auto pr-1">
             <div>
               <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Model</label>
               {textModels.length > 0 ? (
@@ -2421,11 +2421,11 @@ export default function PostComposer({
 
             <div>
               <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Generated Content</label>
-              <div className="bg-muted/40 rounded-lg px-4 py-3 min-h-[60px]">
+              <div className="bg-muted/40 rounded-lg px-4 py-3 min-h-[60px] max-h-64 overflow-y-auto">
                 {aiTextConfig.loading ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Generating...</div>
                 ) : (
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
                     {aiTextConfig.generated || 'Click "Generate Content" to create AI-powered content...'}
                   </p>
                 )}
