@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSocialHub, usePostingLimits } from "@/api/social";
 import { useMediaList } from "@/api/media-library";
@@ -54,6 +54,21 @@ export function CreatePostPage() {
   // When Customize channel is on, uploads can be scoped per-platform via targetPlatforms.
   // Track the raw list so we can partition media per platform at submit time.
   const [uploadedMediaFull, setUploadedMediaFull] = useState<{ url?: string; type: "image" | "video"; targetPlatforms?: string[] }[]>([]);
+
+  // Derive per-platform media map for preview — only meaningful when Customize channel is on
+  // and at least one item is tagged to a specific platform.
+  const platformMediaMap = useMemo(() => {
+    if (!customizeChannel) return undefined;
+    const anyTagged = uploadedMediaFull.some(m => m.targetPlatforms && m.targetPlatforms.length > 0);
+    if (!anyTagged) return undefined;
+    const globalMedia = uploadedMediaFull.filter(m => !m.targetPlatforms && m.url).map(m => ({ url: m.url!, type: m.type }));
+    const map: Record<string, { url: string; type: "image" | "video" }[]> = {};
+    for (const pid of selectedPlatforms) {
+      const perPlatform = uploadedMediaFull.filter(m => m.targetPlatforms?.includes(pid) && m.url).map(m => ({ url: m.url!, type: m.type }));
+      map[pid] = [...globalMedia, ...perPlatform];
+    }
+    return map;
+  }, [customizeChannel, uploadedMediaFull, selectedPlatforms]);
 
   useEffect(() => {
     if (state) window.history.replaceState({}, document.title);
@@ -289,7 +304,7 @@ export function CreatePostPage() {
         },
       );
     },
-    [content, selectedPlatforms, selectedAccountIds, createPost, navigate, wsHash, validatePost],
+    [content, selectedPlatforms, selectedAccountIds, createPost, navigate, wsHash, validatePost, customizeChannel, uploadedMediaFull, platformContent, platformOptions, mediaUrls],
   );
 
   const handleAiText = useCallback(async (topic: string, tone: string, contentType: string, opts?: { model?: string; brand_voice?: boolean; brand_id?: number }) => {
@@ -460,6 +475,7 @@ export function CreatePostPage() {
             imageCount={imageCount}
             platformPostType={platformPostType}
             mediaUrls={previewMedia}
+            platformMediaMap={platformMediaMap}
             accounts={accounts}
             selectedAccountIds={selectedAccountIds}
           />

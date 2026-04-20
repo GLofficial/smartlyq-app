@@ -11,6 +11,8 @@ interface PostPreviewProps {
   imageCount?: number;
   platformPostType?: Record<string, string>;
   mediaUrls?: { url: string; type: "image" | "video" }[];
+  /** Per-platform media when Customize channel is on and media is tagged per-platform */
+  platformMediaMap?: Record<string, { url: string; type: "image" | "video" }[]>;
   accountInfo?: { name: string; avatar: string; username?: string };
   /** All connected accounts — preview picks the first matching one for the active platform */
   accounts?: { id: number; platform: string; account_name: string; account_username: string; profile_picture: string }[];
@@ -1341,7 +1343,7 @@ const PREVIEW_MAP: Record<string, React.FC<{ content: string; device: Device; im
   whatsapp: WhatsAppPreview,
 };
 
-export default function PostPreview({ selectedPlatforms, content, platformContent, customizeChannel, imageCount = 1, platformPostType = {}, mediaUrls, accountInfo, accounts, selectedAccountIds }: PostPreviewProps) {
+export default function PostPreview({ selectedPlatforms, content, platformContent, customizeChannel, imageCount = 1, platformPostType = {}, mediaUrls, platformMediaMap, accountInfo, accounts, selectedAccountIds }: PostPreviewProps) {
   const [device, setDevice] = useState<Device>("desktop");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("feed");
   const platforms = selectedPlatforms.length > 0 ? selectedPlatforms : ["facebook"];
@@ -1381,6 +1383,10 @@ export default function PostPreview({ selectedPlatforms, content, platformConten
   };
 
   const displayContent = getDisplayContent(currentPreview);
+  // When customize channel is on and media is tagged per-platform, show only that platform's media
+  const effectiveMedia = (platformMediaMap && platformMediaMap[currentPreview] !== undefined)
+    ? platformMediaMap[currentPreview]
+    : mediaUrls;
   const dims = PLATFORM_DIMENSIONS[currentPreview];
   const currentSpec = effectiveMode === "story"
     ? { imageLabel: "1080 × 1920px (9:16)" }
@@ -1464,7 +1470,7 @@ export default function PostPreview({ selectedPlatforms, content, platformConten
           effectiveMode === "feed" && device === "mobile" && "max-w-[320px] mx-auto"
         )}>
           {effectiveMode === "story" && supportsStory
-            ? (() => { const StoryComp = STORY_PREVIEW_MAP[currentPreview]; return StoryComp ? <StoryComp content={displayContent} mediaUrls={mediaUrls} accountInfo={currentAccountInfo} /> : null; })()
+            ? (() => { const StoryComp = STORY_PREVIEW_MAP[currentPreview]; return StoryComp ? <StoryComp content={displayContent} mediaUrls={effectiveMedia} accountInfo={currentAccountInfo} /> : null; })()
             : (() => {
                 // Check for LinkedIn Document post type
                 const postType = platformPostType[currentPreview] || platformPostType[currentPreview.replace("_page", "")] || "";
@@ -1472,7 +1478,8 @@ export default function PostPreview({ selectedPlatforms, content, platformConten
                   return <LinkedInDocumentPreview content={displayContent} device={device} />;
                 }
                 const FeedComp = PREVIEW_MAP[currentPreview];
-                return FeedComp ? <FeedComp content={displayContent} device={device} imageCount={imageCount} mediaUrls={mediaUrls} accountInfo={currentAccountInfo} /> : <GenericPreview platform={currentPreview} content={displayContent} device={device} imageCount={imageCount} mediaUrls={mediaUrls} accountInfo={currentAccountInfo} />;
+                const effectiveImageCount = effectiveMedia ? effectiveMedia.length : imageCount;
+                return FeedComp ? <FeedComp content={displayContent} device={device} imageCount={effectiveImageCount} mediaUrls={effectiveMedia} accountInfo={currentAccountInfo} /> : <GenericPreview platform={currentPreview} content={displayContent} device={device} imageCount={effectiveImageCount} mediaUrls={effectiveMedia} accountInfo={currentAccountInfo} />;
               })()
           }
         </div>
