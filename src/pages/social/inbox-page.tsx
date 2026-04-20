@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, ChevronRight, MessageSquare, Send, Search, Archive, ArchiveRestore, Mail, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageSquare, Send, Search, Archive, ArchiveRestore, Mail, AlertTriangle, WifiOff } from "lucide-react";
 import { useSocialInbox, useInboxThread, useInboxSync, useInboxArchive, useInboxUnarchive } from "@/api/social";
 import { useInboxReply } from "@/api/social-posts";
 import { queryClient } from "@/lib/query-client";
 import { useSocialAccounts } from "@/api/social-reports";
 import { PlatformIcon } from "./platform-icon";
 import { SocialFilterSidebar } from "./social-filter-sidebar";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 import { toast } from "sonner";
 
 export function InboxPage() {
@@ -66,6 +68,9 @@ export function InboxPage() {
 		if (!activeConvId) return;
 		queryClient.invalidateQueries({ queryKey: ["social", "inbox"] });
 	}, [activeConvId]);
+
+	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
+	const accountsPath = wsHash ? `/w/${wsHash}/social-media/accounts` : "/social-media/accounts";
 
 	const accounts = accountsData?.accounts ?? [];
 
@@ -221,6 +226,21 @@ export function InboxPage() {
 							</Button>
 						</div>
 						{(() => {
+							const activeConv = (data?.conversations ?? []).find(c => c.id === activeConvId);
+							const activeAcct = accounts.find(a => a.id === activeConv?.social_account_id);
+							if (!activeAcct?.needs_reconnect) return null;
+							return (
+								<div className="px-3 py-2 border-b border-[var(--border)] flex items-start gap-2 bg-red-50 text-red-700">
+									<WifiOff size={14} className="shrink-0 mt-0.5" />
+									<div className="text-xs flex-1">
+										<p className="font-semibold">Account disconnected — replies unavailable.</p>
+										<p className="mt-0.5">The connected {activeAcct.platform} account has expired or been revoked.</p>
+									</div>
+									<Link to={accountsPath} className="text-xs font-semibold underline shrink-0 mt-0.5">Reconnect</Link>
+								</div>
+							);
+						})()}
+						{(() => {
 							const win = thread ? getWindowState(thread.meta_window) : null;
 							if (!win || (!win.expired && win.hoursLeft >= 6)) return null;
 							return (
@@ -262,17 +282,22 @@ export function InboxPage() {
 						{(() => {
 							const win = thread ? getWindowState(thread.meta_window) : null;
 							const windowExpired = !!win?.expired;
+							const activeConv2 = (data?.conversations ?? []).find(c => c.id === activeConvId);
+							const activeAcct2 = accounts.find(a => a.id === activeConv2?.social_account_id);
+							const acctBlocked = !!activeAcct2?.needs_reconnect;
+							const sendBlocked = windowExpired || acctBlocked;
+							const placeholder = acctBlocked ? "Account disconnected — reconnect to reply." : windowExpired ? "Reply window expired." : "Write a reply...";
 							return (
 								<div className="p-3 border-t border-[var(--border)] flex items-center gap-2">
 									<Input
 										value={reply}
 										onChange={(e) => setReply(e.target.value)}
-										onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !windowExpired) { e.preventDefault(); handleSendReply(); } }}
-										placeholder={windowExpired ? "Reply window expired." : "Write a reply..."}
+										onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !sendBlocked) { e.preventDefault(); handleSendReply(); } }}
+										placeholder={placeholder}
 										className="flex-1"
-										disabled={windowExpired}
+										disabled={sendBlocked}
 									/>
-									<Button onClick={handleSendReply} disabled={replyMut.isPending || !reply.trim() || windowExpired}>
+									<Button onClick={handleSendReply} disabled={replyMut.isPending || !reply.trim() || sendBlocked}>
 										<Send size={14} /> Send
 									</Button>
 								</div>

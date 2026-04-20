@@ -1,13 +1,15 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, ChevronRight, MessageCircle, Send, CheckCircle, MessageSquare } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageCircle, Send, CheckCircle, MessageSquare, WifiOff } from "lucide-react";
 import { useSocialComments, useCommentsSync } from "@/api/social";
 import { useReplyComment } from "@/api/social-posts";
 import { useSocialAccounts } from "@/api/social-reports";
 import { PlatformIcon } from "./platform-icon";
 import { SocialFilterSidebar } from "./social-filter-sidebar";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 import { toast } from "sonner";
 
 export function CommentsPage() {
@@ -27,6 +29,9 @@ export function CommentsPage() {
 		});
 	};
 	const [reply, setReply] = useState("");
+
+	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
+	const accountsPath = wsHash ? `/w/${wsHash}/social-media/accounts` : "/social-media/accounts";
 
 	const accounts = accountsData?.accounts ?? [];
 	const activeAccount = accountId ? accounts.find(a => a.id === accountId) : null;
@@ -208,18 +213,40 @@ export function CommentsPage() {
 								</div>
 							)}
 						</div>
+						{(() => {
+							const commentAcct = accounts.find(a => a.platform === activeComment.platform && a.needs_reconnect);
+							if (!commentAcct) return null;
+							return (
+								<div className="px-3 py-2 border-t border-[var(--border)] flex items-start gap-2 bg-red-50 text-red-700">
+									<WifiOff size={14} className="shrink-0 mt-0.5" />
+									<div className="text-xs flex-1">
+										<p className="font-semibold">Account disconnected — replies unavailable.</p>
+										<p className="mt-0.5">The connected {commentAcct.platform} account has expired or been revoked.</p>
+									</div>
+									<Link to={accountsPath} className="text-xs font-semibold underline shrink-0 mt-0.5">Reconnect</Link>
+								</div>
+							);
+						})()}
 						{!activeComment.has_reply && (
 							<div className="p-3 border-t border-[var(--border)] flex items-center gap-2">
-								<Input
-									value={reply}
-									onChange={(e) => setReply(e.target.value)}
-									onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleReply(); } }}
-									placeholder="Write a reply..."
-									className="flex-1"
-								/>
-								<Button onClick={handleReply} disabled={replyMut.isPending || !reply.trim()}>
-									<Send size={14} /> Reply
-								</Button>
+								{(() => {
+									const commentAcctBlocked = accounts.some(a => a.platform === activeComment.platform && a.needs_reconnect);
+									return (
+										<>
+											<Input
+												value={reply}
+												onChange={(e) => setReply(e.target.value)}
+												onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !commentAcctBlocked) { e.preventDefault(); handleReply(); } }}
+												placeholder={commentAcctBlocked ? "Account disconnected — reconnect to reply." : "Write a reply..."}
+												className="flex-1"
+												disabled={commentAcctBlocked}
+											/>
+											<Button onClick={handleReply} disabled={replyMut.isPending || !reply.trim() || commentAcctBlocked}>
+												<Send size={14} /> Reply
+											</Button>
+										</>
+									);
+								})()}
 							</div>
 						)}
 					</>
