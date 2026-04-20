@@ -479,6 +479,17 @@ export default function PostComposer({
     });
   }, [onUploadedMediaChange]);
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
+  const accountDropdownRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!showAccountDropdown) return;
+    const handler = (e: MouseEvent) => {
+      if (accountDropdownRef.current && !accountDropdownRef.current.contains(e.target as Node)) {
+        setShowAccountDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showAccountDropdown]);
   const [platformPostType, setPlatformPostType] = useState<Record<string, string>>({});
   const [autoLike, setAutoLike] = useState<Record<string, boolean>>({});
   const [showAiDropdown, setShowAiDropdown] = useState(false);
@@ -840,6 +851,7 @@ export default function PostComposer({
       <div className="bg-card rounded-lg border border-border p-5">
         <p className="text-sm font-semibold text-primary mb-3">Select Accounts</p>
 
+        <div ref={accountDropdownRef}>
         {/* Selected accounts strip */}
         <button
           onClick={() => setShowAccountDropdown(!showAccountDropdown)}
@@ -962,6 +974,7 @@ export default function PostComposer({
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* Content Editor */}
@@ -2325,7 +2338,7 @@ export default function PostComposer({
                 <select
                   value={aiTextConfig.model || textModels[0]?.model || ""}
                   onChange={(e) => setAiTextConfig(prev => ({ ...prev, model: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full pl-3 pr-9 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring truncate"
                 >
                   {textModels.map(m => (
                     <option key={m.id} value={m.model}>{m.name} ({m.provider})</option>
@@ -2408,7 +2421,7 @@ export default function PostComposer({
                 <select
                   value={aiTextConfig.brandId}
                   onChange={(e) => setAiTextConfig(prev => ({ ...prev, brandId: Number(e.target.value) }))}
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full pl-3 pr-9 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring truncate"
                 >
                   <option value={0}>Choose brand...</option>
                   {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -2487,7 +2500,7 @@ export default function PostComposer({
                 <select
                   value={aiImageConfig.model || imageModels[0]?.model || ""}
                   onChange={(e) => setAiImageConfig(prev => ({ ...prev, model: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full pl-3 pr-9 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring truncate"
                 >
                   {imageModels.map(m => (
                     <option key={m.id} value={m.model}>{m.name} ({m.provider})</option>
@@ -2528,7 +2541,7 @@ export default function PostComposer({
                 <select
                   value={aiImageConfig.brandId}
                   onChange={(e) => setAiImageConfig(prev => ({ ...prev, brandId: Number(e.target.value) }))}
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full pl-3 pr-9 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring truncate"
                 >
                   <option value={0}>Choose brand...</option>
                   {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -2612,7 +2625,7 @@ export default function PostComposer({
                 <select
                   value={aiVideoConfig.type}
                   onChange={(e) => setAiVideoConfig(prev => ({ ...prev, type: e.target.value, model: "" }))}
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full pl-3 pr-9 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring truncate"
                 >
                   <option>Text to Video</option>
                   <option>Image to Video</option>
@@ -2626,7 +2639,7 @@ export default function PostComposer({
                     <select
                       value={aiVideoConfig.model || availableVideoModels[0]?.model || ""}
                       onChange={(e) => setAiVideoConfig(prev => ({ ...prev, model: e.target.value }))}
-                      className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="w-full pl-3 pr-9 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring truncate"
                     >
                       {availableVideoModels.map(m => (
                         <option key={m.model} value={m.model}>{m.model}</option>
@@ -2651,7 +2664,7 @@ export default function PostComposer({
                 <select
                   value={aiVideoConfig.length}
                   onChange={(e) => setAiVideoConfig(prev => ({ ...prev, length: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full pl-3 pr-9 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring truncate"
                 >
                   <option>5</option>
                   <option>10</option>
@@ -2662,7 +2675,7 @@ export default function PostComposer({
                 <select
                   value={aiVideoConfig.resolution}
                   onChange={(e) => setAiVideoConfig(prev => ({ ...prev, resolution: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full pl-3 pr-9 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring truncate"
                 >
                   <option>480p</option>
                   <option>720p</option>
@@ -2674,7 +2687,7 @@ export default function PostComposer({
                 <select
                   value={aiVideoConfig.quality}
                   onChange={(e) => setAiVideoConfig(prev => ({ ...prev, quality: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full pl-3 pr-9 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring truncate"
                 >
                   <option>Auto</option>
                   <option>Standard</option>
@@ -2706,7 +2719,7 @@ export default function PostComposer({
                 <select
                   value={aiVideoConfig.brandId}
                   onChange={(e) => setAiVideoConfig(prev => ({ ...prev, brandId: Number(e.target.value) }))}
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full pl-3 pr-9 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring truncate"
                 >
                   <option value={0}>Choose brand...</option>
                   {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
