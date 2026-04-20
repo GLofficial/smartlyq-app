@@ -11,6 +11,7 @@ import { GoogleAdsDataTable } from "./google-ads-data-table";
 import { GoogleAdsAiInsights } from "./google-ads-ai-insights";
 import { GoogleAdsVerdictsModal } from "./google-ads-verdicts-modal";
 import { DevicesChart, GeoChart, HourOfDayChart, NetworkChart, DemographicsChart, CompetitorsChart } from "./google-ads-tab-charts";
+import { GoogleAdsCreativeGallery } from "./google-ads-creative-gallery";
 import type { GoogleAdsTab, GoogleAdsQueryParams, GoogleAdsVerdict } from "./google-ads-types";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useNavigate } from "react-router-dom";
@@ -179,7 +180,15 @@ export function GoogleAdsInsightsPage() {
 							table={<GoogleAdsDataTable rows={rows} tab={tab} currency={currency} />}
 							insights={insights} isLoading={isLoading} aiHandlers={aiHandlers} />
 					)}
-					{!["overview", "demographics", "devices", "geo", "hours", "networks", "competitors"].includes(tab) && (
+					{tab === "creatives" && (
+						<div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+							<div className="space-y-5">
+								<GoogleAdsCreativeGallery rows={rows} currency={currency} />
+							</div>
+							<GoogleAdsAiInsights insights={insights} isLoading={isLoading} onAiChipClick={handleAiChipClick} onQuickAction={handleQuickAction} onShowVerdicts={() => setVerdictsOpen(true)} />
+						</div>
+					)}
+					{!["overview", "demographics", "devices", "geo", "hours", "networks", "competitors", "creatives"].includes(tab) && (
 						<div className="grid gap-5 lg:grid-cols-[1fr_320px]">
 							<div className="space-y-5">
 								<GoogleAdsPerformanceChart timeseries={data.timeseries} timeseriesPrev={data.timeseries_prev} currency={currency} />

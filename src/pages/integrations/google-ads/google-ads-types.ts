@@ -1,5 +1,5 @@
 export type GoogleAdsTab =
-	| "overview" | "campaigns" | "adgroups" | "ads"
+	| "overview" | "campaigns" | "adgroups" | "ads" | "creatives"
 	| "devices" | "geo" | "regions" | "networks" | "hours"
 	| "demographics" | "competitors";
 
@@ -8,6 +8,7 @@ export const GOOGLE_ADS_TABS: { key: GoogleAdsTab; label: string }[] = [
 	{ key: "campaigns", label: "Campaigns" },
 	{ key: "adgroups", label: "Ad Groups" },
 	{ key: "ads", label: "Ads" },
+	{ key: "creatives", label: "Creatives" },
 	{ key: "devices", label: "Devices" },
 	{ key: "geo", label: "Countries" },
 	{ key: "regions", label: "Regions" },
