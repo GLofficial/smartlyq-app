@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart3, ExternalLink, Settings } from "lucide-react";
+import { BarChart3, ExternalLink, Settings, Target } from "lucide-react";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { useGoogleAdsInsights, useGoogleAdsAction, googleAdsExportUrl } from "@/api/google-ads-insights";
 import { GoogleAdsHeader } from "./google-ads-header";
@@ -10,9 +10,14 @@ import { GoogleAdsPerformanceChart } from "./google-ads-performance-chart";
 import { GoogleAdsDataTable } from "./google-ads-data-table";
 import { GoogleAdsAiInsights } from "./google-ads-ai-insights";
 import { GoogleAdsVerdictsModal } from "./google-ads-verdicts-modal";
-import { DevicesChart, GeoChart, HourOfDayChart, NetworkChart, DemographicsChart, CompetitorsChart } from "./google-ads-tab-charts";
+import { GoogleAdsFiltersBar } from "./google-ads-filters";
+import { GoogleAdsDeviceBreakdown } from "./google-ads-device-breakdown";
+import { GoogleAdsOverviewLayout } from "./google-ads-overview-layout";
+import { GoogleAdsConversionSetsModal } from "./google-ads-conversion-sets-modal";
+import { GeoChart, HourOfDayChart, NetworkChart, DemographicsChart, CompetitorsChart } from "./google-ads-tab-charts";
 import { GoogleAdsCreativeGallery } from "./google-ads-creative-gallery";
 import type { GoogleAdsTab, GoogleAdsQueryParams, GoogleAdsVerdict } from "./google-ads-types";
+import type { GoogleAdsFilters } from "./google-ads-filters";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -31,6 +36,8 @@ export function GoogleAdsInsightsPage() {
 	const [conversionType, setConversionType] = useState("purchases");
 	const [compare, setCompare] = useState(false);
 	const [verdictsOpen, setVerdictsOpen] = useState(false);
+	const [convSetsOpen, setConvSetsOpen] = useState(false);
+	const [filters, setFilters] = useState<GoogleAdsFilters>({ campaign: "", adgroup: "", device: "", country: "" });
 	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
 	const navigate = useNavigate();
 
@@ -39,6 +46,10 @@ export function GoogleAdsInsightsPage() {
 		...(customerId ? { customer_id: customerId } : {}),
 		conversion_type: conversionType,
 		...(compare ? { compare: "1" } : {}),
+		...(filters.campaign ? { campaign: filters.campaign } : {}),
+		...(filters.adgroup ? { adgroup: filters.adgroup } : {}),
+		...(filters.device ? { device: filters.device } : {}),
+		...(filters.country ? { country: filters.country } : {}),
 	};
 
 	const { data, isLoading, error, refetch } = useGoogleAdsInsights(params);
@@ -61,19 +72,18 @@ export function GoogleAdsInsightsPage() {
 		actionMutation.mutate({ action: "gads_triage_set", entity_id: entityId, entity_level: level, decision });
 	}, [actionMutation]);
 
-	const handleExport = useCallback((fmt: string) => {
-		if (fmt === "ai") {
-			const aiPath = wsHash ? `/w/${wsHash}/ai-captain` : "/ai-captain";
-			navigate(aiPath + "?prompt=" + encodeURIComponent("Generate a full performance report for my Google Ads. Include: executive summary, top/bottom campaigns by ROAS, budget recommendations, keyword performance, and device/geo insights."));
-			return;
-		}
-		window.open(googleAdsExportUrl(params, fmt), "_blank");
-	}, [params, wsHash, navigate]);
-
 	const handleAiChipClick = useCallback((question: string) => {
 		const aiPath = wsHash ? `/w/${wsHash}/ai-captain` : "/ai-captain";
 		navigate(aiPath + "?prompt=" + encodeURIComponent(question));
 	}, [wsHash, navigate]);
+
+	const handleExport = useCallback((fmt: string) => {
+		if (fmt === "ai") {
+			handleAiChipClick("Generate a full performance report for my Google Ads. Include: executive summary, top/bottom campaigns by ROAS, budget recommendations, keyword performance, and device/geo insights.");
+			return;
+		}
+		window.open(googleAdsExportUrl(params, fmt), "_blank");
+	}, [params, handleAiChipClick]);
 
 	const handleQuickAction = useCallback((action: string) => {
 		switch (action) {
@@ -84,6 +94,10 @@ export function GoogleAdsInsightsPage() {
 			default: toast.info(action);
 		}
 	}, [handleAiChipClick, handleExport]);
+
+	const handlePatternsAnalyze = useCallback(() => {
+		handleAiChipClick("Analyze my Google Ads ad copy. Identify top-performing headlines, common patterns in my winning ads, and give me copy recommendations to improve CTR and conversion rate.");
+	}, [handleAiChipClick]);
 
 	if (data && !isLoading && data.error === "Google Ads is not connected") return <NotConnected />;
 	if (data && !isLoading && data.error?.includes("token missing")) return <TokenExpired />;
@@ -106,30 +120,15 @@ export function GoogleAdsInsightsPage() {
 				compare={compare} onCompareChange={setCompare}
 			/>
 
+			<div className="flex items-center justify-between flex-wrap gap-2">
+				<GoogleAdsFiltersBar filters={filters} onChange={setFilters} rows={rows} />
+				<Button variant="outline" size="sm" onClick={() => setConvSetsOpen(true)} className="gap-1.5 text-xs">
+					<Target size={12} /> Conversion Actions
+				</Button>
+			</div>
+
 			{needsCustomerSelection ? (
-				<Card>
-					<CardContent className="flex flex-col items-center gap-4 py-12">
-						<Settings size={48} className="text-[var(--muted-foreground)]" />
-						<h2 className="text-lg font-semibold">Select a Google Ads Account</h2>
-						<p className="text-sm text-[var(--muted-foreground)] text-center max-w-md">
-							Choose a Google Ads customer to view reporting and insights.
-						</p>
-						<div className="flex flex-col gap-2 w-full max-w-sm">
-							{availableCustomers.map((c) => (
-								<button key={c} onClick={() => handleCustomerChange(c)}
-									className="flex items-center gap-3 rounded-lg border border-[var(--border)] px-4 py-3 text-left hover:bg-[var(--muted)] transition-colors">
-									<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
-										<PlatformIcon platform="google" size={16} />
-									</div>
-									<div>
-										<p className="text-sm font-medium">{fmtCustomerId(c)}</p>
-										<p className="text-xs text-[var(--muted-foreground)]">Customer ID</p>
-									</div>
-								</button>
-							))}
-						</div>
-					</CardContent>
-				</Card>
+				<CustomerPickerCard customers={availableCustomers} onPick={handleCustomerChange} />
 			) : isLoading && !data ? (
 				<div className="flex h-48 items-center justify-center">
 					<div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--sq-primary)] border-t-transparent" />
@@ -146,9 +145,14 @@ export function GoogleAdsInsightsPage() {
 				<>
 					<GoogleAdsKpiCards totals={data.totals} totalsPrev={data.totals_prev} currency={currency} />
 
-					{tab === "overview" && (
-						<OverviewLayout data={data} currency={currency} insights={insights}
-							isLoading={isLoading} onTriageChange={handleTriageChange} aiHandlers={aiHandlers} />
+					{tab === "overview" && data && (
+						<GoogleAdsOverviewLayout data={data} currency={currency} insights={insights}
+							isLoading={isLoading} customerId={customerId} dateRange={dateRange}
+							onTriageChange={handleTriageChange}
+							onAiChipClick={handleAiChipClick}
+							onQuickAction={handleQuickAction}
+							onShowVerdicts={() => setVerdictsOpen(true)}
+							onPatternsAnalyze={handlePatternsAnalyze} />
 					)}
 					{tab === "demographics" && (
 						<TabWithChart chart={<DemographicsChart rows={rows} currency={currency} />}
@@ -156,7 +160,7 @@ export function GoogleAdsInsightsPage() {
 							insights={insights} isLoading={isLoading} aiHandlers={aiHandlers} />
 					)}
 					{tab === "devices" && (
-						<TabWithChart chart={<DevicesChart rows={rows} currency={currency} />}
+						<TabWithChart chart={<GoogleAdsDeviceBreakdown rows={rows} currency={currency} />}
 							table={<GoogleAdsDataTable rows={rows} tab={tab} currency={currency} />}
 							insights={insights} isLoading={isLoading} aiHandlers={aiHandlers} />
 					)}
@@ -208,6 +212,9 @@ export function GoogleAdsInsightsPage() {
 				recommendations={data?.verdicts?.recommendations?.campaigns ?? []}
 				rows={rows} onTriageChange={handleTriageChange}
 			/>
+			<GoogleAdsConversionSetsModal
+				open={convSetsOpen} onClose={() => setConvSetsOpen(false)} onSaved={() => refetch()}
+			/>
 		</div>
 	);
 }
@@ -219,118 +226,31 @@ function fmtCustomerId(id: string): string {
 	return id;
 }
 
-/* ── Overview Layout ───────────────────────────────────────────────── */
-
-function OverviewLayout({ data, currency, insights, isLoading, onTriageChange, aiHandlers }: {
-	data: NonNullable<ReturnType<typeof useGoogleAdsInsights>["data"]>;
-	currency: string; insights: GoogleAdsVerdict[]; isLoading: boolean;
-	onTriageChange: (id: string, level: string, decision: string) => void;
-	aiHandlers: AiHandlers;
-}) {
+function CustomerPickerCard({ customers, onPick }: { customers: string[]; onPick: (id: string) => void }) {
 	return (
-		<div className="grid gap-5 lg:grid-cols-[1fr_320px]">
-			<div className="space-y-5">
-				<GoogleAdsPerformanceChart timeseries={data.timeseries} timeseriesPrev={data.timeseries_prev} currency={currency} />
-				{data.rows.length > 0 && (
-					<GoogleAdsDataTable rows={data.rows} tab="campaigns" currency={currency} onTriageChange={onTriageChange} />
-				)}
-				{data.adgroups_overview && data.adgroups_overview.length > 0 && (
-					<OverviewSection title="Top Ad Groups">
-						<OverviewAdGroups rows={data.adgroups_overview} currency={currency} />
-					</OverviewSection>
-				)}
-				{data.keywords && data.keywords.length > 0 && (
-					<OverviewSection title="Top Keywords">
-						<OverviewKeywords rows={data.keywords} currency={currency} />
-					</OverviewSection>
-				)}
-			</div>
-			<GoogleAdsAiInsights insights={insights} isLoading={isLoading} onAiChipClick={aiHandlers.onAiChipClick} onQuickAction={aiHandlers.onQuickAction} onShowVerdicts={aiHandlers.onShowVerdicts} />
-		</div>
-	);
-}
-
-function OverviewSection({ title, children }: { title: string; children: React.ReactNode }) {
-	return (
-		<div className="rounded-xl border border-[var(--border)] bg-[var(--card)] overflow-hidden">
-			<div className="px-5 py-3 border-b border-[var(--border)]">
-				<h3 className="text-sm font-semibold text-[var(--foreground)]">{title}</h3>
-			</div>
-			{children}
-		</div>
-	);
-}
-
-function fmtMoney(n: number, c: string): string {
-	if (!c) c = "USD";
-	try { return new Intl.NumberFormat(undefined, { style: "currency", currency: c, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n); }
-	catch { return n.toFixed(2); }
-}
-function fmtNum(n: number): string { return n.toLocaleString(undefined, { maximumFractionDigits: 0 }); }
-
-function OverviewAdGroups({ rows, currency }: { rows: NonNullable<ReturnType<typeof useGoogleAdsInsights>["data"]>["adgroups_overview"]; currency: string }) {
-	if (!rows?.length) return null;
-	return (
-		<div className="overflow-x-auto">
-			<table className="w-full text-sm">
-				<thead className="bg-[var(--muted)]/30">
-					<tr className="border-b border-[var(--border)]">
-						<th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wider text-[var(--muted-foreground)] uppercase">Ad Group</th>
-						<th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wider text-[var(--muted-foreground)] uppercase">Campaign</th>
-						<th className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wider text-[var(--muted-foreground)] uppercase">Spend</th>
-						<th className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wider text-[var(--muted-foreground)] uppercase">Clicks</th>
-						<th className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wider text-[var(--muted-foreground)] uppercase">Conv.</th>
-					</tr>
-				</thead>
-				<tbody>
-					{rows.map((r, i) => (
-						<tr key={`${r.entity_id}-${i}`} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--muted)]/20">
-							<td className="px-4 py-2.5"><p className="font-medium text-sm">{r.key || "—"}</p></td>
-							<td className="px-4 py-2.5 text-xs text-[var(--muted-foreground)]">{r.campaign_name}</td>
-							<td className="px-4 py-2.5 text-right font-mono text-xs">{fmtMoney(r.spend, currency)}</td>
-							<td className="px-4 py-2.5 text-right font-mono text-xs">{fmtNum(r.clicks)}</td>
-							<td className="px-4 py-2.5 text-right font-mono text-xs">{fmtNum(r.conversions)}</td>
-						</tr>
+		<Card>
+			<CardContent className="flex flex-col items-center gap-4 py-12">
+				<Settings size={48} className="text-[var(--muted-foreground)]" />
+				<h2 className="text-lg font-semibold">Select a Google Ads Account</h2>
+				<p className="text-sm text-[var(--muted-foreground)] text-center max-w-md">Choose a Google Ads customer to view reporting and insights.</p>
+				<div className="flex flex-col gap-2 w-full max-w-sm">
+					{customers.map((c) => (
+						<button key={c} onClick={() => onPick(c)}
+							className="flex items-center gap-3 rounded-lg border border-[var(--border)] px-4 py-3 text-left hover:bg-[var(--muted)] transition-colors">
+							<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
+								<PlatformIcon platform="google" size={16} />
+							</div>
+							<div>
+								<p className="text-sm font-medium">{fmtCustomerId(c)}</p>
+								<p className="text-xs text-[var(--muted-foreground)]">Customer ID</p>
+							</div>
+						</button>
 					))}
-				</tbody>
-			</table>
-		</div>
+				</div>
+			</CardContent>
+		</Card>
 	);
 }
-
-function OverviewKeywords({ rows, currency }: { rows: NonNullable<ReturnType<typeof useGoogleAdsInsights>["data"]>["keywords"]; currency: string }) {
-	if (!rows?.length) return null;
-	return (
-		<div className="overflow-x-auto">
-			<table className="w-full text-sm">
-				<thead className="bg-[var(--muted)]/30">
-					<tr className="border-b border-[var(--border)]">
-						<th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wider text-[var(--muted-foreground)] uppercase">Keyword</th>
-						<th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wider text-[var(--muted-foreground)] uppercase">Match</th>
-						<th className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wider text-[var(--muted-foreground)] uppercase">QS</th>
-						<th className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wider text-[var(--muted-foreground)] uppercase">Spend</th>
-						<th className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wider text-[var(--muted-foreground)] uppercase">Clicks</th>
-						<th className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wider text-[var(--muted-foreground)] uppercase">Conv.</th>
-					</tr>
-				</thead>
-				<tbody>
-					{rows.map((r, i) => (
-						<tr key={`${r.keyword}-${i}`} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--muted)]/20">
-							<td className="px-4 py-2.5"><p className="font-medium text-sm">{r.keyword || "—"}</p></td>
-							<td className="px-4 py-2.5 text-xs text-[var(--muted-foreground)]">{(r.match_type || "").toLowerCase()}</td>
-							<td className="px-4 py-2.5 text-right font-mono text-xs">{r.quality_score ?? "—"}</td>
-							<td className="px-4 py-2.5 text-right font-mono text-xs">{fmtMoney(r.spend, currency)}</td>
-							<td className="px-4 py-2.5 text-right font-mono text-xs">{fmtNum(r.clicks)}</td>
-							<td className="px-4 py-2.5 text-right font-mono text-xs">{fmtNum(r.conversions)}</td>
-						</tr>
-					))}
-				</tbody>
-			</table>
-		</div>
-	);
-}
-
-/* ── Tab with Chart Layout ─────────────────────────────────────────── */
 
 function TabWithChart({ chart, table, insights, isLoading, aiHandlers }: { chart: React.ReactNode; table: React.ReactNode; insights: GoogleAdsVerdict[]; isLoading: boolean; aiHandlers: AiHandlers }) {
 	return (
@@ -340,8 +260,6 @@ function TabWithChart({ chart, table, insights, isLoading, aiHandlers }: { chart
 		</div>
 	);
 }
-
-/* ── Not Connected / Token Expired ─────────────────────────────────── */
 
 function NotConnected() {
 	return (

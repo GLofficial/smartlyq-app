@@ -1,8 +1,17 @@
+import { useState } from "react";
 import {
 	BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
 	ResponsiveContainer, Cell, PieChart, Pie,
 } from "recharts";
 import type { GoogleAdsRow } from "./google-ads-types";
+
+type HourMetric = "spend" | "impressions" | "clicks" | "conversions";
+const HOUR_METRICS: { key: HourMetric; label: string }[] = [
+	{ key: "spend", label: "Spend" },
+	{ key: "impressions", label: "Impressions" },
+	{ key: "clicks", label: "Clicks" },
+	{ key: "conversions", label: "Conversions" },
+];
 
 /* ---------- helpers ---------- */
 
@@ -21,12 +30,24 @@ function truncate(s: string, max: number): string {
 	return s.length > max ? s.slice(0, max - 1) + "\u2026" : s;
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({ title, children, right }: { title: string; children: React.ReactNode; right?: React.ReactNode }) {
 	return (
 		<div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
-			<h3 className="text-sm font-semibold text-[var(--foreground)] mb-4">{title}</h3>
+			<div className="flex items-center justify-between mb-4">
+				<h3 className="text-sm font-semibold text-[var(--foreground)]">{title}</h3>
+				{right}
+			</div>
 			{children}
 		</div>
+	);
+}
+
+function MetricToggle({ value, onChange, options }: { value: string; onChange: (m: string) => void; options: { key: string; label: string }[] }) {
+	return (
+		<select value={value} onChange={(e) => onChange(e.target.value)}
+			className="rounded border border-[var(--border)] bg-transparent px-2 py-1 text-xs">
+			{options.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+		</select>
 	);
 }
 
@@ -108,12 +129,13 @@ export function GeoChart({ rows, currency }: { rows: GoogleAdsRow[]; currency: s
    ================================================================ */
 
 export function HourOfDayChart({ rows, currency }: { rows: GoogleAdsRow[]; currency: string }) {
+	const [metric, setMetric] = useState<HourMetric>("spend");
 	if (!rows.length) return null;
 
-	const hours: { hour: string; spend: number; clicks: number; conversions: number }[] =
+	const hours: { hour: string; spend: number; impressions: number; clicks: number; conversions: number }[] =
 		Array.from({ length: 24 }, (_, i) => ({
 			hour: `${String(i).padStart(2, "0")}:00`,
-			spend: 0, clicks: 0, conversions: 0,
+			spend: 0, impressions: 0, clicks: 0, conversions: 0,
 		}));
 
 	for (const r of rows) {
@@ -121,15 +143,21 @@ export function HourOfDayChart({ rows, currency }: { rows: GoogleAdsRow[]; curre
 		const bucket = h >= 0 && h < 24 ? hours[h] : undefined;
 		if (bucket) {
 			bucket.spend += r.spend;
+			bucket.impressions += r.impressions;
 			bucket.clicks += r.clicks;
 			bucket.conversions += r.conversions;
 		}
 	}
 
-	const maxSpend = Math.max(...hours.map((h) => h.spend));
+	const maxVal = Math.max(...hours.map((h) => h[metric]));
+	const isMoney = metric === "spend";
+	const title = metric === "spend" ? "Spend by Hour of Day"
+		: metric === "impressions" ? "Impressions by Hour"
+		: metric === "clicks" ? "Clicks by Hour" : "Conversions by Hour";
 
 	return (
-		<Card title="Spend by Hour of Day">
+		<Card title={title} right={<MetricToggle value={metric} onChange={(m) => setMetric(m as HourMetric)} options={HOUR_METRICS} />}>
+			<p className="text-xs text-[var(--muted-foreground)] mb-3 -mt-2">Identify &ldquo;golden hours&rdquo; with highest activity.</p>
 			<ResponsiveContainer width="100%" height={300}>
 				<BarChart data={hours} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
 					<defs>
@@ -146,11 +174,11 @@ export function HourOfDayChart({ rows, currency }: { rows: GoogleAdsRow[]; curre
 					<XAxis dataKey="hour" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false}
 						interval={1} />
 					<YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false}
-						tickFormatter={(v: number) => fmtMoney(v, currency)} />
+						tickFormatter={(v: number) => isMoney ? fmtMoney(v, currency) : fmtNum(v)} />
 					<Tooltip content={<HourTooltip currency={currency} />} />
-					<Bar dataKey="spend" name="Spend" radius={[3, 3, 0, 0]} maxBarSize={20}>
+					<Bar dataKey={metric} name={title} radius={[3, 3, 0, 0]} maxBarSize={20}>
 						{hours.map((h, i) => (
-							<Cell key={i} fill={h.spend > 0 && h.spend === maxSpend ? "url(#gadsHourGolden)" : "url(#gadsHourGrad)"} />
+							<Cell key={i} fill={h[metric] > 0 && h[metric] === maxVal ? "url(#gadsHourGolden)" : "url(#gadsHourGrad)"} />
 						))}
 					</Bar>
 				</BarChart>
@@ -200,40 +228,88 @@ export function NetworkChart({ rows, currency }: { rows: GoogleAdsRow[]; currenc
    ================================================================ */
 
 export function DemographicsChart({ rows, currency }: { rows: GoogleAdsRow[]; currency: string }) {
+	const [metric, setMetric] = useState<HourMetric>("spend");
 	if (!rows.length) return null;
 
 	const ageRows = rows.filter((r) => r.dimension === "age");
 	const genderRows = rows.filter((r) => r.dimension === "gender");
+	const isMoney = metric === "spend";
+	const fmtVal = (v: number) => isMoney ? fmtMoney(v, currency) : fmtNum(v);
+	const metricLabel = HOUR_METRICS.find((m) => m.key === metric)?.label || "Spend";
 
 	return (
-		<div className="grid gap-4 md:grid-cols-2">
-			{ageRows.length > 0 && (
-				<Card title="Spend by Age Range">
-					<ResponsiveContainer width="100%" height={260}>
-						<BarChart data={ageRows.map((r) => ({ name: r.age_range || r.key, spend: r.spend }))} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-							<CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-							<XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
-							<YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false}
-								tickFormatter={(v: number) => fmtMoney(v, currency)} />
-							<Tooltip content={<SimpleTooltip formatter={(v: number) => fmtMoney(v, currency)} />} />
-							<Bar dataKey="spend" name="Spend" fill="#3b82f6" radius={[3, 3, 0, 0]} maxBarSize={30} />
-						</BarChart>
-					</ResponsiveContainer>
-				</Card>
-			)}
-			{genderRows.length > 0 && (
-				<Card title="Spend by Gender">
-					<ResponsiveContainer width="100%" height={260}>
-						<PieChart>
-							<Pie data={genderRows.map((r) => ({ name: r.gender || r.key, value: r.spend }))} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={100} paddingAngle={2}>
-								{genderRows.map((_, i) => <Cell key={i} fill={["#3b82f6", "#ec4899", "#9ca3af"][i % 3]} />)}
-							</Pie>
-							<Tooltip content={<SimpleTooltip formatter={(v: number) => fmtMoney(v, currency)} />} />
-						</PieChart>
-					</ResponsiveContainer>
-				</Card>
-			)}
+		<div className="space-y-4">
+			<div className="grid gap-4 md:grid-cols-2">
+				{ageRows.length > 0 && (
+					<Card title={`${metricLabel} by Age Range`} right={<MetricToggle value={metric} onChange={(m) => setMetric(m as HourMetric)} options={HOUR_METRICS} />}>
+						<ResponsiveContainer width="100%" height={260}>
+							<BarChart data={ageRows.map((r) => ({ name: r.age_range || r.key, val: (r as unknown as Record<string, number>)[metric] ?? 0 }))} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+								<CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+								<XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
+								<YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false}
+									tickFormatter={fmtVal} />
+								<Tooltip content={<SimpleTooltip formatter={fmtVal} />} />
+								<Bar dataKey="val" name={metricLabel} fill="#3b82f6" radius={[3, 3, 0, 0]} maxBarSize={30} />
+							</BarChart>
+						</ResponsiveContainer>
+					</Card>
+				)}
+				{genderRows.length > 0 && (
+					<Card title={`${metricLabel} by Gender`}>
+						<ResponsiveContainer width="100%" height={260}>
+							<PieChart>
+								<Pie data={genderRows.map((r) => ({ name: r.gender || r.key, value: (r as unknown as Record<string, number>)[metric] ?? 0 }))} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={100} paddingAngle={2}>
+									{genderRows.map((_, i) => <Cell key={i} fill={["#3b82f6", "#ec4899", "#9ca3af"][i % 3]} />)}
+								</Pie>
+								<Tooltip content={<SimpleTooltip formatter={fmtVal} />} />
+							</PieChart>
+						</ResponsiveContainer>
+					</Card>
+				)}
+			</div>
+			{ageRows.length > 0 && <AgeEfficiencyChart rows={ageRows} currency={currency} />}
 		</div>
+	);
+}
+
+type EfficiencyMetric = "roas" | "ctr" | "cpc";
+const EFFICIENCY_METRICS: { key: EfficiencyMetric; label: string }[] = [
+	{ key: "roas", label: "ROAS" },
+	{ key: "ctr", label: "CTR" },
+	{ key: "cpc", label: "CPC" },
+];
+
+function AgeEfficiencyChart({ rows, currency }: { rows: GoogleAdsRow[]; currency: string }) {
+	const [effMetric, setEffMetric] = useState<EfficiencyMetric>("roas");
+	const data = rows.map((r) => {
+		const ctr = r.impressions > 0 ? r.clicks / r.impressions : 0;
+		const cpc = r.clicks > 0 ? r.spend / r.clicks : 0;
+		return {
+			name: r.age_range || r.key,
+			spend: r.spend,
+			roas: r.roas,
+			ctr, cpc,
+		};
+	});
+	const fmtSpend = (v: number) => fmtMoney(v, currency);
+	const fmtEff = (v: number) => effMetric === "roas" ? `${v.toFixed(2)}x` : effMetric === "ctr" ? `${(v * 100).toFixed(2)}%` : fmtMoney(v, currency);
+
+	return (
+		<Card title="Age: Spend vs Efficiency" right={<MetricToggle value={effMetric} onChange={(m) => setEffMetric(m as EfficiencyMetric)} options={EFFICIENCY_METRICS} />}>
+			<ResponsiveContainer width="100%" height={260}>
+				<BarChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+					<CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+					<XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
+					<YAxis yAxisId="left" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false}
+						tickFormatter={fmtSpend} />
+					<YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false}
+						tickFormatter={fmtEff} />
+					<Tooltip />
+					<Bar yAxisId="left" dataKey="spend" name="Spend" fill="#3b82f6" radius={[3, 3, 0, 0]} maxBarSize={30} />
+					<Bar yAxisId="right" dataKey={effMetric} name={effMetric.toUpperCase()} fill="#22c55e" radius={[3, 3, 0, 0]} maxBarSize={30} />
+				</BarChart>
+			</ResponsiveContainer>
+		</Card>
 	);
 }
 
