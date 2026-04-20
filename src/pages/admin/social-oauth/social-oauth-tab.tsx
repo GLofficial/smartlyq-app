@@ -35,6 +35,7 @@ export function SocialOAuthTab() {
 					config={cfg}
 					data={providers[cfg.name] ?? { ...emptyProvider, name: cfg.name }}
 					apiVersion={cfg.apiVersionKey ? (apiVersions[cfg.apiVersionKey] ?? "") : ""}
+					extraSetting={cfg.extraSettingKey ? (apiVersions[cfg.extraSettingKey] ?? "") : ""}
 				/>
 			))}
 		</div>

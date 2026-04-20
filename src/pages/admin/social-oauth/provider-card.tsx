@@ -12,9 +12,10 @@ interface Props {
 	config: ProviderMeta;
 	data: SocialOAuthProvider;
 	apiVersion: string;
+	extraSetting?: string;
 }
 
-export function ProviderCard({ config, data, apiVersion }: Props) {
+export function ProviderCard({ config, data, apiVersion, extraSetting = "" }: Props) {
 	const saveMutation = useSaveSocialOAuthProvider();
 	const [copied, setCopied] = useState(false);
 
@@ -25,6 +26,7 @@ export function ProviderCard({ config, data, apiVersion }: Props) {
 	const [configId, setConfigId] = useState(data.config_id);
 	const [isActive, setIsActive] = useState(data.is_active === 1);
 	const [apiVer, setApiVer] = useState(apiVersion);
+	const [extraSettingVal, setExtraSettingVal] = useState(extraSetting);
 	const [apiEnv, setApiEnv] = useState(data.api_environment || "production");
 
 	// Sync when data changes from server
@@ -40,6 +42,10 @@ export function ProviderCard({ config, data, apiVersion }: Props) {
 	useEffect(() => {
 		setApiVer(apiVersion);
 	}, [apiVersion]);
+
+	useEffect(() => {
+		setExtraSettingVal(extraSetting);
+	}, [extraSetting]);
 
 	const handleCopy = () => {
 		navigator.clipboard.writeText(data.redirect_uri);
@@ -70,6 +76,12 @@ export function ProviderCard({ config, data, apiVersion }: Props) {
 		if (config.apiVersionKey && apiVer) {
 			payload.api_version_key = config.apiVersionKey;
 			payload.api_version_value = apiVer;
+		}
+
+		// Extra setting (e.g. threads_webhook_verify_token)
+		if (config.extraSettingKey) {
+			payload.extra_setting_key = config.extraSettingKey;
+			payload.extra_setting_value = extraSettingVal;
 		}
 
 		saveMutation.mutate(payload, {
@@ -163,6 +175,24 @@ export function ProviderCard({ config, data, apiVersion }: Props) {
 						{config.apiVersionHint && (
 							<p className="text-xs text-[var(--muted-foreground)]">
 								{config.apiVersionHint}
+							</p>
+						)}
+					</div>
+				)}
+
+				{/* Extra setting (e.g. Webhook Verify Token for Threads) */}
+				{config.extraSettingKey && (
+					<div className="space-y-1.5">
+						<label className="text-sm font-medium text-[var(--foreground)]">
+							{config.extraSettingLabel}
+						</label>
+						<Input
+							value={extraSettingVal}
+							onChange={(e) => setExtraSettingVal(e.target.value)}
+						/>
+						{config.extraSettingHint && (
+							<p className="text-xs text-[var(--muted-foreground)]">
+								{config.extraSettingHint}
 							</p>
 						)}
 					</div>

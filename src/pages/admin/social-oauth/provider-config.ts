@@ -18,6 +18,9 @@ export interface ProviderMeta {
 	apiVersionHint?: string;
 	hint?: string;
 	hasEnvironment?: boolean;
+	extraSettingKey?: string;
+	extraSettingLabel?: string;
+	extraSettingHint?: string;
 }
 
 const PROVIDERS: ProviderMeta[] = [
@@ -216,6 +219,9 @@ const PROVIDERS: ProviderMeta[] = [
 		apiVersionKey: "threads_api_version",
 		apiVersionPlaceholder: "v1.0",
 		apiVersionHint: "Defaults to v1.0 if empty.",
+		extraSettingKey: "threads_webhook_verify_token",
+		extraSettingLabel: "Webhook Verify Token",
+		extraSettingHint: "Must match the Verify Token you entered in Meta's webhook dashboard. Only needed if you re-verify the endpoint.",
 	},
 ];
 
