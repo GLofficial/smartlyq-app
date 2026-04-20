@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { STORAGE_KEYS } from "@/lib/constants";
 
 /**
@@ -7,10 +8,13 @@ import { STORAGE_KEYS } from "@/lib/constants";
  */
 export function CaptainPage() {
 	const [src, setSrc] = useState("");
+	const [searchParams] = useSearchParams();
+	const prompt = searchParams.get("prompt") ?? "";
 
 	useEffect(() => {
 		async function loadUrl() {
 			const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+			const addPrompt = (u: string) => prompt ? u + (u.includes("?") ? "&" : "?") + "prompt=" + encodeURIComponent(prompt) : u;
 			try {
 				const res = await fetch("/api/spa/external/captain", {
 					headers: { Authorization: `Bearer ${token}` },
@@ -22,16 +26,16 @@ export function CaptainPage() {
 					if (data.user_info) {
 						url += (url.includes("?") ? "&" : "?") + "user_info=" + encodeURIComponent(JSON.stringify(data.user_info));
 					}
-					setSrc(url);
+					setSrc(addPrompt(url));
 					return;
 				}
 			} catch {}
 			// Fallback: pass SPA JWT directly
 			const captainUrl = "https://captain.smartlyq.com";
-			setSrc(`${captainUrl}?token=${encodeURIComponent(token ?? "")}`);
+			setSrc(addPrompt(`${captainUrl}?token=${encodeURIComponent(token ?? "")}`));
 		}
 		loadUrl();
-	}, []);
+	}, [prompt]);
 
 	if (!src) {
 		return (

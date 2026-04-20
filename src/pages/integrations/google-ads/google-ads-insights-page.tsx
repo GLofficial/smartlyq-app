@@ -73,7 +73,7 @@ export function GoogleAdsInsightsPage() {
 	}, [actionMutation]);
 
 	const handleAiChipClick = useCallback((question: string) => {
-		const aiPath = wsHash ? `/w/${wsHash}/ai-captain` : "/ai-captain";
+		const aiPath = wsHash ? `/w/${wsHash}/captain` : "/captain";
 		navigate(aiPath + "?prompt=" + encodeURIComponent(question));
 	}, [wsHash, navigate]);
 

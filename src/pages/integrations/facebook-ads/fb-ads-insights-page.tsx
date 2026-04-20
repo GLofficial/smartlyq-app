@@ -93,7 +93,7 @@ export function FbAdsInsightsPage() {
 	const handleExport = useCallback((fmt: string) => {
 		if (fmt === "ai") {
 			// Navigate to AI Captain with context about this ad account
-			const aiPath = wsHash ? `/w/${wsHash}/ai-captain` : "/ai-captain";
+			const aiPath = wsHash ? `/w/${wsHash}/captain` : "/captain";
 			navigate(aiPath + "?prompt=" + encodeURIComponent("Generate a full performance report for my Facebook Ads. Include: executive summary, top/bottom campaigns by ROAS, budget recommendations, audience insights, and creative performance."));
 			return;
 		}
@@ -101,7 +101,7 @@ export function FbAdsInsightsPage() {
 	}, [params, wsHash, navigate]);
 
 	const handleAiChipClick = useCallback((question: string) => {
-		const aiPath = wsHash ? `/w/${wsHash}/ai-captain` : "/ai-captain";
+		const aiPath = wsHash ? `/w/${wsHash}/captain` : "/captain";
 		navigate(aiPath + "?prompt=" + encodeURIComponent(question));
 	}, [wsHash, navigate]);
 
