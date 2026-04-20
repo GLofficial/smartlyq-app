@@ -1,9 +1,10 @@
-import { useParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart3, ExternalLink } from "lucide-react";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { FbAdsInsightsPage } from "./facebook-ads/fb-ads-insights-page";
+import { GoogleAdsInsightsPage } from "./google-ads/google-ads-insights-page";
 
 const PLATFORM_NAMES: Record<string, string> = {
 	facebook: "Facebook Ads",
@@ -12,14 +13,20 @@ const PLATFORM_NAMES: Record<string, string> = {
 	linkedin: "LinkedIn Ads",
 };
 
+function detectPlatform(pathname: string): string {
+	// Routes are hardcoded (integrations/google/ads, integrations/facebook/ads, etc.)
+	// so useParams() returns {}. Parse the pathname instead.
+	const m = pathname.match(/\/integrations\/(facebook|google|tiktok|linkedin)(?:-ads)?\/ads/);
+	return m?.[1] ?? "facebook";
+}
+
 export function AdsInsightsPage() {
-	const { platform = "facebook" } = useParams<{ platform: string }>();
+	const { pathname } = useLocation();
+	const platform = detectPlatform(pathname);
 
-	if (platform === "facebook") {
-		return <FbAdsInsightsPage />;
-	}
+	if (platform === "facebook") return <FbAdsInsightsPage />;
+	if (platform === "google") return <GoogleAdsInsightsPage />;
 
-	// Other platforms: placeholder
 	const title = PLATFORM_NAMES[platform] ?? `${platform} Ads`;
 	return (
 		<div className="space-y-6">
