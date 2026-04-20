@@ -105,7 +105,6 @@ export function PlatformBadge({ platformId, size = 18 }: { platformId: string; s
           display: "block",
           width: iconSize,
           height: iconSize,
-          verticalAlign: "top",
           flexShrink: 0,
           transform,
         }}

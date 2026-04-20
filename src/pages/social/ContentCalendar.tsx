@@ -814,7 +814,6 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
                   <div className="flex items-center gap-2 min-w-0">
-                    {activePid && <PlatformBadge platformId={activePid} size={24} />}
                     <div className="flex flex-col min-w-0">
                       <span className="text-sm font-semibold text-foreground truncate">{activeAccount || activeLabel}</span>
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -878,16 +877,7 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                   const displayMedia = overrideMedia ?? selectedPost.mediaUrls;
                   return displayMedia && displayMedia.length > 0 ? (
                     <PostMediaGallery mediaUrls={displayMedia} />
-                  ) : (
-                    <div className="bg-muted rounded-lg aspect-video flex items-center justify-center text-muted-foreground mb-3">
-                      <div className="text-center">
-                        <div className="w-12 h-12 rounded-full bg-foreground/20 flex items-center justify-center mx-auto mb-2">
-                          <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-foreground/60 ml-1" />
-                        </div>
-                        <span className="text-xs">No media</span>
-                      </div>
-                    </div>
-                  );
+                  ) : null;
                 })()}
               </div>
 
