@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import {
   useCrmContacts,
   useCrmContactDelete,
+  useCrmContactStats,
   exportCrmContacts,
   type ApiContact,
 } from "@/api/crm";
@@ -59,6 +60,7 @@ export function CrmContactsPage() {
   }, [searchTimer]);
 
   // Fetch from server with pagination
+  const { data: stats } = useCrmContactStats();
   const { data, isLoading } = useCrmContacts({
     page,
     limit: perPage,
@@ -162,17 +164,35 @@ export function CrmContactsPage() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[var(--foreground)]">Contacts</h1>
-          <p className="text-sm text-[var(--muted-foreground)] mt-1">{pagination.total} contact{pagination.total !== 1 ? "s" : ""} total</p>
+          <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)] mt-1">
+            <span><span className="font-medium text-[var(--foreground)]">{(stats?.all ?? pagination.total).toLocaleString()}</span> contacts total</span>
+            {!!stats && stats.new_this_week > 0 && (
+              <>
+                <span className="inline-flex items-center gap-1.5 text-[var(--muted-foreground)]">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span className="text-emerald-600 font-medium">+{stats.new_this_week}</span> this week
+                </span>
+              </>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}><Upload className="w-4 h-4 mr-1.5" />Import</Button>
-          <Button variant="outline" size="sm" onClick={() => { exportCrmContacts(); toast.success("Downloading..."); }}><Download className="w-4 h-4 mr-1.5" />Export</Button>
-          <Button variant="outline" size="sm" onClick={() => setDeletedOpen(true)}><RotateCcw className="w-4 h-4 mr-1.5" />Restore</Button>
-          <Button onClick={() => setCreateOpen(true)}><Plus className="w-4 h-4 mr-1.5" />Add Contact</Button>
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="gap-1.5"><Upload className="w-4 h-4" />Import</Button>
+          <Button variant="outline" size="sm" onClick={() => { exportCrmContacts(); toast.success("Downloading..."); }} className="gap-1.5"><Download className="w-4 h-4" />Export</Button>
+          <Button variant="outline" size="sm" onClick={() => setDeletedOpen(true)} className="gap-1.5"><RotateCcw className="w-4 h-4" />Restore</Button>
+          <Button onClick={() => setCreateOpen(true)} className="gap-1.5"><Plus className="w-4 h-4" />Add Contact</Button>
         </div>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        <StatCard label="All contacts" value={stats?.all ?? pagination.total} delta={stats?.deltas.all} tint="blue" />
+        <StatCard label="Prospects" value={stats?.prospects ?? 0} delta={stats?.deltas.prospects} tint="violet" />
+        <StatCard label="Customers" value={stats?.customers ?? 0} delta={stats?.deltas.customers} tint="emerald" />
+        <StatCard label="Churned" value={stats?.churned ?? 0} delta={stats?.deltas.churned} tint="rose" />
       </div>
 
       {/* Filters */}
@@ -330,4 +350,37 @@ function timeAgo(d: string): string {
     const months = Math.floor(days / 30);
     return months < 12 ? `${months}mo ago` : `${Math.floor(months / 12)}y ago`;
   } catch { return d; }
+}
+
+const STAT_TINTS: Record<string, { pill: string; text: string }> = {
+  blue:    { pill: "bg-blue-50 text-blue-600",       text: "text-blue-600" },
+  violet:  { pill: "bg-violet-50 text-violet-600",   text: "text-violet-600" },
+  emerald: { pill: "bg-emerald-50 text-emerald-600", text: "text-emerald-600" },
+  rose:    { pill: "bg-rose-50 text-rose-600",       text: "text-rose-600" },
+};
+
+function StatCard({ label, value, delta, tint }: { label: string; value: number; delta?: number; tint: "blue" | "violet" | "emerald" | "rose" }) {
+  const t = STAT_TINTS[tint]!;
+  const hasDelta = typeof delta === "number" && isFinite(delta);
+  const up = (delta ?? 0) >= 0;
+  const pillCls = !hasDelta
+    ? "bg-[var(--muted)] text-[var(--muted-foreground)]"
+    : up
+      ? t.pill
+      : "bg-rose-50 text-rose-600";
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-5 py-4 flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-xs text-[var(--muted-foreground)] truncate">{label}</p>
+        <p className="text-2xl font-bold text-[var(--foreground)] mt-0.5 font-mono">
+          {(value ?? 0).toLocaleString()}
+        </p>
+      </div>
+      {hasDelta && (
+        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${pillCls}`}>
+          {up ? "+" : ""}{(delta as number).toFixed(1)}%
+        </span>
+      )}
+    </div>
+  );
 }

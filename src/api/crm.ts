@@ -254,6 +254,23 @@ export function useCrmContacts(params?: { status?: string; search?: string; page
   });
 }
 
+export interface CrmContactStats {
+  all: number;
+  prospects: number;
+  customers: number;
+  churned: number;
+  new_this_week: number;
+  deltas: { all: number; prospects: number; customers: number; churned: number };
+}
+
+export function useCrmContactStats() {
+  return useQuery({
+    queryKey: ["crm", "contacts", "stats"],
+    queryFn: () => apiClient.get<CrmContactStats>("/api/spa/crm/contacts/stats"),
+    staleTime: 60_000,
+  });
+}
+
 export function useCrmContactGet(id: number | null) {
   return useQuery({
     queryKey: ["crm", "contact", id],
