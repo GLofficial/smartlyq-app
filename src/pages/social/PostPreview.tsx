@@ -653,23 +653,45 @@ function YouTubePreview({ content, device, imageCount = 1, mediaUrls, accountInf
 }
 
 function TikTokPreview({ content, device, mediaUrls, accountInfo }: { content: string; device: Device; imageCount?: number; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
-  const firstMedia = mediaUrls?.[0];
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const images = (mediaUrls ?? []).filter(m => m.type === "image");
+  const hasMultiple = images.length > 1;
+  const currentMedia = mediaUrls?.[carouselIndex] ?? mediaUrls?.[0];
   return (
     <div className="flex justify-center">
       <div className="relative rounded-[2rem] overflow-hidden border-[6px] border-foreground mx-auto" style={{ aspectRatio: "9/16", maxHeight: device === "mobile" ? 520 : 420, width: device === "mobile" ? 300 : 240 }}>
         <div className="absolute inset-0 bg-foreground">
-          {/* Media fill — image stays, video autoplays muted to match TikTok feed behavior */}
-          {firstMedia ? (
-            firstMedia.type === "video" ? (
-              <video src={firstMedia.url} className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline />
+          {/* Media fill */}
+          {currentMedia ? (
+            currentMedia.type === "video" ? (
+              <video src={currentMedia.url} className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline />
             ) : (
-              <img src={firstMedia.url} alt="TikTok" className="absolute inset-0 w-full h-full object-cover" />
+              <img src={currentMedia.url} alt="TikTok" className="absolute inset-0 w-full h-full object-cover" />
             )
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-12 h-12 rounded-full bg-card/20 flex items-center justify-center backdrop-blur-sm">
                 <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-card/80 ml-1" />
               </div>
+            </div>
+          )}
+
+          {/* Carousel arrows */}
+          {hasMultiple && carouselIndex > 0 && (
+            <button onClick={() => setCarouselIndex(i => i - 1)} className="absolute left-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-card/70 shadow flex items-center justify-center z-10">
+              <ChevronLeft className="w-3.5 h-3.5 text-foreground" />
+            </button>
+          )}
+          {hasMultiple && carouselIndex < images.length - 1 && (
+            <button onClick={() => setCarouselIndex(i => i + 1)} className="absolute right-12 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-card/70 shadow flex items-center justify-center z-10">
+              <ChevronRight className="w-3.5 h-3.5 text-foreground" />
+            </button>
+          )}
+          {hasMultiple && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+              {images.map((_, i) => (
+                <div key={i} className={cn("w-1.5 h-1.5 rounded-full transition-colors", i === carouselIndex ? "bg-card" : "bg-card/40")} />
+              ))}
             </div>
           )}
 
@@ -1055,26 +1077,49 @@ function FacebookStoryPreview({ content, mediaUrls, accountInfo }: { content: st
   );
 }
 
-function TikTokStoryPreview({ content, mediaUrls }: { content: string; mediaUrls?: { url: string; type: "image" | "video" }[] }) {
-  const firstMedia = mediaUrls?.[0];
+function TikTokStoryPreview({ content, mediaUrls, accountInfo }: { content: string; mediaUrls?: { url: string; type: "image" | "video" }[]; accountInfo?: { name: string; avatar: string; username?: string } }) {
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const images = (mediaUrls ?? []).filter(m => m.type === "image");
+  const hasMultiple = images.length > 1;
+  const currentMedia = mediaUrls?.[carouselIndex] ?? mediaUrls?.[0];
+  const rawHandle = accountInfo?.username || accountInfo?.name || "yourhandle";
+  const handle = rawHandle.startsWith("@") ? rawHandle : `@${rawHandle}`;
   return (
     <div className="flex justify-center">
       <div className="relative rounded-[2rem] overflow-hidden border-[6px] border-foreground mx-auto" style={{ aspectRatio: "9/16", maxHeight: 560, width: 300 }}>
         <div className="absolute inset-0 bg-foreground">
           {/* Media or video area placeholder */}
-          {firstMedia ? (
-            firstMedia.type === "video" ? (
-              <video src={firstMedia.url} className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline />
+          {currentMedia ? (
+            currentMedia.type === "video" ? (
+              <video src={currentMedia.url} className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline />
             ) : (
-              <img src={firstMedia.url} alt="TikTok" className="absolute inset-0 w-full h-full object-cover" />
+              <img src={currentMedia.url} alt="TikTok" className="absolute inset-0 w-full h-full object-cover" />
             )
           ) : (
           <div className="absolute inset-0 flex items-center justify-center">
-            {/* Play button */}
             <div className="w-14 h-14 rounded-full bg-card/20 flex items-center justify-center backdrop-blur-sm">
               <div className="w-0 h-0 border-t-[10px] border-t-transparent border-b-[10px] border-b-transparent border-l-[16px] border-l-card/80 ml-1" />
             </div>
           </div>
+          )}
+
+          {/* Carousel arrows */}
+          {hasMultiple && carouselIndex > 0 && (
+            <button onClick={() => setCarouselIndex(i => i - 1)} className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-card/70 shadow flex items-center justify-center z-10">
+              <ChevronLeft className="w-4 h-4 text-foreground" />
+            </button>
+          )}
+          {hasMultiple && carouselIndex < images.length - 1 && (
+            <button onClick={() => setCarouselIndex(i => i + 1)} className="absolute right-14 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-card/70 shadow flex items-center justify-center z-10">
+              <ChevronRight className="w-4 h-4 text-foreground" />
+            </button>
+          )}
+          {hasMultiple && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+              {images.map((_, i) => (
+                <div key={i} className={cn("w-1.5 h-1.5 rounded-full transition-colors", i === carouselIndex ? "bg-card" : "bg-card/40")} />
+              ))}
+            </div>
           )}
 
           {/* Right side actions */}
@@ -1108,8 +1153,7 @@ function TikTokStoryPreview({ content, mediaUrls }: { content: string; mediaUrls
           {/* Bottom content */}
           <div className="absolute bottom-0 left-0 right-16 p-4">
             <div className="flex items-center gap-2">
-              <span className="text-card text-sm font-bold">@georgeliontos</span>
-              <span className="bg-[hsl(var(--instagram))] text-card text-[9px] font-bold px-1.5 py-0.5 rounded text-center">VERIFIED</span>
+              <span className="text-card text-sm font-bold">{handle}</span>
             </div>
             <p className="text-card/90 text-xs mt-1.5 line-clamp-2">{content || "Your TikTok caption here..."}</p>
             <div className="flex items-center gap-2 mt-2">
