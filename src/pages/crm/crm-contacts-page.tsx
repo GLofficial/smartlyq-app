@@ -180,10 +180,10 @@ export function CrmContactsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="gap-1.5"><Upload className="w-4 h-4" />Import</Button>
-          <Button variant="outline" size="sm" onClick={() => { exportCrmContacts(); toast.success("Downloading..."); }} className="gap-1.5"><Download className="w-4 h-4" />Export</Button>
-          <Button variant="outline" size="sm" onClick={() => setDeletedOpen(true)} className="gap-1.5"><RotateCcw className="w-4 h-4" />Restore</Button>
-          <Button onClick={() => setCreateOpen(true)} className="gap-1.5"><Plus className="w-4 h-4" />Add Contact</Button>
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="gap-1.5 bg-[var(--card)] shadow-sm"><Upload className="w-4 h-4" />Import</Button>
+          <Button variant="outline" size="sm" onClick={() => { exportCrmContacts(); toast.success("Downloading..."); }} className="gap-1.5 bg-[var(--card)] shadow-sm"><Download className="w-4 h-4" />Export</Button>
+          <Button variant="outline" size="sm" onClick={() => setDeletedOpen(true)} className="gap-1.5 bg-[var(--card)] shadow-sm"><RotateCcw className="w-4 h-4" />Restore</Button>
+          <Button onClick={() => setCreateOpen(true)} className="gap-1.5 shadow-sm"><Plus className="w-4 h-4" />Add Contact</Button>
         </div>
       </div>
 
@@ -199,10 +199,10 @@ export function CrmContactsPage() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-foreground)]" />
-          <Input placeholder="Search by name, email, company, or tag..." value={search} onChange={(e) => handleSearch(e.target.value)} className="pl-9" />
+          <Input placeholder="Search by name, email, company, or tag..." value={search} onChange={(e) => handleSearch(e.target.value)} className="pl-9 bg-[var(--card)] shadow-sm" />
         </div>
         <Select value={statusFilter || "all"} onValueChange={handleStatusChange}>
-          <SelectTrigger className="w-[150px]"><SelectValue placeholder="All statuses" /></SelectTrigger>
+          <SelectTrigger className="w-[150px] bg-[var(--card)] shadow-sm"><SelectValue placeholder="All statuses" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="active">Active</SelectItem>
@@ -211,11 +211,11 @@ export function CrmContactsPage() {
             <SelectItem value="lost">Lost</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={() => setAdvancedFiltersOpen(true)} className="gap-1.5">
+        <Button variant="outline" size="sm" onClick={() => setAdvancedFiltersOpen(true)} className="gap-1.5 bg-[var(--card)] shadow-sm">
           <SlidersHorizontal size={14} /> Advanced Filters
           {filterRules.length > 0 && <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--sq-primary)] text-[9px] text-white">{filterRules.length}</span>}
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setManageFieldsOpen(true)} className="gap-1.5">
+        <Button variant="outline" size="sm" onClick={() => setManageFieldsOpen(true)} className="gap-1.5 bg-[var(--card)] shadow-sm">
           <Settings2 size={14} /> Manage Fields
         </Button>
       </div>
