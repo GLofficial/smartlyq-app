@@ -120,7 +120,10 @@ export interface ApiDealCountByStage {
 export interface ApiDashboardCrm {
   total_pipeline_value: number;
   won_revenue: number;
+  lost_revenue?: number;
   deal_count_by_stage: ApiDealCountByStage[];
+  won_stage_keys?: string[];
+  lost_stage_keys?: string[];
   active_deals_count: number;
   total_contacts: number;
   total_tasks: number;
@@ -128,6 +131,10 @@ export interface ApiDashboardCrm {
   overdue_tasks: number;
   tasks_due_this_week: number;
   recent_activity: Record<string, unknown>[];
+  leads_trend?: { date: string; count: number }[];
+  status_funnel?: { status: string; count: number }[];
+  top_tags?: { tag: string; count: number }[];
+  revenue_trend?: { month: string; value: number; count: number }[];
 }
 
 export interface ApiSaveResponse {
@@ -468,10 +475,14 @@ export function useCrmTaskTimer() {
 
 // Dashboard
 
-export function useCrmDashboard() {
+export function useCrmDashboard(params?: { start?: string; end?: string }) {
+  const qs = new URLSearchParams();
+  if (params?.start) qs.set("start", params.start);
+  if (params?.end) qs.set("end", params.end);
+  const q = qs.toString();
   return useQuery({
-    queryKey: ["crm", "dashboard"],
-    queryFn: () => apiClient.get<{ dashboard: ApiDashboardCrm }>("/api/spa/crm/dashboard"),
+    queryKey: ["crm", "dashboard", params ?? {}],
+    queryFn: () => apiClient.get<{ dashboard: ApiDashboardCrm }>(`/api/spa/crm/dashboard${q ? `?${q}` : ""}`),
   });
 }
 

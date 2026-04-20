@@ -46,6 +46,10 @@ export function ContactCreateDialog({ open, onOpenChange }: Props) {
 	const [phoneType, setPhoneType] = useState("mobile");
 	const [phoneCode, setPhoneCode] = useState("+1");
 	const [phone, setPhone] = useState("");
+	const [secondaryPhoneType, setSecondaryPhoneType] = useState("mobile");
+	const [secondaryPhoneCode, setSecondaryPhoneCode] = useState("+1");
+	const [secondaryPhone, setSecondaryPhone] = useState("");
+	const [showSecondaryPhone, setShowSecondaryPhone] = useState(false);
 	const [role, setRole] = useState("");
 	const [status, setStatus] = useState("prospect");
 	const [contactType, setContactType] = useState("none");
@@ -56,7 +60,9 @@ export function ContactCreateDialog({ open, onOpenChange }: Props) {
 	function reset() {
 		setFirstName(""); setLastName(""); setEmail(""); setSecondaryEmail("");
 		setShowSecondaryEmail(false); setCompany(""); setPhoneType("mobile");
-		setPhoneCode("+1"); setPhone(""); setRole(""); setStatus("prospect");
+		setPhoneCode("+1"); setPhone("");
+		setSecondaryPhoneType("mobile"); setSecondaryPhoneCode("+1"); setSecondaryPhone(""); setShowSecondaryPhone(false);
+		setRole(""); setStatus("prospect");
 		setContactType("none"); setTimezone("none"); setAvatarPreview(""); setErrors({});
 	}
 
@@ -67,6 +73,7 @@ export function ContactCreateDialog({ open, onOpenChange }: Props) {
 		else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Please enter a valid email address.";
 		if (secondaryEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(secondaryEmail)) e.secondary_email = "Please enter a valid email address.";
 		if (phone.trim() && !/^[\d\s\-().+]{4,20}$/.test(phone.trim())) e.phone = "Please enter a valid phone number.";
+		if (secondaryPhone.trim() && !/^[\d\s\-().+]{4,20}$/.test(secondaryPhone.trim())) e.secondary_phone = "Please enter a valid phone number.";
 		if (!company.trim()) e.company = "Company is required.";
 		setErrors(e);
 		return Object.keys(e).length === 0;
@@ -84,6 +91,9 @@ export function ContactCreateDialog({ open, onOpenChange }: Props) {
 				phone: phone.trim(),
 				phone_type: phoneType,
 				phone_country_code: phoneCode,
+				secondary_phone: secondaryPhone.trim(),
+				secondary_phone_type: secondaryPhoneType,
+				secondary_phone_country_code: secondaryPhoneCode,
 				role: role.trim(),
 				status,
 				contact_type: contactType === "none" ? "" : contactType,
@@ -110,6 +120,9 @@ export function ContactCreateDialog({ open, onOpenChange }: Props) {
 	}
 
 	const selectedCountry = COUNTRY_CODES.find((c) => c.dial === phoneCode);
+	const selectedSecondaryCountry = COUNTRY_CODES.find((c) => c.dial === secondaryPhoneCode);
+	const canAddSecondaryEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+	const canAddSecondaryPhone = /^[\d\s\-().+]{4,20}$/.test(phone.trim());
 
 	return (
 		<Dialog open={open} onOpenChange={(o) => { if (!o) { reset(); onOpenChange(false); } }}>
@@ -158,16 +171,16 @@ export function ContactCreateDialog({ open, onOpenChange }: Props) {
 					</Field>
 					{showSecondaryEmail ? (
 						<Field label="Secondary Email" error={errors.secondary_email}>
-							<Input type="email" placeholder="secondary@example.com" value={secondaryEmail} onChange={(e) => setSecondaryEmail(e.target.value)} />
+							<div className="flex gap-1.5">
+								<Input type="email" placeholder="secondary@example.com" value={secondaryEmail} onChange={(e) => setSecondaryEmail(e.target.value)} />
+								<Button type="button" variant="ghost" size="sm" onClick={() => { setSecondaryEmail(""); setShowSecondaryEmail(false); }}>Remove</Button>
+							</div>
 						</Field>
 					) : (
-						<button type="button" onClick={() => {
-							if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-								setErrors((p) => ({ ...p, email: "Please enter a valid email before adding another." }));
-								return;
-							}
-							setShowSecondaryEmail(true);
-						}} className="flex items-center gap-1 text-xs text-[var(--sq-primary)] hover:underline">
+						<button type="button" disabled={!canAddSecondaryEmail}
+							onClick={() => setShowSecondaryEmail(true)}
+							title={!canAddSecondaryEmail ? "Enter a valid primary email first" : undefined}
+							className="flex items-center gap-1 text-xs text-[var(--sq-primary)] hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline">
 							<Plus size={12} /> Add email
 						</button>
 					)}
@@ -207,6 +220,47 @@ export function ContactCreateDialog({ open, onOpenChange }: Props) {
 							<Input placeholder="Enter phone number" value={phone} onChange={(e) => setPhone(e.target.value)} />
 						</div>
 						{errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
+
+						{showSecondaryPhone ? (
+							<>
+								<div className="flex gap-1.5 mt-2">
+									<Select value={secondaryPhoneType} onValueChange={setSecondaryPhoneType}>
+										<SelectTrigger className="w-[100px] shrink-0"><SelectValue /></SelectTrigger>
+										<SelectContent>
+											{PHONE_TYPES.map((t) => (<SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>))}
+										</SelectContent>
+									</Select>
+									<Select value={secondaryPhoneCode} onValueChange={setSecondaryPhoneCode}>
+										<SelectTrigger className="w-[90px] shrink-0">
+											<SelectValue>
+												{selectedSecondaryCountry ? `${selectedSecondaryCountry.flag} ${selectedSecondaryCountry.dial}` : secondaryPhoneCode}
+											</SelectValue>
+										</SelectTrigger>
+										<SelectContent className="max-h-[280px]">
+											{COUNTRY_CODES.map((cc) => (
+												<SelectItem key={cc.code} value={cc.dial}>
+													<span className="flex items-center gap-2">
+														<span>{cc.flag}</span>
+														<span className="text-xs text-[var(--muted-foreground)]">{cc.name}</span>
+														<span className="font-medium">{cc.dial}</span>
+													</span>
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+									<Input placeholder="Secondary phone number" value={secondaryPhone} onChange={(e) => setSecondaryPhone(e.target.value)} />
+									<Button type="button" variant="ghost" size="sm" onClick={() => { setSecondaryPhone(""); setShowSecondaryPhone(false); }}>Remove</Button>
+								</div>
+								{errors.secondary_phone && <p className="text-xs text-red-500">{errors.secondary_phone}</p>}
+							</>
+						) : (
+							<button type="button" disabled={!canAddSecondaryPhone}
+								onClick={() => setShowSecondaryPhone(true)}
+								title={!canAddSecondaryPhone ? "Enter a valid primary phone first" : undefined}
+								className="flex items-center gap-1 text-xs text-[var(--sq-primary)] hover:underline mt-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline">
+								<Plus size={12} /> Add phone
+							</button>
+						)}
 					</div>
 
 					{/* Company + Role */}

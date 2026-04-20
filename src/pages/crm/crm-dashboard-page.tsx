@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AreaChart,
@@ -12,6 +12,8 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { CrmDashboardInsights } from "./crm-dashboard-insights";
+import { CrmDashboardDatePicker, daysAgoRange } from "./crm-dashboard-date-picker";
 import {
   useCrmDashboard,
   useCrmDeals,
@@ -67,7 +69,8 @@ function isOverdue(dateStr: string | null): boolean {
 // ---------------------------------------------------------------------------
 
 export function CrmDashboardPage() {
-  const { data: dashData, isLoading: dashLoading } = useCrmDashboard();
+  const [dateRange, setDateRange] = useState(() => daysAgoRange(30));
+  const { data: dashData, isLoading: dashLoading } = useCrmDashboard({ start: dateRange.start, end: dateRange.end });
   const { data: dealsData, isLoading: dealsLoading } = useCrmDeals();
   const { data: tasksData, isLoading: tasksLoading } = useCrmTasks();
   const { data: stagesData } = useCrmStages();
@@ -143,11 +146,14 @@ export function CrmDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--foreground)]">Dashboard</h1>
-        <p className="text-sm text-[var(--muted-foreground)] mt-1">
-          Overview of your deal flow and task progress.
-        </p>
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--foreground)]">Dashboard</h1>
+          <p className="text-sm text-[var(--muted-foreground)] mt-1">
+            Overview of your deal flow and task progress.
+          </p>
+        </div>
+        <CrmDashboardDatePicker value={dateRange} onChange={setDateRange} />
       </div>
 
       {/* KPI cards */}
@@ -280,6 +286,9 @@ export function CrmDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Leads / Revenue / Funnel / Tags */}
+      <CrmDashboardInsights dashboard={dashboard} />
 
       {/* Bottom row: tasks + overdue deals */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
