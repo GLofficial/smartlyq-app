@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Eye, MousePointer, ShoppingCart, Target, TrendingUp, RefreshCw, Plus } from "lucide-react";
+import { DollarSign, Eye, MousePointer, ShoppingCart, Target, TrendingUp, RefreshCw, Plus, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import type { Campaign } from "@/api/tools";
@@ -10,7 +10,15 @@ import { useWorkspaceStore } from "@/stores/workspace-store";
 import { AdToolbar } from "./ad-toolbar";
 import { useAdContext } from "./ad-context";
 import { useSync } from "@/api/ad-manager/mutations";
+import { useAdSettings } from "@/api/ad-manager/settings";
 import { AdSpendChart } from "./ad-charts";
+
+const PLATFORM_LABEL: Record<string, string> = {
+	meta: "Meta",
+	google: "Google Ads",
+	tiktok: "TikTok",
+	linkedin: "LinkedIn",
+};
 
 function fmt(n: number): string {
 	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -21,6 +29,10 @@ function fmt(n: number): string {
 export function AdManagerPage() {
 	const { queryString } = useAdContext();
 	const sync = useSync();
+	const { data: adSettings } = useAdSettings();
+	const revokedAccounts = (adSettings?.accounts ?? []).filter(
+		(a) => a.status === "revoked" || a.status === "error",
+	);
 	const { data, isLoading } = useQuery({
 		queryKey: ["ad-manager", "dashboard", queryString],
 		queryFn: () => apiClient.get<{
@@ -77,6 +89,42 @@ export function AdManagerPage() {
 					</Button>
 				</div>
 			</div>
+
+			{/* Reconnect banner — surfaces any ad-platform integration whose token
+			    was revoked (Facebook code 190) or errored out. Without this the
+			    dashboard silently shows stale / zero data. */}
+			{revokedAccounts.length > 0 && (
+				<Card className="border-red-300 bg-red-50 dark:bg-red-950/20">
+					<CardContent className="p-4 flex items-start gap-3">
+						<AlertTriangle size={20} className="text-red-600 shrink-0 mt-0.5" />
+						<div className="flex-1 min-w-0">
+							<div className="font-medium text-red-800 dark:text-red-200">
+								{(() => {
+									const first = revokedAccounts[0];
+									if (revokedAccounts.length === 1 && first) {
+										return `${PLATFORM_LABEL[first.platform] ?? first.platform} connection needs reconnect`;
+									}
+									return `${revokedAccounts.length} ad integrations need reconnect`;
+								})()}
+							</div>
+							<div className="text-sm text-red-700 dark:text-red-300 mt-1 flex flex-wrap gap-x-3 gap-y-1">
+								{revokedAccounts.map((a) => (
+									<span key={a.id} className="inline-flex items-center gap-1">
+										<PlatformIcon platform={a.platform} size={12} />
+										<span className="font-medium">{a.account_name || a.account_id}</span>
+									</span>
+								))}
+							</div>
+							<div className="text-xs text-red-600/80 dark:text-red-400/80 mt-1">
+								Sync is paused for these accounts until you reconnect. Data shown may be stale.
+							</div>
+						</div>
+						<Button size="sm" variant="outline" className="shrink-0 border-red-300 text-red-700 hover:bg-red-100" asChild>
+							<Link to={p("ad-manager/settings")}>Reconnect</Link>
+						</Button>
+					</CardContent>
+				</Card>
+			)}
 
 			{/* Stat Cards — 6 metrics with trend % */}
 			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

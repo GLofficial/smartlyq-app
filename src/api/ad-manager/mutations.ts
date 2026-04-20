@@ -132,10 +132,17 @@ export function useSettingsAction() {
 export function useSync() {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: () => apiClient.post<Record<string, unknown>>("/api/spa/ad-manager/sync", {}),
-		onSuccess: () => {
-			toast.success("Sync started");
-			qc.invalidateQueries({ queryKey: ["ad-manager"] });
+		mutationFn: () =>
+			apiClient.post<{ ok?: number; status?: string; message?: string }>(
+				"/api/spa/ad-manager/sync",
+				{},
+			),
+		onSuccess: (data) => {
+			toast.success(
+				data?.message || "Sync started in the background — refresh in a minute to see updated data.",
+			);
+			// Invalidate after a delay so the background job has time to run.
+			setTimeout(() => qc.invalidateQueries({ queryKey: ["ad-manager"] }), 45_000);
 		},
 		onError: (err: Error) => toast.error(err.message || "Sync failed"),
 	});
