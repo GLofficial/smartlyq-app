@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bell, Plug, X, ExternalLink } from "lucide-react";
+import { Bell, Plug, X, ExternalLink, Settings2 } from "lucide-react";
 import { useAdSettings } from "@/api/ad-manager/settings";
 import { PlatformIcon } from "@/pages/social/platform-icon";
 import { useSettingsAction } from "@/api/ad-manager/mutations";
 import { AdToolbar } from "@/pages/ad-manager/ad-toolbar";
 import { DisconnectDialog } from "./ad-dialogs-2";
+import { FbTrackedAccountsDialog } from "./fb-tracked-accounts-dialog";
 
 const TABS = [
 	{ id: "notifications", label: "Notifications", icon: Bell },
@@ -18,6 +19,7 @@ export function AdSettingsPage() {
 	const [activeTab, setActiveTab] = useState("integrations");
 	const disconnect = useSettingsAction();
 	const [disconnectPlatform, setDisconnectPlatform] = useState<string | null>(null);
+	const [fbAccountsOpen, setFbAccountsOpen] = useState(false);
 
 	return (
 		<div className="space-y-6">
@@ -75,10 +77,17 @@ export function AdSettingsPage() {
 													{a.status === "connected" ? "Connected" : a.status}
 												</span>
 												{a.status === "connected" ? (
-													<Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50"
-														onClick={() => setDisconnectPlatform(a.platform)}>
-														<X size={13} className="mr-1" /> Disconnect
-													</Button>
+													<>
+														{a.platform === "meta" && (
+															<Button variant="outline" size="sm" onClick={() => setFbAccountsOpen(true)}>
+																<Settings2 size={13} className="mr-1" /> Manage accounts
+															</Button>
+														)}
+														<Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50"
+															onClick={() => setDisconnectPlatform(a.platform)}>
+															<X size={13} className="mr-1" /> Disconnect
+														</Button>
+													</>
 												) : (
 													<Button variant="outline" size="sm" asChild>
 														<a href={`/my/integrations/${platformPath(a.platform)}/start`} target="_blank" rel="noopener noreferrer">
@@ -111,6 +120,7 @@ export function AdSettingsPage() {
 									platformName={platformLabel(disconnectPlatform ?? "")}
 									onConfirm={() => { disconnect.mutate({ action: "disconnect-platform", platform: disconnectPlatform! }); setDisconnectPlatform(null); }}
 									loading={disconnect.isPending} />
+								<FbTrackedAccountsDialog open={fbAccountsOpen} onClose={() => setFbAccountsOpen(false)} />
 							</CardContent>
 						</Card>
 					)}
