@@ -18,8 +18,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDeletePost } from "@/api/social-posts";
+import { useSocialAccountsFull } from "@/api/social-accounts";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { cn } from "@/lib/cn";
+import { Copy, Check, ChevronDown } from "lucide-react";
 
 // Renders real media (images + videos) as a responsive gallery
 function PostMediaGallery({ mediaUrls }: { mediaUrls: string[] }) {
@@ -425,15 +428,75 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
     return dateStr < todayStr;
   };
   const [shareOpen, setShareOpen] = useState(false);
-  const [shareAccount, setShareAccount] = useState("All accounts");
+  // 0 = "All accounts", otherwise a social_accounts.id
+  const [shareAccountId, setShareAccountId] = useState<number>(0);
   const [shareStart, setShareStart] = useState(() => {
     const d = new Date();
-    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
   const [shareEnd, setShareEnd] = useState(() => {
     const d = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
-    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
+  const [shareExpiresDays, setShareExpiresDays] = useState<number>(30);
+  const [shareLink, setShareLink] = useState<string>("");
+  const [shareId, setShareId] = useState<number | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [sharePickerOpen, setSharePickerOpen] = useState(false);
+
+  const { data: shareAccountsData } = useSocialAccountsFull();
+  const shareAccounts = shareAccountsData?.accounts ?? [];
+  const shareSelectedAccount = shareAccountId > 0 ? shareAccounts.find((a) => a.id === shareAccountId) : null;
+
+  const handleGenerateShareLink = async () => {
+    if (!shareStart || !shareEnd) {
+      toast.error("Select a date range");
+      return;
+    }
+    setShareLoading(true);
+    try {
+      const resp: { share_url: string; share_id: number; expires_at: string } = await apiClient.post(
+        "/api/spa/social/calendar/share/create",
+        {
+          start: shareStart,
+          end: shareEnd,
+          social_account_id: shareAccountId,
+          expires_days: shareExpiresDays,
+        },
+      );
+      setShareLink(resp.share_url);
+      setShareId(resp.share_id);
+      toast.success("Share link created");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to create share link");
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const handleRevokeShareLink = async () => {
+    if (!shareId) return;
+    try {
+      await apiClient.post("/api/spa/social/calendar/share/revoke", { share_id: shareId });
+      setShareLink("");
+      setShareId(null);
+      toast.success("Share link revoked");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to revoke share link");
+    }
+  };
+
+  const handleCopyShareLink = async () => {
+    if (!shareLink) return;
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
 
   const updateTitle = useCallback(() => {
     const api = calendarRef.current?.getApi();
@@ -993,7 +1056,7 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
       </Dialog>
 
       {/* Share Calendar Modal */}
-      <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+      <Dialog open={shareOpen} onOpenChange={(open) => { setShareOpen(open); if (!open) { setShareLink(""); setShareId(null); } }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">Share Calendar</DialogTitle>
@@ -1005,36 +1068,81 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Client (Social account)</label>
-              <select
-                value={shareAccount}
-                onChange={(e) => setShareAccount(e.target.value)}
-                className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option>All accounts</option>
-                <option>stavroswebnet.bsky.social</option>
-                <option>George Liontos</option>
-                <option>Stav Test page</option>
-                <option>stavroswebnet</option>
-              </select>
+              <Popover open={sharePickerOpen} onOpenChange={setSharePickerOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground flex items-center justify-between gap-2 focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      {shareSelectedAccount ? (
+                        <>
+                          <span className="relative inline-block shrink-0">
+                            {shareSelectedAccount.profile_picture ? (
+                              <img src={shareSelectedAccount.profile_picture} alt="" className="w-5 h-5 rounded-full object-cover" />
+                            ) : (
+                              <span className="w-5 h-5 rounded-full bg-muted" />
+                            )}
+                            <span className="absolute -right-0.5 -bottom-0.5">
+                              <PlatformBadge platformId={shareSelectedAccount.platform} size={10} />
+                            </span>
+                          </span>
+                          <span className="truncate">{shareSelectedAccount.account_name || `#${shareSelectedAccount.id}`}</span>
+                        </>
+                      ) : (
+                        <span>All accounts</span>
+                      )}
+                    </span>
+                    <ChevronDown size={14} className="shrink-0 opacity-60" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)] max-h-64 overflow-auto" align="start">
+                  <button
+                    type="button"
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted ${shareAccountId === 0 ? 'bg-muted' : ''}`}
+                    onClick={() => { setShareAccountId(0); setSharePickerOpen(false); }}
+                  >
+                    All accounts
+                  </button>
+                  {shareAccounts.map((a) => (
+                    <button
+                      type="button"
+                      key={a.id}
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted ${shareAccountId === a.id ? 'bg-muted' : ''}`}
+                      onClick={() => { setShareAccountId(a.id); setSharePickerOpen(false); }}
+                    >
+                      <span className="relative inline-block shrink-0">
+                        {a.profile_picture ? (
+                          <img src={a.profile_picture} alt="" className="w-5 h-5 rounded-full object-cover" />
+                        ) : (
+                          <span className="w-5 h-5 rounded-full bg-muted" />
+                        )}
+                        <span className="absolute -right-0.5 -bottom-0.5">
+                          <PlatformBadge platformId={a.platform} size={10} />
+                        </span>
+                      </span>
+                      <span className="truncate">{a.account_name || `#${a.id}`}</span>
+                    </button>
+                  ))}
+                </PopoverContent>
+              </Popover>
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Start</label>
               <input
-                type="text"
+                type="date"
                 value={shareStart}
                 onChange={(e) => setShareStart(e.target.value)}
                 className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="DD/MM/YYYY"
               />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">End</label>
               <input
-                type="text"
+                type="date"
                 value={shareEnd}
                 onChange={(e) => setShareEnd(e.target.value)}
                 className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="DD/MM/YYYY"
               />
             </div>
           </div>
@@ -1042,17 +1150,45 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
           <div className="mt-3">
             <label className="text-xs text-muted-foreground mb-1 block">Link expires</label>
             <div className="flex items-center gap-3">
-              <input
-                type="text"
-                value="In 30 days"
-                readOnly
-                className="flex-1 px-3 py-2.5 border border-border rounded-lg text-sm bg-muted text-foreground"
-              />
-              <Button className="px-8">Generate link</Button>
+              <select
+                value={shareExpiresDays}
+                onChange={(e) => setShareExpiresDays(Number(e.target.value))}
+                className="flex-1 px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value={7}>In 7 days</option>
+                <option value={14}>In 14 days</option>
+                <option value={30}>In 30 days</option>
+              </select>
+              <Button className="px-8" onClick={handleGenerateShareLink} disabled={shareLoading || !shareStart || !shareEnd}>
+                {shareLoading ? "Generating..." : "Generate link"}
+              </Button>
             </div>
           </div>
 
-          <div className="flex justify-end mt-4 pt-3 border-t border-border">
+          {shareLink && (
+            <div className="mt-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={shareLink}
+                  readOnly
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="flex-1 px-3 py-2.5 border border-border rounded-lg text-sm bg-muted text-foreground"
+                />
+                <Button variant="outline" onClick={handleCopyShareLink}>
+                  {shareCopied ? <Check size={14} /> : <Copy size={14} />}
+                  <span className="ml-1.5">{shareCopied ? "Copied" : "Copy"}</span>
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-between items-center mt-4 pt-3 border-t border-border">
+            {shareId ? (
+              <Button variant="outline" onClick={handleRevokeShareLink} className="text-red-500 border-red-200 hover:bg-red-50">
+                Revoke link
+              </Button>
+            ) : <span />}
             <Button variant="outline" onClick={() => setShareOpen(false)}>Close</Button>
           </div>
         </DialogContent>
