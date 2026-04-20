@@ -1209,8 +1209,21 @@ export default function PostComposer({
               className="text-xs text-destructive hover:text-destructive"
               onClick={() => {
                 if (customizeChannel && customizeActivePid) {
-                  // Clear only this platform's scoped items
-                  setUploadedMedia(prev => prev.filter(m => !m.targetPlatforms || !m.targetPlatforms.includes(customizeActivePid)));
+                  // For global items (no targetPlatforms), redirect them to all other platforms
+                  // instead of deleting — removing them from this platform only.
+                  const others = selectedPlatforms.filter(p => p !== customizeActivePid);
+                  setUploadedMedia(prev => prev.flatMap(m => {
+                    if (m.targetPlatforms?.includes(customizeActivePid)) {
+                      // Platform-scoped: remove only this platform's entry
+                      const remaining = m.targetPlatforms.filter(p => p !== customizeActivePid);
+                      return remaining.length > 0 ? [{ ...m, targetPlatforms: remaining }] : [];
+                    }
+                    if (!m.targetPlatforms) {
+                      // Global: redirect to other platforms
+                      return others.length > 0 ? [{ ...m, targetPlatforms: others }] : [];
+                    }
+                    return [m];
+                  }));
                   onImageCountChange?.(0);
                 } else {
                   clearMedia();
@@ -1263,8 +1276,17 @@ export default function PostComposer({
                 )}
                 <button
                   onClick={() => {
-                    // Remove by id so the filtered index never drifts out of sync with the flat array.
-                    setUploadedMedia(prev => prev.filter(m => m.id !== item.id));
+                    if (customizeChannel && customizeActivePid && !item.targetPlatforms) {
+                      // Global image removed from a specific platform tab — redirect it to all
+                      // other platforms so it stays on them but disappears from this one.
+                      const others = selectedPlatforms.filter(p => p !== customizeActivePid);
+                      setUploadedMedia(prev => prev.flatMap(m => {
+                        if (m.id !== item.id) return [m];
+                        return others.length > 0 ? [{ ...m, targetPlatforms: others }] : [];
+                      }));
+                    } else {
+                      setUploadedMedia(prev => prev.filter(m => m.id !== item.id));
+                    }
                     onImageCountChange?.(uploadedMedia.length - 1);
                   }}
                   className="absolute top-1 right-1 w-5 h-5 rounded-full bg-foreground/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
