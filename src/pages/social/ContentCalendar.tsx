@@ -138,6 +138,8 @@ interface DemoPost {
   platformSucceeded?: Record<string, boolean>;
   /** Per-platform post type label: "Reel", "Story", "Short", "Video", "Post", etc. */
   platformPostTypes?: Record<string, string>;
+  /** Per-platform content/media overrides from Customize channel */
+  platformOverrides?: Record<string, string | { content?: string; media_urls?: string[] }>;
 }
 
 const today = new Date();
@@ -366,6 +368,7 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
       const platformSucceeded = (ep.platformSucceeded && typeof ep.platformSucceeded === "object" && !Array.isArray(ep.platformSucceeded)) ? ep.platformSucceeded as Record<string, boolean> : {};
       const platformErrors = (ep.platformErrors && typeof ep.platformErrors === "object" && !Array.isArray(ep.platformErrors)) ? ep.platformErrors as Record<string, string> : {};
       const platformPostTypes = (ep.platformPostTypes && typeof ep.platformPostTypes === "object" && !Array.isArray(ep.platformPostTypes)) ? ep.platformPostTypes as Record<string, string> : {};
+      const platformOverrides = (ep.platformOverrides && typeof ep.platformOverrides === "object" && !Array.isArray(ep.platformOverrides)) ? ep.platformOverrides as Record<string, string | { content?: string; media_urls?: string[] }> : undefined;
       // Derive per-platform status — for partial posts, per-platform success varies
       const derivePlatformStatus = (pid: string): "published" | "scheduled" | "draft" | "failed" => {
         if (postStatus === "partial") {
@@ -399,6 +402,7 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
         platformErrors,
         platformSucceeded,
         platformPostTypes,
+        platformOverrides,
       };
     });
   }, [realEvents]);
@@ -804,25 +808,35 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                   </div>
                 )}
 
-                {/* Real media, or placeholder if none */}
-                {selectedPost.mediaUrls && selectedPost.mediaUrls.length > 0 ? (
-                  <PostMediaGallery mediaUrls={selectedPost.mediaUrls} />
-                ) : (
-                  <div className="bg-muted rounded-lg aspect-video flex items-center justify-center text-muted-foreground mb-3">
-                    <div className="text-center">
-                      <div className="w-12 h-12 rounded-full bg-foreground/20 flex items-center justify-center mx-auto mb-2">
-                        <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-foreground/60 ml-1" />
+                {/* Real media, or placeholder if none — use per-platform override when available */}
+                {(() => {
+                  const override = activePid && selectedPost.platformOverrides ? selectedPost.platformOverrides[activePid] : undefined;
+                  const overrideMedia = override && typeof override === "object" && Array.isArray(override.media_urls) ? override.media_urls : undefined;
+                  const displayMedia = overrideMedia ?? selectedPost.mediaUrls;
+                  return displayMedia && displayMedia.length > 0 ? (
+                    <PostMediaGallery mediaUrls={displayMedia} />
+                  ) : (
+                    <div className="bg-muted rounded-lg aspect-video flex items-center justify-center text-muted-foreground mb-3">
+                      <div className="text-center">
+                        <div className="w-12 h-12 rounded-full bg-foreground/20 flex items-center justify-center mx-auto mb-2">
+                          <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-foreground/60 ml-1" />
+                        </div>
+                        <span className="text-xs">No media</span>
                       </div>
-                      <span className="text-xs">No media</span>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
 
-              {/* Content text */}
+              {/* Content text — use per-platform override when available */}
               <div className="border-t border-border pt-3">
                 <p className="text-[11px] font-semibold text-muted-foreground tracking-wide uppercase mb-1">Content:</p>
-                <p className="text-sm text-foreground">{selectedPost.content}</p>
+                <p className="text-sm text-foreground">{(() => {
+                  const ov = activePid && selectedPost.platformOverrides ? selectedPost.platformOverrides[activePid] : undefined;
+                  if (typeof ov === "string") return ov;
+                  if (ov && typeof ov === "object" && typeof ov.content === "string") return ov.content;
+                  return selectedPost.content;
+                })()}</p>
               </div>
 
               {/* Timestamps */}
