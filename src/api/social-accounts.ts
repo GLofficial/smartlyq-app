@@ -79,7 +79,9 @@ export function useStartOAuth() {
 }
 
 // Native-picker-only hooks (SPA popup OAuth flow).
-// Returns pending status=0 rows for the given platform so the React picker modal can render them.
+// Returns pending status=0 AND active status=1 rows for the given platform so the React picker
+// modal can render both lists and let users disconnect existing accounts inline to free up
+// plan-limit slots before connecting new ones.
 export interface PendingAccount {
 	id: number;
 	platform: string;
@@ -89,13 +91,21 @@ export interface PendingAccount {
 	account_type: string;
 	profile_picture: string;
 	created_at: string;
+	status: number;
+}
+
+export interface PickerData {
+	pending: PendingAccount[];
+	active: PendingAccount[];
+	plan_limit: number | null;
+	active_count: number;
 }
 
 export function useSocialAccountsPending(platform: string, enabled: boolean) {
 	return useQuery({
 		queryKey: ["social", "accounts", "pending", platform],
 		queryFn: () =>
-			apiClient.get<{ pending: PendingAccount[]; plan_limit: number | null; active_count: number }>(
+			apiClient.get<PickerData>(
 				`/api/spa/social/accounts/pending?platform=${encodeURIComponent(platform)}`,
 			),
 		enabled: enabled && platform !== "",
