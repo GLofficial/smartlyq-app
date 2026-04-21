@@ -153,8 +153,18 @@ export function useReplyComment() {
 
 export function useInboxReply() {
 	return useMutation({
-		mutationFn: (data: { conversation_id: number; message: string }) =>
+		mutationFn: (data: { conversation_id: number; message: string; media_url?: string }) =>
 			apiClient.post<{ message: string }>("/api/spa/social/inbox/reply", data),
 		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["social", "inbox"] }),
+	});
+}
+
+export function useInboxUploadMedia() {
+	return useMutation({
+		mutationFn: (file: File) => {
+			const fd = new FormData();
+			fd.append("file", file);
+			return apiClient.upload<{ url: string }>("/api/spa/social/inbox/upload-media", fd);
+		},
 	});
 }

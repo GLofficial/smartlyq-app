@@ -3,9 +3,12 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, ChevronRight, MessageSquare, Send, Search, Archive, ArchiveRestore, Mail, AlertTriangle, WifiOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageSquare, Send, Search, Archive, ArchiveRestore, Mail, AlertTriangle, WifiOff, Smile, Image as ImageIcon, X } from "lucide-react";
 import { useSocialInbox, useInboxThread, useInboxSync, useInboxArchive, useInboxUnarchive } from "@/api/social";
-import { useInboxReply } from "@/api/social-posts";
+import { useInboxReply, useInboxUploadMedia } from "@/api/social-posts";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import data from "@emoji-mart/data";
+import Picker from "@emoji-mart/react";
 import { queryClient } from "@/lib/query-client";
 import { useSocialAccounts } from "@/api/social-reports";
 import { PlatformIcon } from "./platform-icon";
@@ -25,6 +28,7 @@ export function InboxPage() {
 	const { data: accountsData, isLoading: accountsLoading } = useSocialAccounts();
 	const { data: thread, isLoading: threadLoading } = useInboxThread(activeConvId);
 	const replyMut = useInboxReply();
+	const uploadMut = useInboxUploadMedia();
 	const syncMut = useInboxSync();
 	const archiveMut = useInboxArchive();
 	const unarchiveMut = useInboxUnarchive();
@@ -58,6 +62,10 @@ export function InboxPage() {
 		return { expired: false, hoursLeft: Math.max(0, hoursLeft) };
 	};
 	const [reply, setReply] = useState("");
+	const [emojiOpen, setEmojiOpen] = useState(false);
+	const [mediaFile, setMediaFile] = useState<File | null>(null);
+	const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 	const scrollRef = useRef<HTMLDivElement | null>(null);
 
 	useEffect(() => {
@@ -82,11 +90,37 @@ export function InboxPage() {
 		return true;
 	});
 
-	const handleSendReply = () => {
-		if (!reply.trim() || !activeConvId) return;
+	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		setMediaFile(file);
+		setMediaPreview(URL.createObjectURL(file));
+		e.target.value = "";
+	};
+
+	const handleSendReply = async () => {
+		if (!activeConvId || (!reply.trim() && !mediaFile)) return;
+		let mediaUrl: string | undefined;
+		if (mediaFile) {
+			try {
+				const res = await uploadMut.mutateAsync(mediaFile);
+				mediaUrl = res.url;
+			} catch {
+				toast.error("Failed to upload image.");
+				return;
+			}
+		}
 		replyMut.mutate(
-			{ conversation_id: activeConvId, message: reply },
-			{ onSuccess: () => { toast.success("Reply sent."); setReply(""); }, onError: () => toast.error("Failed to send.") },
+			{ conversation_id: activeConvId, message: reply, media_url: mediaUrl },
+			{
+				onSuccess: () => {
+					toast.success("Reply sent.");
+					setReply("");
+					setMediaFile(null);
+					setMediaPreview(null);
+				},
+				onError: () => toast.error("Failed to send."),
+			},
 		);
 	};
 
@@ -291,18 +325,44 @@ export function InboxPage() {
 							const sendBlocked = windowExpired || acctBlocked;
 							const placeholder = acctBlocked ? "Account disconnected — reconnect to reply." : windowExpired ? "Reply window expired." : "Write a reply...";
 							return (
-								<div className="p-3 border-t border-[var(--border)] flex items-center gap-2">
-									<Input
-										value={reply}
-										onChange={(e) => setReply(e.target.value)}
-										onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !sendBlocked) { e.preventDefault(); handleSendReply(); } }}
-										placeholder={placeholder}
-										className="flex-1"
-										disabled={sendBlocked}
-									/>
-									<Button onClick={handleSendReply} disabled={replyMut.isPending || !reply.trim() || sendBlocked}>
-										<Send size={14} /> Send
-									</Button>
+								<div className="border-t border-[var(--border)]">
+									{mediaPreview && (
+										<div className="px-3 pt-2">
+											<div className="relative inline-block">
+												<img src={mediaPreview} alt="" className="h-16 w-16 rounded object-cover border border-[var(--border)]" />
+												<button onClick={() => { setMediaFile(null); setMediaPreview(null); }} className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-[var(--foreground)] text-[var(--background)] flex items-center justify-center">
+													<X size={10} />
+												</button>
+											</div>
+										</div>
+									)}
+									<div className="p-3 flex items-center gap-1.5">
+										<Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
+											<PopoverTrigger asChild>
+												<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" disabled={sendBlocked} title="Emoji">
+													<Smile size={16} />
+												</Button>
+											</PopoverTrigger>
+											<PopoverContent side="top" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
+												<Picker data={data} onEmojiSelect={(e: { native: string }) => { setReply(r => r + e.native); setEmojiOpen(false); }} theme="light" />
+											</PopoverContent>
+										</Popover>
+										<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" disabled={sendBlocked} title="Send image" onClick={() => fileInputRef.current?.click()}>
+											<ImageIcon size={16} />
+										</Button>
+										<input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handleFileSelect} />
+										<Input
+											value={reply}
+											onChange={(e) => setReply(e.target.value)}
+											onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !sendBlocked) { e.preventDefault(); handleSendReply(); } }}
+											placeholder={placeholder}
+											className="flex-1"
+											disabled={sendBlocked}
+										/>
+										<Button onClick={handleSendReply} disabled={replyMut.isPending || uploadMut.isPending || (!reply.trim() && !mediaFile) || sendBlocked}>
+											<Send size={14} /> {uploadMut.isPending ? "Uploading…" : "Send"}
+										</Button>
+									</div>
 								</div>
 							);
 						})()}
