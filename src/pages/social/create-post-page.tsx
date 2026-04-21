@@ -227,7 +227,11 @@ export function CreatePostPage() {
   }, [selectedAccountIds, content, selectedPlatforms, platformPostType, platformOptions, previewMedia, limits]);
 
   const handleSubmit = useCallback(
-    (action: CreatePostData["action"], scheduledTime?: string) => {
+    (
+      action: CreatePostData["action"],
+      scheduledTime?: string,
+      extras?: { queue_id?: number; recurrence?: CreatePostData["recurrence"] },
+    ) => {
       if (!validatePost(action, scheduledTime)) return;
       // Always send the user's IANA timezone so the backend can convert local → UTC correctly.
       // Avoids the classic "scheduled Friday post lands on Saturday" bug from manual offset math.
@@ -290,12 +294,17 @@ export function CreatePostPage() {
           timezone: userTimezone,
           platform_options: platformOptions,
           platform_overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
+          queue_id: extras?.queue_id,
+          recurrence: extras?.recurrence,
         },
         {
           onSuccess: () => {
             toast.success(
               action === "save_draft" ? "Draft saved" :
               action === "scheduled" ? "Post scheduled" :
+              action === "send_for_approval" ? "Sent for approval" :
+              action === "add_to_queue" ? "Added to queue" :
+              action === "recurring" ? "Recurring schedule created" :
               "Post queued for publishing",
             );
             navigate(wsHash ? `/w/${wsHash}/social-media/posts` : "/social-media/posts");
@@ -431,6 +440,9 @@ export function CreatePostPage() {
             onSelectedAccountIdsChange={setSelectedAccountIds}
             onSaveDraft={() => handleSubmit("save_draft")}
             onPostNow={() => handleSubmit("post_now")}
+            onSendForApproval={() => handleSubmit("send_for_approval")}
+            onAddToQueue={(queueId: number) => handleSubmit("add_to_queue", undefined, { queue_id: queueId })}
+            onScheduleRecurring={(recurrence) => handleSubmit("recurring", undefined, { recurrence })}
             onSchedulePost={(date, time) => {
               // Normalize time to 24-hour "HH:MM" (accept "02:05 PM", "14:05", "2:05pm", etc.)
               const raw = (time || "").trim();

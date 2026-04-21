@@ -18,6 +18,8 @@ import Picker from "@emoji-mart/react";
 import { useAiModels } from "@/api/ai-generate";
 import { useVideoModels } from "@/api/video-gen";
 import { useBrands } from "@/api/brands";
+import { PostActionsSplit } from "./post-actions-split";
+import { AddToQueueModal, ScheduleRecurringModal, type RecurrenceConfig } from "./post-action-modals";
 
 // Unicode bold/italic character maps for social media formatting
 const BOLD_MAP: Record<string, string> = {};
@@ -364,6 +366,9 @@ interface PostComposerProps {
   /** Callbacks for real posting actions */
   onSaveDraft?: () => void;
   onPostNow?: () => void;
+  onSendForApproval?: () => void;
+  onAddToQueue?: (queueId: number) => void;
+  onScheduleRecurring?: (recurrence: RecurrenceConfig) => void;
   onSchedulePost?: (date: string, time: string) => void;
   isSubmitting?: boolean;
   /** Selected account IDs (real) — synced with parent */
@@ -433,6 +438,9 @@ export default function PostComposer({
   realAccounts,
   onSaveDraft,
   onPostNow,
+  onSendForApproval,
+  onAddToQueue,
+  onScheduleRecurring,
   onSchedulePost,
   isSubmitting,
   selectedAccountIds,
@@ -543,6 +551,8 @@ export default function PostComposer({
   const [availableLabels] = useState(["facebook", "instagram", "twitter", "linkedin", "marketing", "product"]);
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [scheduleOpen, setScheduleOpen] = useState(!!initialScheduledDate);
+  const [queueOpen, setQueueOpen] = useState(false);
+  const [recurringOpen, setRecurringOpen] = useState(false);
   const [scheduleDate, setScheduleDate] = useState(() => {
     if (initialScheduledDate) {
       // Convert YYYY-MM-DD to DD/MM/YYYY
@@ -2147,9 +2157,29 @@ export default function PostComposer({
       <div className="flex flex-wrap gap-2 sm:gap-3">
         <Button variant="accent" className="flex-1 min-w-[100px] sm:min-w-[140px] text-xs sm:text-sm" disabled={isSubmitting || selectedAccounts.length === 0} onClick={onSaveDraft}><Save className="w-4 h-4" /> Save Draft</Button>
         <Button variant="success" className="flex-1 min-w-[100px] sm:min-w-[140px] text-xs sm:text-sm" disabled={isSubmitting || selectedAccounts.length === 0} onClick={() => setScheduleOpen(true)}><CalendarDays className="w-4 h-4" /> Schedule Post</Button>
-        <Button className="flex-1 min-w-[100px] sm:min-w-[140px] text-xs sm:text-sm" disabled={isSubmitting || selectedAccounts.length === 0 || !content.trim()} onClick={onPostNow}><Send className="w-4 h-4" /> Post Now</Button>
-        <Button variant="outline" className="min-w-[80px] sm:min-w-[120px] text-xs sm:text-sm" disabled={isSubmitting || selectedAccounts.length === 0}><ListOrdered className="w-4 h-4" /> Queue</Button>
+        <PostActionsSplit
+          disabled={selectedAccounts.length === 0 || !content.trim()}
+          isSubmitting={isSubmitting}
+          onAction={(action) => {
+            if (action === "post_now") onPostNow?.();
+            else if (action === "send_for_approval") onSendForApproval?.();
+            else if (action === "recurring") setRecurringOpen(true);
+            else if (action === "add_to_queue") setQueueOpen(true);
+          }}
+        />
       </div>
+
+      {/* Add to Queue + Schedule Recurring modals */}
+      <AddToQueueModal
+        open={queueOpen}
+        onClose={() => setQueueOpen(false)}
+        onConfirm={(queueId) => { setQueueOpen(false); onAddToQueue?.(queueId); }}
+      />
+      <ScheduleRecurringModal
+        open={recurringOpen}
+        onClose={() => setRecurringOpen(false)}
+        onConfirm={(recurrence) => { setRecurringOpen(false); onScheduleRecurring?.(recurrence); }}
+      />
 
       {/* Image Picker Dialog */}
       <Dialog open={imagePickerOpen} onOpenChange={setImagePickerOpen}>

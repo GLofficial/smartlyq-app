@@ -34,9 +34,22 @@ export interface CreatePostData {
 	content: string;
 	platforms: string[];
 	selected_accounts: number[];
-	action: "save_draft" | "scheduled" | "post_now";
+	action: "save_draft" | "scheduled" | "post_now" | "send_for_approval" | "add_to_queue" | "recurring";
 	scheduled_time: string | null;
 	media_urls: string[];
+	/** Queue ID for action=add_to_queue. Post publishes in the queue's next open slot. */
+	queue_id?: number;
+	/** Recurrence config for action=recurring. See RecurrenceConfig in post-action-modals. */
+	recurrence?: {
+		frequency: "daily" | "weekly" | "monthly";
+		interval: number;
+		days_of_week: string[];
+		day_of_month: number | null;
+		time_of_day: string;
+		starts_at: string;
+		ends_at: string | null;
+		max_occurrences: number | null;
+	};
 	/** IANA timezone (e.g. "Europe/Athens"). Required for scheduled posts — backend uses this to convert to UTC. */
 	timezone?: string;
 	/** Per-platform options keyed by platform (e.g. `{ tiktok: { visibility, allow_comments, ... } }`).
