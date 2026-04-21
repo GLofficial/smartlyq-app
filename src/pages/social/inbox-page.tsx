@@ -208,7 +208,7 @@ export function InboxPage() {
 												{conv.last_message_at ? new Date(conv.last_message_at).toLocaleDateString() : ""}
 											</span>
 										</div>
-										<p className="text-xs text-[var(--muted-foreground)] truncate mt-0.5">{conv.snippet}</p>
+										<p className="text-xs text-[var(--muted-foreground)] truncate mt-0.5">{conv.snippet === "0" || conv.snippet === "" ? "📷 Image" : conv.snippet}</p>
 									</div>
 									{conv.unread_count > 0 && (
 										<span className="shrink-0 min-w-[20px] h-5 rounded-full bg-[var(--sq-primary)] text-white text-[10px] font-bold flex items-center justify-center px-1.5">
