@@ -143,6 +143,12 @@ interface DemoPost {
   platformPostTypes?: Record<string, string>;
   /** Per-platform content/media overrides from Customize channel */
   platformOverrides?: Record<string, string | { content?: string; media_urls?: string[] }>;
+  /** Approval lifecycle: 'none' | 'pending' | 'approved' | 'rejected'. */
+  approvalStatus?: string;
+  /** Non-null when the post was added to a named queue. */
+  queueId?: number | null;
+  /** Non-null when the post was materialized from a recurring schedule. */
+  recurrenceId?: number | null;
 }
 
 const today = new Date();
@@ -406,6 +412,9 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
         platformSucceeded,
         platformPostTypes,
         platformOverrides,
+        approvalStatus: (ep.approvalStatus as string) || "none",
+        queueId: typeof ep.queueId === "number" ? (ep.queueId as number) : null,
+        recurrenceId: typeof ep.recurrenceId === "number" ? (ep.recurrenceId as number) : null,
       };
     });
   }, [realEvents]);
@@ -728,6 +737,30 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                         )}
                         <p className="text-[10px] font-semibold text-foreground line-clamp-1">{post.title}</p>
                         <p className="text-[9px] text-muted-foreground line-clamp-1 mt-0.5">{post.content}</p>
+                        {(post.approvalStatus === "pending" || post.approvalStatus === "rejected" || post.queueId || post.recurrenceId) && (
+                          <div className="flex items-center gap-1 mt-1 flex-wrap">
+                            {post.approvalStatus === "pending" && (
+                              <span className="inline-flex items-center gap-0.5 px-1 py-[1px] rounded bg-purple-100 text-purple-700 text-[8px] font-semibold uppercase tracking-wide">
+                                Pending
+                              </span>
+                            )}
+                            {post.approvalStatus === "rejected" && (
+                              <span className="inline-flex items-center gap-0.5 px-1 py-[1px] rounded bg-red-100 text-red-700 text-[8px] font-semibold uppercase tracking-wide">
+                                Rejected
+                              </span>
+                            )}
+                            {post.queueId && (
+                              <span className="inline-flex items-center gap-0.5 px-1 py-[1px] rounded bg-orange-100 text-orange-700 text-[8px] font-semibold uppercase tracking-wide">
+                                Queued
+                              </span>
+                            )}
+                            {post.recurrenceId && (
+                              <span className="inline-flex items-center gap-0.5 px-1 py-[1px] rounded bg-violet-100 text-violet-700 text-[8px] font-semibold uppercase tracking-wide">
+                                Recurring
+                              </span>
+                            )}
+                          </div>
+                        )}
                         <div className="flex items-center justify-between gap-1 mt-1 min-w-0">
                           <PlatformIcons platforms={post.platforms} maxVisible={3} size={16} />
                           <div className="shrink-0 scale-90 origin-right"><StatusBadge status={post.status} /></div>

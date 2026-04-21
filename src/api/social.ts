@@ -99,6 +99,12 @@ export interface CalendarEvent {
 		platformPostTypes?: Record<string, string>;
 		/** Per-platform content/media overrides from Customize channel */
 		platformOverrides?: Record<string, string | { content?: string; media_urls?: string[] }>;
+		/** Approval lifecycle: 'none' | 'pending' | 'approved' | 'rejected'. */
+		approvalStatus?: string;
+		/** Non-null when the post was added to a named queue (awaits queue drainer). */
+		queueId?: number | null;
+		/** Non-null when the post was materialized from a recurring schedule. */
+		recurrenceId?: number | null;
 	};
 	// Legacy fields (keep for backward compat)
 	date?: string | null;
