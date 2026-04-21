@@ -607,64 +607,55 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
 
   return (
     <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">
-          <div className="max-w-[1400px] mx-auto space-y-4">
-            {/* Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="text-[11px] font-semibold text-muted-foreground tracking-wide uppercase mb-1 block">Content</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="Search content"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
+          <div className="w-full space-y-4">
+            {/* Filters — single premium row, matches CRM contacts toolbar style */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-foreground)]" />
+                <input
+                  type="text"
+                  placeholder="Search content, captions, tags..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 border border-[var(--border)] rounded-lg text-sm bg-[var(--card)] shadow-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
               </div>
-              <div>
-                <label className="text-[11px] font-semibold text-muted-foreground tracking-wide uppercase mb-1 block">Status</label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  {STATUS_OPTIONS.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-[11px] font-semibold text-muted-foreground tracking-wide uppercase mb-1 block">Platform</label>
-                <select
-                  value={platformFilter}
-                  onChange={(e) => setPlatformFilter(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  {PLATFORM_FILTERS.map((p) => (
-                    <option key={p.id} value={p.id}>{p.label}</option>
-                  ))}
-                </select>
-              </div>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full sm:w-[160px] px-3 py-2 border border-[var(--border)] rounded-lg text-sm bg-[var(--card)] shadow-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <select
+                value={platformFilter}
+                onChange={(e) => setPlatformFilter(e.target.value)}
+                className="w-full sm:w-[160px] px-3 py-2 border border-[var(--border)] rounded-lg text-sm bg-[var(--card)] shadow-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {PLATFORM_FILTERS.map((p) => (
+                  <option key={p.id} value={p.id}>{p.label}</option>
+                ))}
+              </select>
             </div>
 
             {/* Calendar toolbar */}
-            <div className="flex flex-wrap items-center gap-3 justify-between">
+            <div className="flex flex-wrap items-center gap-2 justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex items-center bg-muted rounded-lg">
-                  <button onClick={handlePrev} className="p-2 hover:bg-card rounded-l-lg transition-colors"><ChevronLeft className="w-4 h-4 text-foreground" /></button>
+                <div className="flex items-center bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-sm">
+                  <button onClick={handlePrev} className="p-2 hover:bg-[var(--muted)] rounded-l-lg transition-colors"><ChevronLeft className="w-4 h-4 text-foreground" /></button>
                   <span className="px-4 py-2 text-sm font-semibold text-foreground min-w-[140px] text-center">{title}</span>
-                  <button onClick={handleNext} className="p-2 hover:bg-card rounded-r-lg transition-colors"><ChevronRight className="w-4 h-4 text-foreground" /></button>
+                  <button onClick={handleNext} className="p-2 hover:bg-[var(--muted)] rounded-r-lg transition-colors"><ChevronRight className="w-4 h-4 text-foreground" /></button>
                 </div>
-                <Button variant="outline" size="sm" onClick={handleToday} className="gap-1.5">
+                <Button variant="outline" size="sm" onClick={handleToday} className="gap-1.5 bg-[var(--card)] shadow-sm">
                   <CalendarDays className="w-4 h-4" /> Today
                 </Button>
               </div>
 
               <div className="flex items-center gap-2">
-                {/* View toggles */}
-                <div className="flex items-center bg-muted rounded-lg p-0.5">
+                {/* View toggles — primary-tinted active pill (not destructive red) */}
+                <div className="flex items-center bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-sm p-0.5">
                   {(Object.entries(VIEW_LABELS) as [CalendarView, { label: string }][]).map(([key, val]) => (
                     <button
                       key={key}
@@ -672,8 +663,8 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                       className={cn(
                         "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
                         currentView === key
-                          ? "bg-destructive text-destructive-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
+                          ? "bg-[var(--sq-primary)] text-white shadow-sm"
+                          : "text-muted-foreground hover:text-foreground hover:bg-[var(--muted)]"
                       )}
                     >
                       {val.label}
@@ -681,10 +672,10 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                   ))}
                 </div>
 
-                <Button variant="outline" className="gap-1.5" onClick={() => setShareOpen(true)}>
+                <Button variant="outline" size="sm" className="gap-1.5 bg-[var(--card)] shadow-sm" onClick={() => setShareOpen(true)}>
                   <Share2 className="w-4 h-4" /> Share
                 </Button>
-                <Button className="gap-1.5" onClick={() => {
+                <Button size="sm" className="gap-1.5 shadow-sm" onClick={() => {
                   const api = calendarRef.current?.getApi();
                   const currentDate = api?.getDate();
                   const dateStr = currentDate ? currentDate.toISOString().split("T")[0] : undefined;
