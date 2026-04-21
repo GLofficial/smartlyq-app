@@ -270,7 +270,9 @@ export function InboxPage() {
 										<div key={m.id} className={`flex ${isUs ? "justify-end" : "justify-start"}`}>
 											<div className={`max-w-[70%] rounded-2xl px-3 py-2 ${isUs ? "bg-[var(--sq-primary)] text-white rounded-br-sm" : "bg-[var(--card)] border border-[var(--border)] rounded-bl-sm"}`}>
 												{m.media_url && <img src={m.media_url} alt="" className="rounded mb-1.5 max-w-full" />}
-												<p className="text-sm whitespace-pre-wrap">{m.content}</p>
+												{m.content && m.content !== "0" && (
+													<p className="text-sm whitespace-pre-wrap" style={{ fontFamily: "emoji, system-ui, sans-serif" }}>{m.content}</p>
+												)}
 												<p className={`text-[10px] mt-1 ${isUs ? "text-white/70" : "text-[var(--muted-foreground)]"}`}>
 													{m.sent_at ? new Date(m.sent_at).toLocaleString("en-US", { hour: "numeric", minute: "2-digit", month: "short", day: "numeric" }) : ""}
 												</p>
