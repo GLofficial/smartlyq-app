@@ -105,6 +105,7 @@ const CrmProjectsPage = lazy(() => import("@/pages/crm/crm-projects-page").then(
 const CrmContactsPage = lazy(() => import("@/pages/crm/crm-contacts-page").then((m) => ({ default: m.CrmContactsPage })));
 const CrmTasksPage = lazy(() => import("@/pages/crm/crm-tasks-page").then((m) => ({ default: m.CrmTasksPage })));
 const CrmPreviewPage = lazy(() => import("@/pages/crm/crm-preview-page").then((m) => ({ default: m.CrmPreviewPage })));
+const CrmLeadSyncPage = lazy(() => import("@/pages/crm/crm-lead-sync-page").then((m) => ({ default: m.CrmLeadSyncPage })));
 const SettingsPage = lazy(() => import("@/pages/settings/settings-page").then((m) => ({ default: m.SettingsPage })));
 
 function S({ children }: { children: React.ReactNode }) {
@@ -252,6 +253,7 @@ export const router = createBrowserRouter([
 					{ path: "crm/contacts", element: <S><CrmContactsPage /></S> },
 					{ path: "crm/tasks", element: <S><CrmTasksPage /></S> },
 					{ path: "crm/preview/:dealId", element: <S><CrmPreviewPage /></S> },
+					{ path: "integrations/lead-sync", element: <S><CrmLeadSyncPage /></S> },
 
 					/* Whitelabel + Agency */
 					{ path: "agency", element: <S><AgencyPage /></S> },

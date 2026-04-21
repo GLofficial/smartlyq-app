@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, RefreshCw, Unplug, RotateCw } from "lucide-react";
+import { CheckCircle, RefreshCw, Unplug, RotateCw, ArrowRight, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useIntegrations } from "@/api/general";
 import { useStartOAuth, useDisconnectAccount, useSyncAccount } from "@/api/social-accounts";
@@ -176,6 +177,32 @@ export function IntegrationsPage() {
 					</div>
 				</div>
 			))}
+
+			{/* Automations — Lead Sync */}
+			<div className="space-y-3">
+				<h2 className="text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Automations</h2>
+				<Card className="transition-shadow hover:shadow-md">
+					<CardContent className="p-0">
+						<div className="h-1" style={{ backgroundColor: "#1877F2" }} />
+						<div className="flex items-center gap-4 p-5">
+							<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#1877F2]/10">
+								<Users size={22} className="text-[#1877F2]" />
+							</div>
+							<div className="min-w-0 flex-1">
+								<p className="text-sm font-semibold">Facebook Lead Ads → CRM</p>
+								<p className="mt-0.5 text-xs leading-relaxed text-[var(--muted-foreground)]">
+									Every new lead submitted through your Facebook Lead Ad forms lands directly in your CRM contacts. Map form fields to CRM fields and let the webhook do the rest.
+								</p>
+							</div>
+							<Link to={wp("integrations/lead-sync")}>
+								<Button size="sm" variant="outline" className="gap-1.5 bg-[var(--card)] shadow-sm">
+									Manage <ArrowRight size={14} />
+								</Button>
+							</Link>
+						</div>
+					</CardContent>
+				</Card>
+			</div>
 
 			{/* Social Media Accounts */}
 			<div className="space-y-3">
