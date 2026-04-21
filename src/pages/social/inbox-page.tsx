@@ -1,12 +1,13 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, MessageSquare, Send, Search, Archive, ArchiveRestore, Mail, AlertTriangle, WifiOff, Smile, Image as ImageIcon, X } from "lucide-react";
 import { useSocialInbox, useInboxThread, useInboxSync, useInboxArchive, useInboxUnarchive } from "@/api/social";
-import { useInboxReply, useInboxUploadMedia } from "@/api/social-posts";
+import { useInboxReply } from "@/api/social-posts";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { InboxMediaPicker } from "./InboxMediaPicker";
 import emojiData from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import { queryClient } from "@/lib/query-client";
@@ -28,7 +29,6 @@ export function InboxPage() {
 	const { data: accountsData, isLoading: accountsLoading } = useSocialAccounts();
 	const { data: thread, isLoading: threadLoading } = useInboxThread(activeConvId);
 	const replyMut = useInboxReply();
-	const uploadMut = useInboxUploadMedia();
 	const syncMut = useInboxSync();
 	const archiveMut = useInboxArchive();
 	const unarchiveMut = useInboxUnarchive();
@@ -63,9 +63,9 @@ export function InboxPage() {
 	};
 	const [reply, setReply] = useState("");
 	const [emojiOpen, setEmojiOpen] = useState(false);
-	const [mediaFile, setMediaFile] = useState<File | null>(null);
+	const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+	const [mediaUrl, setMediaUrl] = useState<string | null>(null);
 	const [mediaPreview, setMediaPreview] = useState<string | null>(null);
-	const fileInputRef = useRef<HTMLInputElement>(null);
 	const scrollRef = useRef<HTMLDivElement | null>(null);
 
 	useEffect(() => {
@@ -90,33 +90,15 @@ export function InboxPage() {
 		return true;
 	});
 
-	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (!file) return;
-		setMediaFile(file);
-		setMediaPreview(URL.createObjectURL(file));
-		e.target.value = "";
-	};
-
-	const handleSendReply = async () => {
-		if (!activeConvId || (!reply.trim() && !mediaFile)) return;
-		let mediaUrl: string | undefined;
-		if (mediaFile) {
-			try {
-				const res = await uploadMut.mutateAsync(mediaFile);
-				mediaUrl = res.url;
-			} catch {
-				toast.error("Failed to upload image.");
-				return;
-			}
-		}
+	const handleSendReply = () => {
+		if (!activeConvId || (!reply.trim() && !mediaUrl)) return;
 		replyMut.mutate(
-			{ conversation_id: activeConvId, message: reply, media_url: mediaUrl },
+			{ conversation_id: activeConvId, message: reply, media_url: mediaUrl ?? undefined },
 			{
 				onSuccess: () => {
 					toast.success("Reply sent.");
 					setReply("");
-					setMediaFile(null);
+					setMediaUrl(null);
 					setMediaPreview(null);
 				},
 				onError: () => toast.error("Failed to send."),
@@ -330,7 +312,7 @@ export function InboxPage() {
 										<div className="px-3 pt-2">
 											<div className="relative inline-block">
 												<img src={mediaPreview} alt="" className="h-16 w-16 rounded object-cover border border-[var(--border)]" />
-												<button onClick={() => { setMediaFile(null); setMediaPreview(null); }} className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-[var(--foreground)] text-[var(--background)] flex items-center justify-center">
+												<button onClick={() => { setMediaUrl(null); setMediaPreview(null); }} className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-[var(--foreground)] text-[var(--background)] flex items-center justify-center">
 													<X size={10} />
 												</button>
 											</div>
@@ -347,10 +329,14 @@ export function InboxPage() {
 												<Picker data={emojiData} onEmojiSelect={(e: { native: string }) => { setReply(r => r + e.native); setEmojiOpen(false); }} theme="light" />
 											</PopoverContent>
 										</Popover>
-										<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" disabled={sendBlocked} title="Send image" onClick={() => fileInputRef.current?.click()}>
+										<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" disabled={sendBlocked} title="Attach image" onClick={() => setMediaPickerOpen(true)}>
 											<ImageIcon size={16} />
 										</Button>
-										<input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handleFileSelect} />
+										<InboxMediaPicker
+											open={mediaPickerOpen}
+											onOpenChange={setMediaPickerOpen}
+											onSelect={(url, preview) => { setMediaUrl(url); setMediaPreview(preview); }}
+										/>
 										<Input
 											value={reply}
 											onChange={(e) => setReply(e.target.value)}
@@ -359,8 +345,8 @@ export function InboxPage() {
 											className="flex-1"
 											disabled={sendBlocked}
 										/>
-										<Button onClick={handleSendReply} disabled={replyMut.isPending || uploadMut.isPending || (!reply.trim() && !mediaFile) || sendBlocked}>
-											<Send size={14} /> {uploadMut.isPending ? "Uploading…" : "Send"}
+										<Button onClick={handleSendReply} disabled={replyMut.isPending || (!reply.trim() && !mediaUrl) || sendBlocked}>
+											<Send size={14} /> Send
 										</Button>
 									</div>
 								</div>
