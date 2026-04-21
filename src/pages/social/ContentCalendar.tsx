@@ -14,7 +14,7 @@ import type { DateClickArg } from "@fullcalendar/interaction";
 import { PLATFORM_BRANDS, PlatformIcon, PlatformBadge } from "./PlatformIcons";
 import { Bell, HelpCircle, Settings, Users, Search, ChevronLeft, ChevronRight, CalendarDays, Share2, Plus, X, ExternalLink, RotateCw, MinusCircle, Trash2, PenLine, AlertTriangle, Clock, CheckCircle2, FileEdit } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDeletePost } from "@/api/social-posts";
