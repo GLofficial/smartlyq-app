@@ -153,7 +153,7 @@ export function useReplyComment() {
 
 export function useInboxReply() {
 	return useMutation({
-		mutationFn: (data: { conversation_id: number; message: string; media_url?: string }) =>
+		mutationFn: (data: { conversation_id: number; message: string; media_url?: string; media_type?: string }) =>
 			apiClient.post<{ message: string }>("/api/spa/social/inbox/reply", data),
 		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["social", "inbox"] }),
 	});
