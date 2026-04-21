@@ -427,6 +427,28 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
     const todayStr = new Date().toISOString().split("T")[0];
     return dateStr < todayStr;
   };
+  const [postShareOpen, setPostShareOpen] = useState(false);
+  const [postShareExpiresDays, setPostShareExpiresDays] = useState<number>(7);
+  const [postShareLink, setPostShareLink] = useState<string>("");
+  const [postShareLoading, setPostShareLoading] = useState(false);
+  const [postShareCopied, setPostShareCopied] = useState(false);
+
+  const handleGeneratePostShareLink = async () => {
+    if (!selectedPost) return;
+    setPostShareLoading(true);
+    try {
+      const resp: { ok: number; share_url: string; expires_at: string } = await apiClient.post(
+        "/api/spa/social/posts/share/create",
+        { post_id: Number(selectedPost.id), expires_days: postShareExpiresDays }
+      );
+      setPostShareLink(resp.share_url ?? "");
+    } catch {
+      toast.error("Failed to generate share link.");
+    } finally {
+      setPostShareLoading(false);
+    }
+  };
+
   const [shareOpen, setShareOpen] = useState(false);
   // 0 = "All accounts", otherwise a social_accounts.id
   const [shareAccountId, setShareAccountId] = useState<number>(0);
@@ -927,7 +949,7 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                     <Button variant="outline" className="gap-1.5" onClick={() => { if (onDeletePost && selectedPost) { onDeletePost(Number(selectedPost.id)); setSelectedPost(null); } }}><MinusCircle className="w-4 h-4" /> Remove Failed</Button>
                   </>
                 )}
-                <Button variant="outline" className="gap-1.5"><Share2 className="w-4 h-4" /> Share</Button>
+                <Button variant="outline" className="gap-1.5" onClick={() => { setPostShareLink(""); setPostShareCopied(false); setPostShareOpen(true); }}><Share2 className="w-4 h-4" /> Share</Button>
                 <Button variant="outline" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => { if (selectedPost) setDeleteConfirmId(Number(selectedPost.id)); }}><Trash2 className="w-4 h-4" /> Delete</Button>
                 {selectedPost.status === "partial" && (
                   <Button className="gap-1.5 bg-warning text-warning-foreground hover:bg-warning/90"><FileEdit className="w-4 h-4" /> Edit Failed</Button>
@@ -1040,6 +1062,42 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
               </Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Post Modal */}
+      <Dialog open={postShareOpen} onOpenChange={(open) => { setPostShareOpen(open); if (!open) { setPostShareLink(""); setPostShareCopied(false); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Share Post</DialogTitle></DialogHeader>
+          <p className="text-sm text-[var(--muted-foreground)]">Creates a <strong>read-only</strong> public link for this post. You can revoke it anytime.</p>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium">Link expires</label>
+              <select
+                className="mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                value={postShareExpiresDays}
+                onChange={(e) => setPostShareExpiresDays(Number(e.target.value))}
+              >
+                <option value={7}>In 7 days</option>
+                <option value={14}>In 14 days</option>
+                <option value={30}>In 30 days</option>
+              </select>
+            </div>
+            {postShareLink && (
+              <div className="flex gap-2">
+                <input readOnly value={postShareLink} className="flex-1 rounded-md border border-[var(--border)] bg-[var(--muted)] px-3 py-2 text-sm truncate" />
+                <Button variant="outline" onClick={() => { navigator.clipboard.writeText(postShareLink); setPostShareCopied(true); setTimeout(() => setPostShareCopied(false), 2000); }}>
+                  {postShareCopied ? "Copied!" : "Copy"}
+                </Button>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPostShareOpen(false)}>Close</Button>
+            <Button onClick={handleGeneratePostShareLink} disabled={postShareLoading}>
+              {postShareLoading ? "Generating…" : "Generate link"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
