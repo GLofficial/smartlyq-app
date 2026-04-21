@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { PlatformIcon } from "./platform-icon";
 
 type IgMethod = "facebook" | "direct";
@@ -39,26 +39,55 @@ const METHODS: Array<{
 	},
 ];
 
+/**
+ * Custom portal modal — intentionally NOT using shadcn's Dialog because its
+ * translate(-50%,-50%) positioning was fighting with tailwindcss-animate's
+ * slide-in transforms in a way that left the modal stuck in the top-left
+ * quadrant. Using fixed+flex gives bulletproof viewport centering.
+ */
 export function InstagramMethodModal({ open, onClose, onConfirm }: Props) {
 	const [selected, setSelected] = useState<IgMethod>("facebook");
 
-	return (
-		<Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-			{/*
-			  Force hard centering with inline style to beat any stray transform from parent
-			  layout or lingering animation transform. Tailwind's translate-x-[-50%] gets
-			  combined with the slide-in animation transforms by tailwindcss-animate and can
-			  end up at a non-center resting position on some browser/version combos.
-			*/}
-			<DialogContent
-				className="max-w-2xl"
-				style={{ left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}
-			>
-				<DialogHeader>
-					<DialogTitle className="text-lg">Connect Instagram</DialogTitle>
-				</DialogHeader>
+	// Lock body scroll while modal is open + close on Escape.
+	useEffect(() => {
+		if (!open) return;
+		const prev = document.body.style.overflow;
+		document.body.style.overflow = "hidden";
+		function onKey(e: KeyboardEvent) {
+			if (e.key === "Escape") onClose();
+		}
+		window.addEventListener("keydown", onKey);
+		return () => {
+			document.body.style.overflow = prev;
+			window.removeEventListener("keydown", onKey);
+		};
+	}, [open, onClose]);
 
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
+	if (!open) return null;
+
+	return createPortal(
+		<div
+			className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-150"
+			onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+			role="dialog"
+			aria-modal="true"
+		>
+			<div
+				className="relative bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-xl p-6 w-full max-w-2xl"
+				onMouseDown={(e) => e.stopPropagation()}
+			>
+				<button
+					type="button"
+					onClick={onClose}
+					className="absolute top-4 right-4 rounded-sm opacity-70 hover:opacity-100 transition-opacity"
+					aria-label="Close"
+				>
+					<X size={16} />
+				</button>
+
+				<h2 className="text-lg font-semibold leading-none tracking-tight mb-4">Connect Instagram</h2>
+
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 					{METHODS.map((m) => (
 						<MethodCard
 							key={m.id}
@@ -69,12 +98,13 @@ export function InstagramMethodModal({ open, onClose, onConfirm }: Props) {
 					))}
 				</div>
 
-				<DialogFooter className="gap-2">
+				<div className="mt-5 flex justify-end gap-2">
 					<Button variant="outline" onClick={onClose}>Close</Button>
 					<Button onClick={() => onConfirm(selected)}>Connect</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+				</div>
+			</div>
+		</div>,
+		document.body,
 	);
 }
 
@@ -95,7 +125,6 @@ function MethodCard({
 					: "border-[var(--border)] hover:border-[var(--muted-foreground)]/40"
 			}`}
 		>
-			{/* Radio indicator top-right */}
 			<div className={`absolute top-3 right-3 h-4 w-4 rounded-full border-2 ${
 				selected ? "border-[var(--sq-primary)]" : "border-[var(--muted-foreground)]/50"
 			}`}>
