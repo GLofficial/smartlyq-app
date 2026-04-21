@@ -78,7 +78,15 @@ export function SocialAccountsPage() {
 			const key = `${d.platform ?? ""}:${d.ts ?? 0}`;
 			if (seen.has(key)) return;
 			seen.add(key);
-			if (d.error) { toast.error(d.error); refetch(); return; }
+			if (d.error) {
+				// Strip HTML tags from backend messages — errorPage() / redirect() may include
+				// <strong>, <a>, etc. that sonner renders as literal text. Safer than rendering
+				// untrusted HTML in a toast.
+				const plain = d.error.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+				toast.error(plain);
+				refetch();
+				return;
+			}
 			const platform = (d.platform || "").toLowerCase();
 			if (!platform) return;
 			// Open the React picker modal for every platform — same behavior for FB, IG, LinkedIn, YouTube, etc.
