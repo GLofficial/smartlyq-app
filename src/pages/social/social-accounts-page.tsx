@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Trash2, RotateCcw, AlertTriangle } from "lucide-react";
-import { useSocialAccountsFull, useSyncAccount, useSyncAll, useDisconnectAccount, useReconnectAccount, type SocialAccount } from "@/api/social-accounts";
+import { useSocialAccountsFull, useSyncAccount, useSyncAll, useDisconnectAccount, type SocialAccount } from "@/api/social-accounts";
 import { PlatformIcon } from "./platform-icon";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { apiClient } from "@/lib/api-client";
@@ -31,7 +31,6 @@ export function SocialAccountsPage() {
 	const activeIds = accounts.filter((a) => a.is_active === 1).map((a) => a.id);
 	const [disconnectId, setDisconnectId] = useState<SocialAccount | null>(null);
 	const disconnect = useDisconnectAccount();
-	const reconnect = useReconnectAccount();
 	const syncOne = useSyncAccount();
 	const [igModal, setIgModal] = useState(false);
 	const [pickerFor, setPickerFor] = useState<string | null>(null);
@@ -49,7 +48,7 @@ export function SocialAccountsPage() {
 				`/api/spa/social/oauth/start?platform=${encodeURIComponent(dbPlatform)}&spa_popup=1`,
 			);
 			if (!res.redirect_url) { toast.error("No OAuth URL"); return; }
-			const w = window.open(res.redirect_url, "smartlyq_oauth", "width=700,height=820");
+			const w = openCenteredPopup(res.redirect_url, "smartlyq_oauth", 700, 820);
 			if (!w) {
 				// Popup blocked. We do NOT fall back to the legacy Bootstrap flow — that would
 				// violate the "never land on Bootstrap" requirement. Show a clear error modal.
@@ -59,6 +58,11 @@ export function SocialAccountsPage() {
 			toast.error((e as Error)?.message ?? "Failed to start OAuth");
 		}
 	}, []);
+
+	// Reconnect an existing account (expired token etc.) — same popup path as connect.
+	const reconnectPopup = useCallback((platform: string) => {
+		connect(platform);
+	}, [connect]);
 
 	useEffect(() => {
 		function onMsg(e: MessageEvent) {
@@ -142,7 +146,7 @@ export function SocialAccountsPage() {
 										<td className="px-3 py-3"><StatusBadge label={a.status_label} /></td>
 										<td className="px-3 py-3 text-xs text-[var(--muted-foreground)]">
 											{a.needs_reconnect ? (
-												<button onClick={() => reconnect.mutate(a.id)} className="text-red-500 font-medium hover:underline">
+												<button onClick={() => reconnectPopup(a.platform)} className="text-red-500 font-medium hover:underline">
 													↻ Reconnect
 												</button>
 											) : a.validity || "—"}
@@ -151,7 +155,7 @@ export function SocialAccountsPage() {
 										<td className="px-3 py-3 text-right">
 											<div className="flex items-center justify-end gap-1">
 												{a.needs_reconnect && (
-													<Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => reconnect.mutate(a.id)} title="Reconnect">
+													<Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => reconnectPopup(a.platform)} title="Reconnect">
 														<RotateCcw size={14} className="text-amber-600" />
 													</Button>
 												)}
@@ -297,6 +301,25 @@ export function SocialAccountsPage() {
 			</Dialog>
 		</div>
 	);
+}
+
+/**
+ * Open a popup centered on the user's screen (or the current window on multi-monitor setups).
+ * The default window.open coordinates default to 0,0 in some browsers/OSes, which is why the
+ * OAuth popup was appearing stuck on the top-left corner.
+ */
+function openCenteredPopup(url: string, name: string, width: number, height: number): Window | null {
+	// Use screen.availWidth/Height when available so we don't overlap the OS dock/taskbar.
+	const screenWidth = window.screen?.availWidth ?? window.screen?.width ?? width;
+	const screenHeight = window.screen?.availHeight ?? window.screen?.height ?? height;
+	// window.screenX/Y point to the current browser window's top-left — important when the
+	// user has a multi-monitor setup so the popup opens on the same monitor they're on.
+	const dualScreenLeft = window.screenX ?? window.screenLeft ?? 0;
+	const dualScreenTop = window.screenY ?? window.screenTop ?? 0;
+	const left = Math.max(0, Math.floor(dualScreenLeft + (screenWidth - width) / 2));
+	const top = Math.max(0, Math.floor(dualScreenTop + (screenHeight - height) / 2));
+	const features = `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no,location=yes`;
+	return window.open(url, name, features);
 }
 
 function StatusBadge({ label }: { label: string }) {
