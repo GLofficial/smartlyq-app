@@ -151,128 +151,6 @@ interface DemoPost {
   recurrenceId?: number | null;
 }
 
-const today = new Date();
-const y = today.getFullYear();
-const m = today.getMonth();
-
-const DEMO_POSTS: DemoPost[] = [
-  {
-    id: "p1",
-    title: "Cross-Platform Post",
-    content: "Ένα ακόμα μοναδικό feature του SmartlyQ! Enjoy!",
-    date: `${y}-${String(m + 1).padStart(2, "0")}-09`,
-    time: "13:42",
-    platforms: [
-      { id: "facebook", name: "George Liontos", status: "published" },
-      { id: "linkedin", name: "George Liontos", status: "failed" },
-      { id: "tiktok", name: "George Liontos |AI & Marketing", status: "published" },
-    ],
-    status: "partial",
-  },
-  {
-    id: "p2",
-    title: "yes yes yes",
-    content: "yes yes yes",
-    date: `${y}-${String(m + 1).padStart(2, "0")}-09`,
-    time: "10:00",
-    platforms: [{ id: "facebook", name: "Stav Test page", status: "published" }],
-    status: "published",
-  },
-  {
-    id: "p3",
-    title: "rearaerar😊",
-    content: "rearaerar😊",
-    date: `${y}-${String(m + 1).padStart(2, "0")}-09`,
-    time: "11:00",
-    platforms: [{ id: "instagram", name: "stavroswebnet", status: "published" }],
-    status: "published",
-  },
-  {
-    id: "p4",
-    title: "hellloooo😊",
-    content: "hellloooo😊",
-    date: `${y}-${String(m + 1).padStart(2, "0")}-09`,
-    time: "14:00",
-    platforms: [{ id: "facebook", name: "Unknown", status: "published" }],
-    status: "published",
-  },
-  {
-    id: "p5",
-    title: "test new ffmp",
-    content: "test new ffmp",
-    date: `${y}-${String(m + 1).padStart(2, "0")}-10`,
-    time: "15:49",
-    platforms: [{ id: "tiktok", name: "Stavros Kats", status: "published" }],
-    status: "published",
-  },
-  {
-    id: "p6",
-    title: "Hello againnnn",
-    content: "Hello againnnn",
-    date: `${y}-${String(m + 1).padStart(2, "0")}-10`,
-    time: "15:50",
-    platforms: [{ id: "tiktok", name: "Stavros Kats", status: "published" }],
-    status: "published",
-  },
-  {
-    id: "p7",
-    title: "catzilla",
-    content: "catzilla",
-    date: `${y}-${String(m + 1).padStart(2, "0")}-12`,
-    time: "09:00",
-    platforms: [{ id: "tumblr", name: "My Blog", status: "published" }],
-    status: "published",
-  },
-  {
-    id: "p8",
-    title: "the mightly catzilla roar",
-    content: "the mightly catzilla roar",
-    date: `${y}-${String(m + 1).padStart(2, "0")}-13`,
-    time: "10:00",
-    platforms: [{ id: "pinterest", name: "stavroskatsoulotos", status: "published" }],
-    status: "published",
-  },
-  {
-    id: "p9",
-    title: "Super catzilla",
-    content: "Super catzilla",
-    date: `${y}-${String(m + 1).padStart(2, "0")}-13`,
-    time: "11:00",
-    platforms: [{ id: "pinterest", name: "stavroskatsoulotos", status: "published" }],
-    status: "published",
-  },
-  {
-    id: "p10",
-    title: "catzilla!!!🐱",
-    content: "catzilla!!!🐱",
-    date: `${y}-${String(m + 1).padStart(2, "0")}-13`,
-    time: "12:00",
-    platforms: [{ id: "bluesky", name: "stavroswebnet.bsky.s...", status: "published" }],
-    status: "published",
-  },
-  {
-    id: "p11",
-    title: "Scheduled post example",
-    content: "This post is scheduled for later this month.",
-    date: `${y}-${String(m + 1).padStart(2, "0")}-20`,
-    time: "14:00",
-    platforms: [
-      { id: "facebook", name: "George Liontos", status: "scheduled" },
-      { id: "instagram", name: "stavroswebnet", status: "scheduled" },
-    ],
-    status: "scheduled",
-  },
-  {
-    id: "p12",
-    title: "Draft post idea",
-    content: "Need to finalize this content before publishing.",
-    date: `${y}-${String(m + 1).padStart(2, "0")}-22`,
-    time: "10:00",
-    platforms: [{ id: "tiktok", name: "Stavros Kats", status: "draft" }],
-    status: "draft",
-  },
-];
-
 function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; classes: string }> = {
     published: { label: "PUBLISHED", classes: "bg-success/10 text-success border-success/20" },
@@ -320,7 +198,7 @@ function PlatformIcons({ platforms, maxVisible = 3, size = 18 }: { platforms: { 
 }
 
 interface CalendarProps {
-  /** Real events from API — if provided, replaces DEMO_POSTS */
+  /** Real events from API — mapped into DemoPost shape below. */
   realEvents?: { id: number | string; title: string; start: string | null; extendedProps: Record<string, unknown> }[];
   onDeletePost?: (postId: number) => void;
   onRetryPost?: (postId: number) => void;
@@ -419,8 +297,6 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
     });
   }, [realEvents]);
 
-  const useReal = apiPosts.length > 0;
-  const [posts, setPosts] = useState<DemoPost[]>(DEMO_POSTS);
   const [currentView, setCurrentView] = useState<CalendarView>("dayGridMonth");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
@@ -537,8 +413,7 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
     }
   }, []);
 
-  const sourcePosts = useReal ? apiPosts : posts;
-  const filteredPosts = sourcePosts.filter((p) => {
+  const filteredPosts = apiPosts.filter((p) => {
     if (searchQuery && !p.title.toLowerCase().includes(searchQuery.toLowerCase()) && !p.content.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (statusFilter !== "All Status" && p.status !== statusFilter.toLowerCase()) return false;
     if (platformFilter !== "all" && !p.platforms.some((pl) => pl.id === platformFilter)) return false;
@@ -584,13 +459,6 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
       return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
     };
 
-    setPosts((prev) =>
-      prev.map((p) =>
-        p.id === postId ? { ...p, date: newDate, time: newTime } : p
-      )
-    );
-
-    // Call API to reschedule if wired
     if (onReschedulePost && post.id) {
       onReschedulePost(Number(post.id), newDate, newTime);
     }
