@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { queryClient } from "@/lib/query-client";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 
 export interface BusinessProfile {
 	id: number;
@@ -48,14 +49,24 @@ export function useUploadBusinessLogo() {
 			fd.append("logo", file);
 			return apiClient.upload<{ message: string; logo_url: string }>("/api/spa/settings/business-logo", fd);
 		},
-		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["settings", "business-profile"] }),
+		onSuccess: (res) => {
+			queryClient.invalidateQueries({ queryKey: ["settings", "business-profile"] });
+			// Push the new URL into the workspace store so the sidebar switcher picks it
+			// up without a full bootstrap re-fetch.
+			const { activeWorkspaceId, setWorkspaceIcon } = useWorkspaceStore.getState();
+			if (activeWorkspaceId && res?.logo_url) setWorkspaceIcon(activeWorkspaceId, res.logo_url);
+		},
 	});
 }
 
 export function useRemoveBusinessLogo() {
 	return useMutation({
 		mutationFn: () => apiClient.post<{ message: string }>("/api/spa/settings/business-logo/remove"),
-		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["settings", "business-profile"] }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["settings", "business-profile"] });
+			const { activeWorkspaceId, setWorkspaceIcon } = useWorkspaceStore.getState();
+			if (activeWorkspaceId) setWorkspaceIcon(activeWorkspaceId, null);
+		},
 	});
 }
 

@@ -8,6 +8,7 @@ interface WorkspaceState {
 	activeWorkspaceHash: string | null;
 	setWorkspaces: (workspaces: Workspace[], activeId: number | null) => void;
 	setActiveWorkspace: (id: number, hash: string) => void;
+	setWorkspaceIcon: (id: number, iconUrl: string | null) => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
@@ -22,5 +23,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
 		set({ activeWorkspaceId, activeWorkspaceHash });
 		// SECURITY: Clear ALL cached data when switching workspaces to prevent cross-workspace data leak
 		queryClient.clear();
+	},
+	setWorkspaceIcon: (id, iconUrl) => {
+		set((state) => ({
+			workspaces: state.workspaces.map((w) =>
+				w.id === id ? { ...w, icon_url: iconUrl } : w,
+			),
+		}));
 	},
 }));

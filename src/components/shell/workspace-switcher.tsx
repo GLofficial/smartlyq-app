@@ -119,9 +119,12 @@ export function WorkspaceSwitcher() {
 				onClick={() => (open ? setOpen(false) : openPanel())}
 				className="flex w-full items-center gap-2 rounded-lg bg-[var(--sidebar-accent)] px-3 py-2 hover:bg-[color-mix(in_srgb,var(--sidebar-accent)_80%,var(--sidebar-border))] transition-colors"
 			>
-				<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--sq-primary)] text-[11px] font-bold text-white">
-					{(activeWs?.name ?? "W").charAt(0).toUpperCase()}
-				</div>
+				<WorkspaceIcon
+					name={activeWs?.name ?? "W"}
+					iconUrl={activeWs?.icon_url ?? null}
+					seed={activeWs?.id ?? 0}
+					className="h-7 w-7 rounded-md text-[11px]"
+				/>
 				<div className="flex-1 min-w-0 text-left">
 					<p className="truncate text-sm font-medium text-[var(--sidebar-foreground)]">
 						{activeWs?.name ?? "Workspace"}
@@ -202,10 +205,6 @@ function WorkspaceRow({
 	onSwitch: (id: number) => void;
 	onTogglePin: (id: number) => void;
 }) {
-	const initial = ws.name.charAt(0).toUpperCase();
-	const colors = ["bg-blue-500", "bg-emerald-500", "bg-orange-500", "bg-purple-500", "bg-pink-500", "bg-cyan-500", "bg-amber-500", "bg-indigo-500"];
-	const color = colors[ws.id % colors.length];
-
 	return (
 		<div
 			className={cn(
@@ -217,9 +216,12 @@ function WorkspaceRow({
 			role="button"
 			tabIndex={0}
 		>
-			<div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white", color)}>
-				{initial}
-			</div>
+			<WorkspaceIcon
+				name={ws.name}
+				iconUrl={ws.icon_url ?? null}
+				seed={ws.id}
+				className="h-10 w-10 rounded-lg text-sm"
+			/>
 			<div className="flex-1 min-w-0">
 				<p className={cn("truncate text-sm font-medium", isActive ? "text-[var(--sq-primary)]" : "text-[var(--foreground)]")}>
 					{ws.name}
@@ -248,6 +250,42 @@ function WorkspaceRow({
 					<ExternalLink size={14} />
 				</button>
 			</div>
+		</div>
+	);
+}
+
+const FALLBACK_COLORS = [
+	"bg-blue-500", "bg-emerald-500", "bg-orange-500", "bg-purple-500",
+	"bg-pink-500", "bg-cyan-500", "bg-amber-500", "bg-indigo-500",
+];
+
+function WorkspaceIcon({
+	name, iconUrl, seed, className,
+}: {
+	name: string;
+	iconUrl: string | null;
+	seed: number;
+	className?: string;
+}) {
+	// Track broken-image state so a failed <img> fetch falls back to the initial
+	// tile instead of showing a broken-image glyph.
+	const [failed, setFailed] = useState(false);
+	const showImg = !!iconUrl && !failed;
+	const initial = (name || "W").charAt(0).toUpperCase();
+	const color = FALLBACK_COLORS[Math.abs(seed) % FALLBACK_COLORS.length];
+	return (
+		<div className={cn("flex shrink-0 items-center justify-center overflow-hidden font-bold text-white", !showImg && color, className)}>
+			{showImg ? (
+				<img
+					src={iconUrl!}
+					alt={name}
+					loading="lazy"
+					onError={() => setFailed(true)}
+					className="h-full w-full object-cover"
+				/>
+			) : (
+				<span>{initial}</span>
+			)}
 		</div>
 	);
 }

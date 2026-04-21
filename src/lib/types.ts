@@ -39,6 +39,7 @@ export interface Workspace {
 	hash_id: string;
 	slug: string;
 	is_active: boolean;
+	icon_url?: string | null;
 }
 
 /** White-label tenant branding */
