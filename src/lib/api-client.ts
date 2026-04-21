@@ -122,10 +122,20 @@ class ApiClient {
 
 	private async doRefreshToken(): Promise<boolean> {
 		try {
+			// Send the (possibly expired) access token in the Authorization header.
+			// The refresh endpoint verifies signature + iat age and ignores the exp claim,
+			// so this works even after the access token is dead — up to a 7-day grace window.
+			// Without this header the refresh always failed and every user was logged out
+			// shortly after their 1h access token expired.
+			const existing = this.getToken();
+			if (!existing) return false;
 			const response = await fetch(`${this.baseUrl}${ENDPOINTS.TOKEN_REFRESH}`, {
 				method: "POST",
 				credentials: "include",
-				headers: { Accept: "application/json" },
+				headers: {
+					Accept: "application/json",
+					Authorization: `Bearer ${existing}`,
+				},
 			});
 			if (!response.ok) return false;
 			const data = await response.json();
