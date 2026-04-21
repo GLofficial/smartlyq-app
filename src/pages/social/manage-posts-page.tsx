@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Plus, ChevronLeft, ChevronRight, Search, Pencil, Copy, Trash2, RotateCw, XCircle, SlidersHorizontal, Loader2, Calendar, Inbox as InboxIcon, Send, FileDown, ExternalLink } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Search, Pencil, Copy, Trash2, RotateCw, XCircle, SlidersHorizontal, Loader2, Calendar, Inbox as InboxIcon, Send, FileDown, ExternalLink, Check, X } from "lucide-react";
 import { useSocialPosts } from "@/api/social";
-import { useRetryPost, useDeletePost, useDuplicatePost, useMoveToDraft, useShareNow } from "@/api/social-posts";
+import { useRetryPost, useDeletePost, useDuplicatePost, useMoveToDraft, useShareNow, useApprovePost, useRejectPost } from "@/api/social-posts";
 import { PlatformIcon } from "./platform-icon";
 import { PLATFORM_BRANDS } from "./PlatformIcons";
 import { useWorkspaceStore } from "@/stores/workspace-store";
@@ -45,6 +45,8 @@ export function ManagePostsPage() {
 	const duplicateMut = useDuplicatePost();
 	const moveToDraftMut = useMoveToDraft();
 	const shareNowMut = useShareNow();
+	const approveMut = useApprovePost();
+	const rejectMut = useRejectPost();
 
 	const handleSearch = useCallback((val: string) => {
 		setSearch(val);
@@ -288,6 +290,24 @@ export function ManagePostsPage() {
 													onClick={() => retryMut.mutate(post.id, { onSuccess: () => toast.success("Queued for retry") })}>
 													<RotateCw size={13} />
 												</Button>
+											)}
+											{/* Approve / Reject appear only on the pending_review tab. The backend
+											    endpoints already check workspace membership; role-level gating can be
+											    layered on top later without changing this button wire. */}
+											{tab === "pending_review" && (
+												<>
+													<Button variant="outline" size="sm" className="h-7 w-7 p-0 text-emerald-600 hover:bg-emerald-50" title="Approve"
+														onClick={() => approveMut.mutate(post.id, { onSuccess: () => toast.success("Post approved") })}>
+														<Check size={13} />
+													</Button>
+													<Button variant="outline" size="sm" className="h-7 w-7 p-0 text-red-500 hover:bg-red-50" title="Reject"
+														onClick={() => {
+															const reason = prompt("Reason for rejection (optional):") ?? "";
+															rejectMut.mutate({ post_id: post.id, reason }, { onSuccess: () => toast.success("Post rejected") });
+														}}>
+														<X size={13} />
+													</Button>
+												</>
 											)}
 											<Button variant="outline" size="sm" className="h-7 w-7 p-0 text-red-500" title="Delete"
 												onClick={() => { if (confirm("Delete this post?")) deleteMut.mutate(post.id, { onSuccess: () => toast.success("Deleted") }); }}>
