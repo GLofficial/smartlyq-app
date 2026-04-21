@@ -1,8 +1,8 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, AlertTriangle, Trash2, CheckCircle2 } from "lucide-react";
+import { Loader2, AlertTriangle, Trash2, CheckCircle2, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { PlatformIcon } from "./platform-icon";
@@ -52,28 +52,44 @@ export function SocialAccountsPickerModal({ platform, open, onClose }: Props) {
 	const activateMut = useActivateSocialAccounts();
 	const disconnectMut = useDisconnectAccount();
 	const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-	const preselectedFor = useRef<string | null>(null);
+	const cancelFiredRef = useRef(false);
 
-	const pendingRows = pendingQ.data?.pending ?? [];
-	const activeRows = pendingQ.data?.active ?? [];
+	// Memoize the derived arrays from react-query data so their reference is stable across
+	// renders when the underlying query data hasn't changed. The old pattern (data?.x ?? [])
+	// returned a new [] on every render when data was undefined, causing the useEffect below
+	// to re-fire indefinitely (React error #185 — "Maximum update depth exceeded").
+	const pendingRows: PendingAccount[] = useMemo(
+		() => pendingQ.data?.pending ?? [],
+		[pendingQ.data?.pending],
+	);
+	const activeRows: PendingAccount[] = useMemo(
+		() => pendingQ.data?.active ?? [],
+		[pendingQ.data?.active],
+	);
 	const planLimit = pendingQ.data?.plan_limit ?? null;
 	const activeCountAll = pendingQ.data?.active_count ?? 0;
 
-	// Pre-select every pending row on first successful load for this platform. Using a ref
-	// key (platform + pending id list) avoids the infinite-render loop caused by the old
-	// useEffect([rows]) where `rows` was a new array reference on every render, so setState
-	// retriggered the effect even when no real data changed (React error #185).
+	// Stable primitive key that only changes when the SET of pending IDs changes. Using a
+	// string in the useEffect dep array guarantees the effect doesn't re-fire on unrelated
+	// re-renders (e.g. user ticks a checkbox, which changes selectedIds but not the pending list).
+	const pendingIdsKey = useMemo(
+		() => pendingRows.map((r) => r.id).join(","),
+		[pendingRows],
+	);
+
+	// Pre-select every pending row on first successful load for this platform.
 	useEffect(() => {
 		if (!pendingQ.isSuccess) return;
-		const key = `${platform}:${pendingRows.map((r) => r.id).join(",")}`;
-		if (preselectedFor.current === key) return;
-		preselectedFor.current = key;
+		if (pendingIdsKey === "") return;
 		setSelectedIds(new Set(pendingRows.map((r) => r.id)));
-	}, [pendingQ.isSuccess, pendingRows, platform]);
+		// Intentionally omit pendingRows from deps — pendingIdsKey is the stable primitive
+		// proxy for "did the pending set change" and prevents effect-setState-effect loops.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [pendingQ.isSuccess, pendingIdsKey]);
 
-	// Reset preselection tracking when the modal closes so a future reopen re-preselects.
+	// Reset the cancel-guard when the modal opens so a fresh flow can vacuum on close.
 	useEffect(() => {
-		if (!open) preselectedFor.current = null;
+		if (open) cancelFiredRef.current = false;
 	}, [open]);
 
 	const platformLabel = PLATFORM_LABELS[platform] ?? platform;
@@ -135,14 +151,20 @@ export function SocialAccountsPickerModal({ platform, open, onClose }: Props) {
 			const r = await activateMut.mutateAsync({ platform, selected_ids: ids });
 			toast.success(`Connected ${r.activated} account${r.activated === 1 ? "" : "s"}`);
 			setSelectedIds(new Set());
+			// Prevent Dialog's onOpenChange from triggering a second empty-activate after
+			// the modal animates out.
+			cancelFiredRef.current = true;
 			onClose();
 		} catch (e) {
 			toast.error((e as Error)?.message ?? "Failed to connect accounts");
 		}
 	}
 
-	async function handleCancel() {
-		// Vacuum pending rows — user chose not to connect any of them.
+	// Guarded with a ref so onOpenChange(false) firing during Dialog close animation
+	// doesn't cause a second vacuum call after handleSave already closed the modal.
+	const handleCancel = useCallback(async () => {
+		if (cancelFiredRef.current) return;
+		cancelFiredRef.current = true;
 		try {
 			await activateMut.mutateAsync({ platform, selected_ids: [] });
 		} catch {
@@ -150,7 +172,7 @@ export function SocialAccountsPickerModal({ platform, open, onClose }: Props) {
 		}
 		setSelectedIds(new Set());
 		onClose();
-	}
+	}, [activateMut, platform, onClose]);
 
 	return (
 		<Dialog open={open} onOpenChange={(o) => { if (!o) handleCancel(); }}>
@@ -194,14 +216,33 @@ export function SocialAccountsPickerModal({ platform, open, onClose }: Props) {
 							<Loader2 size={18} className="animate-spin text-[var(--muted-foreground)]" />
 						</div>
 					) : pendingRows.length === 0 ? (
-						<div className="flex flex-col items-center gap-2 py-8 text-center">
+						<div className="flex flex-col items-center gap-3 py-8 text-center">
 							<AlertTriangle size={24} className="text-[var(--muted-foreground)]" />
 							<p className="text-sm text-[var(--muted-foreground)]">
 								No new {platformLabel} accounts were returned after authorization.
 							</p>
-							<p className="text-xs text-[var(--muted-foreground)]">
-								Try reconnecting, or make sure your {platformLabel} account has the required permissions.
-							</p>
+							{platform === "instagram" ? (
+								<div className="rounded-md border border-[var(--border)] bg-[var(--muted)]/30 p-3 text-left text-xs text-[var(--muted-foreground)] max-w-sm">
+									<p className="flex items-start gap-2 mb-2">
+										<Info size={13} className="mt-0.5 shrink-0 text-blue-600" />
+										<span className="font-medium text-[var(--foreground)]">Instagram via Facebook requires:</span>
+									</p>
+									<ul className="list-disc ml-5 space-y-1">
+										<li>Your Instagram is a <strong>Business</strong> or <strong>Creator</strong> account.</li>
+										<li>It's <strong>linked to a Facebook Page</strong> you admin.</li>
+										<li>You selected that Page during authorization.</li>
+									</ul>
+									<p className="mt-2">If all the above are true, try the <strong>Instagram Direct</strong> option instead — it doesn't require a linked Facebook Page.</p>
+								</div>
+							) : platform === "instagram_direct" ? (
+								<p className="text-xs text-[var(--muted-foreground)] max-w-sm">
+									Make sure your Instagram is a Business or Creator account. Personal accounts aren't supported by the Instagram Graph API.
+								</p>
+							) : (
+								<p className="text-xs text-[var(--muted-foreground)]">
+									Try reconnecting, or make sure your {platformLabel} account has the required permissions.
+								</p>
+							)}
 						</div>
 					) : (
 						<div>
