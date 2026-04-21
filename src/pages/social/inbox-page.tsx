@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, MessageSquare, Send, Search, Archive, Archiv
 import { useSocialInbox, useInboxThread, useInboxSync, useInboxArchive, useInboxUnarchive } from "@/api/social";
 import { useInboxReply, useInboxUploadMedia } from "@/api/social-posts";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import data from "@emoji-mart/data";
+import emojiData from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import { queryClient } from "@/lib/query-client";
 import { useSocialAccounts } from "@/api/social-reports";
@@ -344,7 +344,7 @@ export function InboxPage() {
 												</Button>
 											</PopoverTrigger>
 											<PopoverContent side="top" align="start" className="p-0 border-0 shadow-none bg-transparent w-auto">
-												<Picker data={data} onEmojiSelect={(e: { native: string }) => { setReply(r => r + e.native); setEmojiOpen(false); }} theme="light" />
+												<Picker data={emojiData} onEmojiSelect={(e: { native: string }) => { setReply(r => r + e.native); setEmojiOpen(false); }} theme="light" />
 											</PopoverContent>
 										</Popover>
 										<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" disabled={sendBlocked} title="Send image" onClick={() => fileInputRef.current?.click()}>
