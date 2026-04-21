@@ -162,7 +162,7 @@ export function InboxPage() {
 												{conv.participant_name.charAt(0).toUpperCase()}
 											</div>
 										)}
-										<div className="absolute -bottom-0.5 -right-0.5">
+										<div className="absolute -bottom-0.5 -right-0.5 rounded-full ring-2 ring-[var(--background)]">
 											<PlatformIcon platform={conv.platform} size={14} />
 										</div>
 									</div>
