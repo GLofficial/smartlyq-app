@@ -9,6 +9,7 @@ import { useInboxReply } from "@/api/social-posts";
 import { queryClient } from "@/lib/query-client";
 import { useSocialAccounts } from "@/api/social-reports";
 import { PlatformIcon } from "./platform-icon";
+import { PlatformBadge } from "./PlatformIcons";
 import { SocialFilterSidebar } from "./social-filter-sidebar";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { toast } from "sonner";
@@ -162,8 +163,8 @@ export function InboxPage() {
 												{conv.participant_name.charAt(0).toUpperCase()}
 											</div>
 										)}
-										<div className="absolute -bottom-0.5 -right-0.5 rounded-full ring-2 ring-[var(--background)]">
-											<PlatformIcon platform={conv.platform} size={14} />
+										<div className="absolute -bottom-0.5 -right-0.5">
+											<PlatformBadge platformId={conv.platform} size={16} />
 										</div>
 									</div>
 									<div className="min-w-0 flex-1">
