@@ -44,6 +44,7 @@ const KIND_LABELS: Record<string, string> = {
 	user: "Profile",
 	personal: "Profile",
 	business: "Business",
+	company: "Company Page",
 };
 
 export function SocialAccountsPickerModal({ platform, open, onClose }: Props) {
@@ -276,9 +277,14 @@ export function SocialAccountsPickerModal({ platform, open, onClose }: Props) {
 					{/* ALREADY connected accounts for this platform — disconnect inline to free slots. */}
 					{activeRows.length > 0 && (
 						<div>
-							<h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-2">
-								Already connected ({activeRows.length})
-							</h3>
+							<div className="flex items-center justify-between mb-2">
+								<h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+									Already connected ({activeRows.length})
+								</h3>
+							</div>
+							<p className="text-[11px] text-[var(--muted-foreground)] mb-2">
+								Social accounts are shared with everyone in this workspace. Accounts connected by teammates are listed here too.
+							</p>
 							<ul className="space-y-1.5">
 								{activeRows.map((r) => (
 									<ConnectedRow
@@ -352,6 +358,7 @@ function PickerRow({ row, checked, onToggle }: { row: PendingAccount; checked: b
 
 function ConnectedRow({ row, onDisconnect, busy }: { row: PendingAccount; onDisconnect: () => void; busy: boolean }) {
 	const kind = KIND_LABELS[row.account_type] ?? row.account_type;
+	const connectedBy = row.connected_by_name?.trim() ?? "";
 	return (
 		<li className="flex items-center gap-3 rounded-md border border-[var(--border)] bg-[var(--muted)]/30 p-2.5">
 			{row.profile_picture ? (
@@ -369,6 +376,7 @@ function ConnectedRow({ row, onDisconnect, busy }: { row: PendingAccount; onDisc
 				<p className="truncate text-xs text-[var(--muted-foreground)]">
 					{kind}
 					{row.account_username && row.account_username !== row.account_name && ` · @${row.account_username}`}
+					{connectedBy && <span className="ml-1 text-[var(--muted-foreground)]/70">· connected by {connectedBy}</span>}
 				</p>
 			</div>
 			<Button

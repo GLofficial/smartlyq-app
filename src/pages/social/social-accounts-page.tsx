@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { SocialAccountsPickerModal } from "./social-accounts-picker-modal";
+import { InstagramMethodModal } from "./instagram-method-modal";
 
 const PLATFORMS = [
 	{ id: "facebook", label: "Facebook", desc: "Connect your Facebook pages for content posting and analytics.", features: ["Post Creation", "Analytics", "Scheduling"] },
@@ -268,23 +269,11 @@ export function SocialAccountsPage() {
 			</Dialog>
 
 			{/* Instagram Connection Method Modal */}
-			<Dialog open={igModal} onOpenChange={setIgModal}>
-				<DialogContent className="max-w-md">
-					<DialogHeader><DialogTitle>Connect Instagram</DialogTitle><DialogDescription>Choose your connection method.</DialogDescription></DialogHeader>
-					<div className="space-y-3 py-3">
-						<button onClick={() => { setIgModal(false); connect("instagram", "facebook"); }}
-							className="w-full rounded-lg border border-[var(--border)] p-4 text-left hover:border-[var(--sq-primary)] transition-colors">
-							<p className="text-sm font-semibold text-[var(--foreground)]">Via Facebook Page</p>
-							<p className="text-xs text-[var(--muted-foreground)] mt-1">Requires Business/Creator account linked to a Facebook Page. Full features including Stories and Reels.</p>
-						</button>
-						<button onClick={() => { setIgModal(false); connect("instagram", "direct"); }}
-							className="w-full rounded-lg border border-[var(--border)] p-4 text-left hover:border-[var(--sq-primary)] transition-colors">
-							<p className="text-sm font-semibold text-[var(--foreground)]">Via Instagram Direct</p>
-							<p className="text-xs text-[var(--muted-foreground)] mt-1">Login with Instagram credentials directly. Business/Creator account required.</p>
-						</button>
-					</div>
-				</DialogContent>
-			</Dialog>
+			<InstagramMethodModal
+				open={igModal}
+				onClose={() => setIgModal(false)}
+				onConfirm={(method) => { setIgModal(false); connect("instagram", method); }}
+			/>
 
 			{/* Native account picker modal — opens after every successful OAuth popup bounce */}
 			{pickerFor && (

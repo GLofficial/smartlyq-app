@@ -92,6 +92,8 @@ export interface PendingAccount {
 	profile_picture: string;
 	created_at: string;
 	status: number;
+	connected_by_name?: string;
+	connected_by_user_id?: number;
 }
 
 export interface PickerData {
