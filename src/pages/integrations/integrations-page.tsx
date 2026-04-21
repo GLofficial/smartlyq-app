@@ -2,12 +2,10 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, RefreshCw, Unplug, RotateCw, ArrowRight, Users } from "lucide-react";
+import { CheckCircle, RefreshCw, ArrowRight, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useIntegrations } from "@/api/general";
-import { useStartOAuth, useDisconnectAccount, useSyncAccount } from "@/api/social-accounts";
-import { PlatformIcon } from "@/pages/social/platform-icon";
 import { INTEGRATION_BRANDS } from "./integration-logos";
 import { apiClient } from "@/lib/api-client";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
@@ -40,18 +38,7 @@ interface Integration {
 
 export function IntegrationsPage() {
 	const { data, isLoading } = useIntegrations();
-	const connected = data?.connected ?? [];
-	const platforms = data?.platforms ?? {};
 	const integrations: Integration[] = data?.integrations ?? [];
-
-	const oauthMut = useStartOAuth();
-	const disconnectMut = useDisconnectAccount();
-	const syncMut = useSyncAccount();
-	const connectedPlatforms = new Set(connected.map((c: { platform: string }) => c.platform));
-
-	const handleConnect = (platform: string) => {
-		oauthMut.mutate({ platform }, { onError: (e) => toast.error((e as { error?: string })?.error ?? "OAuth failed") });
-	};
 
 	const wp = useWorkspacePath();
 	const [wooDialogOpen, setWooDialogOpen] = useState(false);
@@ -86,15 +73,6 @@ export function IntegrationsPage() {
 		} catch {
 			toast.error("Failed to disconnect.");
 		}
-	};
-
-	const handleDisconnect = (accountId: number, name: string) => {
-		if (!confirm(`Disconnect ${name}?`)) return;
-		disconnectMut.mutate(accountId, { onSuccess: () => { toast.success("Disconnected."); queryClient.invalidateQueries({ queryKey: ["integrations"] }); } });
-	};
-
-	const handleSync = (accountId: number) => {
-		syncMut.mutate(accountId, { onSuccess: () => { toast.success("Synced."); queryClient.invalidateQueries({ queryKey: ["integrations"] }); } });
 	};
 
 	const byCategory = integrations.reduce<Record<string, Integration[]>>((acc, i) => {
@@ -202,53 +180,6 @@ export function IntegrationsPage() {
 						</div>
 					</CardContent>
 				</Card>
-			</div>
-
-			{/* Social Media Accounts */}
-			<div className="space-y-3">
-				<h2 className="text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
-					Social Media Accounts ({connected.length})
-				</h2>
-
-				{connected.length > 0 && (
-					<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-						{connected.map((acc: { id: number; platform: string; account_name: string; profile_picture: string; token_status: string }) => (
-							<Card key={acc.id} className="transition-shadow hover:shadow-sm">
-								<CardContent className="flex items-center gap-3 p-4">
-									{acc.profile_picture ? (
-										<img src={acc.profile_picture} alt="" className="h-10 w-10 rounded-full ring-2 ring-[var(--border)]" />
-									) : (
-										<PlatformIcon platform={acc.platform} size={24} />
-									)}
-									<div className="min-w-0 flex-1">
-										<p className="truncate text-sm font-medium">{acc.account_name}</p>
-										<p className="text-xs capitalize text-[var(--muted-foreground)]">{acc.platform}</p>
-									</div>
-									<div className="flex items-center gap-1">
-										{acc.token_status === "active" ? <CheckCircle size={14} className="text-green-500" /> : <span className="h-2 w-2 rounded-full bg-red-500" />}
-										<Button variant="ghost" size="icon" className="h-7 w-7" title="Sync" onClick={() => handleSync(acc.id)}><RotateCw size={12} /></Button>
-										<Button variant="ghost" size="icon" className="h-7 w-7 text-red-500" title="Disconnect" onClick={() => handleDisconnect(acc.id, acc.account_name)}><Unplug size={12} /></Button>
-									</div>
-								</CardContent>
-							</Card>
-						))}
-					</div>
-				)}
-
-				{/* Connect new platforms */}
-				<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-					{Object.entries(platforms)
-						.filter(([key]) => !connectedPlatforms.has(key))
-						.map(([key, info]: [string, { name: string }]) => (
-						<Card key={key} className="border-dashed">
-							<CardContent className="flex items-center gap-3 p-4">
-								<PlatformIcon platform={key} size={24} />
-								<div className="flex-1"><p className="text-sm font-medium text-[var(--muted-foreground)]">{info.name}</p></div>
-								<Button size="sm" variant="outline" onClick={() => handleConnect(key)}>Connect</Button>
-							</CardContent>
-						</Card>
-					))}
-				</div>
 			</div>
 
 			{/* Connect Dialogs */}
