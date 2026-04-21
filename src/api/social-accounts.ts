@@ -62,15 +62,57 @@ export function useReconnectAccount() {
 
 export function useStartOAuth() {
 	return useMutation({
-		mutationFn: (body: { platform: string; connection_method?: string }) => {
+		mutationFn: (body: { platform: string; connection_method?: string; popup?: boolean }) => {
 			// Instagram "direct" method maps to the "instagram_direct" provider
 			let platform = body.platform;
 			if (platform === "instagram" && body.connection_method === "direct") {
 				platform = "instagram_direct";
 			}
-			return apiClient.get<{ redirect_url: string }>(`/api/spa/social/oauth/start?platform=${encodeURIComponent(platform)}`);
+			const popup = body.popup ? "&spa_popup=1" : "";
+			return apiClient.get<{ redirect_url: string }>(
+				`/api/spa/social/oauth/start?platform=${encodeURIComponent(platform)}${popup}`,
+			);
 		},
 		onSuccess: (data) => { if (data.redirect_url) window.location.href = data.redirect_url; else toast.error("No OAuth URL"); },
 		onError: (e: Error) => toast.error(e.message),
+	});
+}
+
+// Native-picker-only hooks (SPA popup OAuth flow).
+// Returns pending status=0 rows for the given platform so the React picker modal can render them.
+export interface PendingAccount {
+	id: number;
+	platform: string;
+	account_id: string;
+	account_name: string;
+	account_username: string;
+	account_type: string;
+	profile_picture: string;
+	created_at: string;
+}
+
+export function useSocialAccountsPending(platform: string, enabled: boolean) {
+	return useQuery({
+		queryKey: ["social", "accounts", "pending", platform],
+		queryFn: () =>
+			apiClient.get<{ pending: PendingAccount[]; plan_limit: number | null; active_count: number }>(
+				`/api/spa/social/accounts/pending?platform=${encodeURIComponent(platform)}`,
+			),
+		enabled: enabled && platform !== "",
+		staleTime: 0,
+	});
+}
+
+export function useActivateSocialAccounts() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (body: { platform: string; selected_ids: number[] }) =>
+			apiClient.post<{ success: boolean; activated: number; platform: string }>(
+				"/api/spa/social/accounts/activate",
+				body,
+			),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: ["social", "accounts"] });
+		},
 	});
 }

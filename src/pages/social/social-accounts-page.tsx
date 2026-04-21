@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Trash2, RotateCcw, AlertTriangle } from "lucide-react";
-import { useSocialAccountsFull, useSyncAccount, useSyncAll, useDisconnectAccount, useReconnectAccount, useStartOAuth, type SocialAccount } from "@/api/social-accounts";
+import { useSocialAccountsFull, useSyncAccount, useSyncAll, useDisconnectAccount, useReconnectAccount, type SocialAccount } from "@/api/social-accounts";
 import { PlatformIcon } from "./platform-icon";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { apiClient } from "@/lib/api-client";
+import { toast } from "sonner";
+import { SocialAccountsPickerModal } from "./social-accounts-picker-modal";
 
 const PLATFORMS = [
 	{ id: "facebook", label: "Facebook", desc: "Connect your Facebook pages for content posting and analytics.", features: ["Post Creation", "Analytics", "Scheduling"] },
@@ -22,7 +25,7 @@ const PLATFORMS = [
 ] as const;
 
 export function SocialAccountsPage() {
-	const { data, isLoading } = useSocialAccountsFull();
+	const { data, isLoading, refetch } = useSocialAccountsFull();
 	const syncAll = useSyncAll();
 	const accounts = data?.accounts ?? [];
 	const activeIds = accounts.filter((a) => a.is_active === 1).map((a) => a.id);
@@ -30,8 +33,47 @@ export function SocialAccountsPage() {
 	const disconnect = useDisconnectAccount();
 	const reconnect = useReconnectAccount();
 	const syncOne = useSyncAccount();
-	const startOAuth = useStartOAuth();
 	const [igModal, setIgModal] = useState(false);
+	const [pickerFor, setPickerFor] = useState<string | null>(null);
+	const [popupBlocked, setPopupBlocked] = useState<string | null>(null);
+
+	// Popup-based OAuth: open provider consent in a popup, stay inside the SPA. The popup
+	// hits the legacy /{platform}/login which stashes $_SESSION['spa_popup']=1; when auth()
+	// returns, Controller::redirect() emits a postMessage + window.close() bounce. We listen
+	// for the message here and open the native React picker modal. No Bootstrap UI shown.
+	const connect = useCallback(async (platform: string, connectionMethod?: string) => {
+		try {
+			let dbPlatform = platform;
+			if (platform === "instagram" && connectionMethod === "direct") dbPlatform = "instagram_direct";
+			const res = await apiClient.get<{ redirect_url: string }>(
+				`/api/spa/social/oauth/start?platform=${encodeURIComponent(dbPlatform)}&spa_popup=1`,
+			);
+			if (!res.redirect_url) { toast.error("No OAuth URL"); return; }
+			const w = window.open(res.redirect_url, "smartlyq_oauth", "width=700,height=820");
+			if (!w) {
+				// Popup blocked. We do NOT fall back to the legacy Bootstrap flow — that would
+				// violate the "never land on Bootstrap" requirement. Show a clear error modal.
+				setPopupBlocked(platform);
+			}
+		} catch (e) {
+			toast.error((e as Error)?.message ?? "Failed to start OAuth");
+		}
+	}, []);
+
+	useEffect(() => {
+		function onMsg(e: MessageEvent) {
+			if (e.origin !== window.location.origin) return;
+			const d = e.data as { type?: string; platform?: string; error?: string } | null;
+			if (!d || d.type !== "smartlyq:oauth-done") return;
+			if (d.error) { toast.error(d.error); refetch(); return; }
+			const platform = (d.platform || "").toLowerCase();
+			if (!platform) return;
+			// Open the React picker modal for every platform — same behavior for FB, IG, LinkedIn, YouTube, etc.
+			setPickerFor(platform);
+		}
+		window.addEventListener("message", onMsg);
+		return () => window.removeEventListener("message", onMsg);
+	}, [refetch]);
 
 	return (
 		<div className="space-y-8">
@@ -137,7 +179,7 @@ export function SocialAccountsPage() {
 						<Card key={p.id} className="hover:shadow-md transition-shadow cursor-pointer"
 							onClick={() => {
 								if (p.id === "instagram") { setIgModal(true); return; }
-								startOAuth.mutate({ platform: p.id });
+								connect(p.id);
 							}}>
 							<CardContent className="p-5">
 								<div className="flex items-start gap-4">
@@ -196,17 +238,61 @@ export function SocialAccountsPage() {
 				<DialogContent className="max-w-md">
 					<DialogHeader><DialogTitle>Connect Instagram</DialogTitle><DialogDescription>Choose your connection method.</DialogDescription></DialogHeader>
 					<div className="space-y-3 py-3">
-						<button onClick={() => { setIgModal(false); startOAuth.mutate({ platform: "instagram", connection_method: "facebook" }); }}
+						<button onClick={() => { setIgModal(false); connect("instagram", "facebook"); }}
 							className="w-full rounded-lg border border-[var(--border)] p-4 text-left hover:border-[var(--sq-primary)] transition-colors">
 							<p className="text-sm font-semibold text-[var(--foreground)]">Via Facebook Page</p>
 							<p className="text-xs text-[var(--muted-foreground)] mt-1">Requires Business/Creator account linked to a Facebook Page. Full features including Stories and Reels.</p>
 						</button>
-						<button onClick={() => { setIgModal(false); startOAuth.mutate({ platform: "instagram", connection_method: "direct" }); }}
+						<button onClick={() => { setIgModal(false); connect("instagram", "direct"); }}
 							className="w-full rounded-lg border border-[var(--border)] p-4 text-left hover:border-[var(--sq-primary)] transition-colors">
 							<p className="text-sm font-semibold text-[var(--foreground)]">Via Instagram Direct</p>
 							<p className="text-xs text-[var(--muted-foreground)] mt-1">Login with Instagram credentials directly. Business/Creator account required.</p>
 						</button>
 					</div>
+				</DialogContent>
+			</Dialog>
+
+			{/* Native account picker modal — opens after every successful OAuth popup bounce */}
+			{pickerFor && (
+				<SocialAccountsPickerModal
+					platform={pickerFor}
+					open
+					onClose={() => { setPickerFor(null); refetch(); }}
+				/>
+			)}
+
+			{/* Popup blocked — SPA users must never land on the legacy Bootstrap picker, so we
+			    surface a clear error instead of falling back to a full-page redirect. */}
+			<Dialog open={!!popupBlocked} onOpenChange={() => setPopupBlocked(null)}>
+				<DialogContent className="max-w-md">
+					<DialogHeader>
+						<div className="flex items-center gap-3">
+							<div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
+								<AlertTriangle size={20} className="text-amber-600" />
+							</div>
+							<div>
+								<DialogTitle>Popup blocked</DialogTitle>
+								<DialogDescription>
+									Your browser prevented SmartlyQ from opening the connect window.
+								</DialogDescription>
+							</div>
+						</div>
+					</DialogHeader>
+					<div className="text-sm text-[var(--muted-foreground)] py-2">
+						Please allow popups for this site and try again. In most browsers the block indicator appears at the right end of the address bar — click it and choose "Always allow".
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setPopupBlocked(null)}>Cancel</Button>
+						<Button
+							onClick={() => {
+								const p = popupBlocked;
+								setPopupBlocked(null);
+								if (p) connect(p);
+							}}
+						>
+							Try again
+						</Button>
+					</DialogFooter>
 				</DialogContent>
 			</Dialog>
 		</div>
