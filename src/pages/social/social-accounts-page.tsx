@@ -65,18 +65,48 @@ export function SocialAccountsPage() {
 	}, [connect]);
 
 	useEffect(() => {
-		function onMsg(e: MessageEvent) {
-			if (e.origin !== window.location.origin) return;
-			const d = e.data as { type?: string; platform?: string; error?: string } | null;
+		// Handle the oauth-done event from three possible channels, since Cross-Origin-Opener-
+		// Policy can sever window.opener during cross-origin OAuth navigation to Meta/Google/etc.
+		// Primary: BroadcastChannel (same-origin, survives opener severance).
+		// Fallback 1: storage event (fires in other same-origin tabs on setItem).
+		// Fallback 2: postMessage (works when COOP happens to not sever opener).
+		const seen = new Set<string>();
+		function handle(data: unknown) {
+			const d = data as { type?: string; platform?: string; error?: string; ts?: number } | null;
 			if (!d || d.type !== "smartlyq:oauth-done") return;
+			const key = `${d.platform ?? ""}:${d.ts ?? 0}`;
+			if (seen.has(key)) return;
+			seen.add(key);
 			if (d.error) { toast.error(d.error); refetch(); return; }
 			const platform = (d.platform || "").toLowerCase();
 			if (!platform) return;
 			// Open the React picker modal for every platform — same behavior for FB, IG, LinkedIn, YouTube, etc.
 			setPickerFor(platform);
 		}
+
+		let bc: BroadcastChannel | null = null;
+		try {
+			bc = new BroadcastChannel("smartlyq:oauth");
+			bc.onmessage = (e) => handle(e.data);
+		} catch { bc = null; }
+
+		function onStorage(e: StorageEvent) {
+			if (e.key !== "smartlyq:oauth:event" || !e.newValue) return;
+			try { handle(JSON.parse(e.newValue)); } catch { /* ignore */ }
+		}
+		window.addEventListener("storage", onStorage);
+
+		function onMsg(e: MessageEvent) {
+			if (e.origin !== window.location.origin) return;
+			handle(e.data);
+		}
 		window.addEventListener("message", onMsg);
-		return () => window.removeEventListener("message", onMsg);
+
+		return () => {
+			bc?.close();
+			window.removeEventListener("storage", onStorage);
+			window.removeEventListener("message", onMsg);
+		};
 	}, [refetch]);
 
 	return (
