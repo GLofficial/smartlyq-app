@@ -44,7 +44,16 @@ export function InstagramMethodModal({ open, onClose, onConfirm }: Props) {
 
 	return (
 		<Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-			<DialogContent className="max-w-2xl">
+			{/*
+			  Force hard centering with inline style to beat any stray transform from parent
+			  layout or lingering animation transform. Tailwind's translate-x-[-50%] gets
+			  combined with the slide-in animation transforms by tailwindcss-animate and can
+			  end up at a non-center resting position on some browser/version combos.
+			*/}
+			<DialogContent
+				className="max-w-2xl"
+				style={{ left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}
+			>
 				<DialogHeader>
 					<DialogTitle className="text-lg">Connect Instagram</DialogTitle>
 				</DialogHeader>
