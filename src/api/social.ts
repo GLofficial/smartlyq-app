@@ -134,7 +134,10 @@ export function useCalendarEvents(start: string, end: string) {
 				`/api/spa/social/calendar?start=${start}&end=${end}`,
 			),
 		enabled: !!start && !!end,
-		staleTime: 60_000,
+		staleTime: 5 * 60_000,
+		// Keep the prior month's events visible while the new range loads — prevents
+		// the calendar from flashing empty on every month switch.
+		placeholderData: (prev) => prev,
 	});
 }
 
