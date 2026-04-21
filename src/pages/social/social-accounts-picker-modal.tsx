@@ -104,6 +104,15 @@ export function SocialAccountsPickerModal({ platform, open, onClose }: Props) {
 	const overLimit =
 		planLimit !== null && remaining !== null && selectedCount > remaining;
 
+	// Reconnect detection: the OAuth flow completed, but upsertAccount() refreshed tokens
+	// on existing status=1 rows instead of creating new status=0 rows (see
+	// SocialAccountsService::upsertAccount lines 226-228 — "don't flip active → pending").
+	// In that case the picker has zero pending + some active rows, which previously showed
+	// the generic "No new accounts returned" error. Now we surface a success state so users
+	// understand the reconnect actually worked.
+	const reconnectSucceeded =
+		pendingQ.isSuccess && pendingRows.length === 0 && activeRows.length > 0;
+
 	function toggle(id: number) {
 		setSelectedIds((prev) => {
 			const next = new Set(prev);
@@ -216,6 +225,18 @@ export function SocialAccountsPickerModal({ platform, open, onClose }: Props) {
 						<div className="flex items-center justify-center py-10">
 							<Loader2 size={18} className="animate-spin text-[var(--muted-foreground)]" />
 						</div>
+					) : reconnectSucceeded ? (
+						<div className="flex flex-col items-center gap-3 py-6 text-center">
+							<div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
+								<CheckCircle2 size={22} className="text-emerald-600" />
+							</div>
+							<p className="text-sm font-semibold text-[var(--foreground)]">
+								{platformLabel} {activeRows.length === 1 ? "account" : "accounts"} reconnected
+							</p>
+							<p className="text-xs text-[var(--muted-foreground)] max-w-sm">
+								Your existing {activeRows.length === 1 ? "account's" : "accounts'"} access {activeRows.length === 1 ? "token was" : "tokens were"} refreshed. You're good to keep posting.
+							</p>
+						</div>
 					) : pendingRows.length === 0 ? (
 						<div className="flex flex-col items-center gap-3 py-8 text-center">
 							<AlertTriangle size={24} className="text-[var(--muted-foreground)]" />
@@ -300,23 +321,31 @@ export function SocialAccountsPickerModal({ platform, open, onClose }: Props) {
 				</div>
 
 				<DialogFooter className="gap-2">
-					<Button variant="outline" onClick={handleCancel} disabled={activateMut.isPending}>
-						Cancel
-					</Button>
-					<Button
-						onClick={handleSave}
-						disabled={activateMut.isPending || pendingRows.length === 0 || selectedCount === 0 || overLimit}
-					>
-						{activateMut.isPending ? (
-							<><Loader2 size={14} className="mr-1.5 animate-spin" /> Connecting…</>
-						) : selectedCount === 0 ? (
-							"Select at least one"
-						) : overLimit ? (
-							"Over plan limit"
-						) : (
-							`Connect ${selectedCount} account${selectedCount === 1 ? "" : "s"}`
-						)}
-					</Button>
+					{reconnectSucceeded ? (
+						<Button onClick={handleCancel} disabled={activateMut.isPending} className="ml-auto">
+							Done
+						</Button>
+					) : (
+						<>
+							<Button variant="outline" onClick={handleCancel} disabled={activateMut.isPending}>
+								Cancel
+							</Button>
+							<Button
+								onClick={handleSave}
+								disabled={activateMut.isPending || pendingRows.length === 0 || selectedCount === 0 || overLimit}
+							>
+								{activateMut.isPending ? (
+									<><Loader2 size={14} className="mr-1.5 animate-spin" /> Connecting…</>
+								) : selectedCount === 0 ? (
+									"Select at least one"
+								) : overLimit ? (
+									"Over plan limit"
+								) : (
+									`Connect ${selectedCount} account${selectedCount === 1 ? "" : "s"}`
+								)}
+							</Button>
+						</>
+					)}
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>
