@@ -16,6 +16,8 @@ import { PlatformIcon } from "./platform-icon";
 import { PlatformBadge } from "./PlatformIcons";
 import { SocialFilterSidebar } from "./social-filter-sidebar";
 import { useWorkspaceStore } from "@/stores/workspace-store";
+import { useAuthStore } from "@/stores/auth-store";
+import { getRealtimeSocket } from "@/lib/realtime";
 import { toast } from "sonner";
 
 function SnippetPreview({ snippet }: { snippet: string }) {
@@ -38,6 +40,11 @@ export function InboxPage() {
 	const typingMut = useInboxTyping();
 	const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const lastTypingSentRef = useRef<number>(0);
+	const socketStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const [remoteTyping, setRemoteTyping] = useState(false);
+	const remoteTypingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const user = useAuthStore((s) => s.user);
+	const workspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
 	const syncMut = useInboxSync();
 	const archiveMut = useInboxArchive();
 	const unarchiveMut = useInboxUnarchive();
@@ -78,13 +85,39 @@ export function InboxPage() {
 
 	useEffect(() => {
 		if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-	}, [thread?.messages?.length]);
+	}, [thread?.messages?.length, remoteTyping]);
 
 	// Backend clears unread_count when the thread is fetched — invalidate list so the badge drops immediately.
 	useEffect(() => {
 		if (!activeConvId) return;
 		queryClient.invalidateQueries({ queryKey: ["social", "inbox"] });
 	}, [activeConvId]);
+
+	// Subscribe to WebSocket typing events for the active conversation.
+	useEffect(() => {
+		setRemoteTyping(false);
+		if (!user || !workspaceId || !activeConvId) return;
+		const socket = getRealtimeSocket({ uid: user.id, workspaceId });
+		if (!socket) return;
+
+		const showTyping = (data: { conversation_id: number }) => {
+			if (data?.conversation_id !== activeConvId) return;
+			setRemoteTyping(true);
+			if (remoteTypingTimerRef.current) clearTimeout(remoteTypingTimerRef.current);
+			remoteTypingTimerRef.current = setTimeout(() => setRemoteTyping(false), 5000);
+		};
+		const hideTyping = (data: { conversation_id: number }) => {
+			if (data?.conversation_id !== activeConvId) return;
+			setRemoteTyping(false);
+		};
+
+		socket.on("inbox:typing", showTyping);
+		socket.on("inbox:typing_stop", hideTyping);
+		return () => {
+			socket.off("inbox:typing", showTyping);
+			socket.off("inbox:typing_stop", hideTyping);
+		};
+	}, [user, workspaceId, activeConvId]);
 
 	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
 	const accountsPath = wsHash ? `/w/${wsHash}/social-media/accounts` : "/social-media/accounts";
@@ -314,6 +347,15 @@ export function InboxPage() {
 									);
 								})
 							)}
+							{remoteTyping && (
+								<div className="flex justify-start">
+									<div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
+										<span className="w-2 h-2 rounded-full bg-[var(--muted-foreground)] animate-bounce" style={{ animationDelay: "0ms" }} />
+										<span className="w-2 h-2 rounded-full bg-[var(--muted-foreground)] animate-bounce" style={{ animationDelay: "150ms" }} />
+										<span className="w-2 h-2 rounded-full bg-[var(--muted-foreground)] animate-bounce" style={{ animationDelay: "300ms" }} />
+									</div>
+								</div>
+							)}
 						</div>
 						{(() => {
 							const win = thread ? getWindowState(thread.meta_window) : null;
@@ -366,19 +408,26 @@ export function InboxPage() {
 											value={reply}
 											onChange={(e) => {
 												setReply(e.target.value);
+												if (!activeConvId) return;
+												// Emit typing via WebSocket (shows indicator to other agents on our platform)
+												const socket = user && workspaceId ? getRealtimeSocket({ uid: user.id, workspaceId }) : null;
+												if (socket) {
+													socket.emit("inbox:typing", { conversation_id: activeConvId });
+													if (socketStopTimerRef.current) clearTimeout(socketStopTimerRef.current);
+													socketStopTimerRef.current = setTimeout(() => {
+														socket.emit("inbox:typing_stop", { conversation_id: activeConvId });
+													}, 2000);
+												}
+												// Call PHP API for FB/IG external typing_on (throttled to every 5s)
 												const convPlatform = thread?.conversation.platform ?? "";
-												if (activeConvId && (convPlatform === "facebook" || convPlatform === "instagram")) {
+												if (convPlatform === "facebook" || convPlatform === "instagram") {
 													const now = Date.now();
-													// Fire immediately on first keystroke, then throttle to every 5s
 													if (now - lastTypingSentRef.current > 5000) {
 														lastTypingSentRef.current = now;
 														typingMut.mutate(activeConvId);
 													}
-													// Reset throttle 6s after last keystroke so next typing session fires immediately
 													if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
-													typingTimerRef.current = setTimeout(() => {
-														lastTypingSentRef.current = 0;
-													}, 6000);
+													typingTimerRef.current = setTimeout(() => { lastTypingSentRef.current = 0; }, 6000);
 												}
 											}}
 											onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !sendBlocked) { e.preventDefault(); handleSendReply(); } }}
