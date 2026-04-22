@@ -1,12 +1,19 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { STORAGE_KEYS } from "@/lib/constants";
 
 /**
  * Embeds Video Editor (Next.js app) inside the unified shell.
  * Passes the SPA JWT directly — it already contains workspace_hash.
+ *
+ * Also listens for cross-origin navigation intents posted by the editor
+ * via `{ type: 'smartlyq:navigate', target: 'plans' }`. That lets the
+ * editor's in-iframe Upgrade button route the parent window to the SPA
+ * plans page instead of the legacy Bootstrap UI.
  */
 export function VideoEditorPage() {
 	const [src, setSrc] = useState("");
+	const navigate = useNavigate();
 
 	useEffect(() => {
 		async function loadUrl() {
@@ -36,6 +43,21 @@ export function VideoEditorPage() {
 		}
 		loadUrl();
 	}, []);
+
+	useEffect(() => {
+		const handler = (e: MessageEvent) => {
+			const data = e.data as { type?: string; target?: string } | null;
+			if (!data || data.type !== "smartlyq:navigate") return;
+			// Extract workspace hash from the current SPA URL: /w/{hash}/...
+			const match = window.location.pathname.match(/^\/w\/([^/]+)/);
+			const hash = match?.[1];
+			if (data.target === "plans") {
+				navigate(hash ? `/w/${hash}/plans` : "/w/plans");
+			}
+		};
+		window.addEventListener("message", handler);
+		return () => window.removeEventListener("message", handler);
+	}, [navigate]);
 
 	if (!src) {
 		return (
