@@ -156,9 +156,12 @@ export interface Comment {
 export interface InboxMessage {
 	id: number;
 	sender_type: "us" | "them" | string;
+	sender_name: string;
 	content: string;
 	sent_at: string | null;
 	media_url: string;
+	media_type: string | null;
+	attachment_type: string | null;
 }
 
 export interface InboxThread {

@@ -285,7 +285,13 @@ export function InboxPage() {
 									return (
 										<div key={m.id} className={`flex ${isUs ? "justify-end" : "justify-start"}`}>
 											<div className={`max-w-[70%] rounded-2xl px-3 py-2 ${isUs ? "bg-[var(--sq-primary)] text-white rounded-br-sm" : "bg-[var(--card)] border border-[var(--border)] rounded-bl-sm"}`}>
-												{m.media_url && <img src={m.media_url} alt="" className="rounded mb-1.5 max-w-full" />}
+												{m.media_url && (
+													(m.media_type === "video" || m.attachment_type === "video") ? (
+														<video src={m.media_url} controls className="rounded mb-1.5 max-w-full max-h-64" />
+													) : (
+														<img src={m.media_url} alt="" className="rounded mb-1.5 max-w-full" />
+													)
+												)}
 												{m.content && m.content !== "0" && (
 													<p className="text-sm whitespace-pre-wrap" style={{ fontFamily: "emoji, system-ui, sans-serif" }}>{m.content}</p>
 												)}
