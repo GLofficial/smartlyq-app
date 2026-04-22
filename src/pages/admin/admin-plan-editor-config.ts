@@ -162,6 +162,24 @@ export const PLAN_EDITOR_SECTIONS: SectionDef[] = [
 		],
 	},
 	{
+		title: "Video Editor: AI Providers",
+		help: "Per-service feature gates and monthly caps for the video editor. Leave a limit blank for unlimited.",
+		fields: [
+			{ key: "video_editor_tts", label: "Enable text-to-speech (ElevenLabs)", type: "bool" },
+			{ key: "video_editor_tts_monthly_chars", label: "TTS monthly character limit", type: "number", placeholder: "e.g. 100000" },
+			{ key: "video_editor_stt", label: "Enable transcription (Deepgram / OpenAI)", type: "bool" },
+			{ key: "video_editor_stt_monthly_minutes", label: "Transcription monthly minutes", type: "number", placeholder: "e.g. 120" },
+			{ key: "video_editor_image_gen", label: "Enable image generation (Freepik)", type: "bool" },
+			{ key: "video_editor_image_gen_monthly_count", label: "Image generations per month", type: "number", placeholder: "e.g. 100" },
+			{ key: "video_editor_video_gen", label: "Enable video generation (Freepik Pixverse/Hailuo/Wan)", type: "bool" },
+			{ key: "video_editor_video_gen_monthly_count", label: "Video generations per month", type: "number", placeholder: "e.g. 30" },
+			{ key: "video_editor_stock_media", label: "Enable stock media search (Pexels)", type: "bool" },
+			{ key: "video_editor_stock_media_monthly_count", label: "Stock media searches per month", type: "number", placeholder: "e.g. 500" },
+			{ key: "video_editor_ai_text", label: "Enable AI text (schema/script/title/enhance — OpenAI)", type: "bool" },
+			{ key: "video_editor_ai_text_monthly_count", label: "AI text calls per month", type: "number", placeholder: "e.g. 500" },
+		],
+	},
+	{
 		title: "Workspaces",
 		fields: [
 			{ key: "workspace_enabled", label: "Workspaces enabled", type: "bool" },
