@@ -605,11 +605,16 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                         )}
                         <p className="text-[10px] font-semibold text-foreground line-clamp-1">{post.title}</p>
                         <p className="text-[9px] text-muted-foreground line-clamp-1 mt-0.5">{post.content}</p>
-                        {(post.approvalStatus === "pending" || post.approvalStatus === "rejected" || post.queueId || post.recurrenceId) && (
+                        {(post.approvalStatus === "pending" || post.approvalStatus === "rejected" || (post.approvalStatus === "approved" && post.status === "draft") || post.queueId || post.recurrenceId) && (
                           <div className="flex items-center gap-1 mt-1 flex-wrap">
                             {post.approvalStatus === "pending" && (
                               <span className="inline-flex items-center gap-0.5 px-1 py-[1px] rounded bg-purple-100 text-purple-700 text-[8px] font-semibold uppercase tracking-wide">
                                 Pending
+                              </span>
+                            )}
+                            {post.approvalStatus === "approved" && post.status === "draft" && (
+                              <span className="inline-flex items-center gap-0.5 px-1 py-[1px] rounded bg-emerald-100 text-emerald-700 text-[8px] font-semibold uppercase tracking-wide">
+                                Approved
                               </span>
                             )}
                             {post.approvalStatus === "rejected" && (
@@ -684,6 +689,13 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-purple-100 text-purple-700 border-purple-200">
                       👁 PENDING
                     </span>
+                  ) : selectedPost.approvalStatus === "approved" && selectedPost.status === "draft" ? (
+                    <>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-emerald-100 text-emerald-700 border-emerald-200">
+                        ✅ APPROVED
+                      </span>
+                      <StatusBadge status={selectedPost.status} />
+                    </>
                   ) : (
                     <StatusBadge status={selectedPost.status} />
                   )}

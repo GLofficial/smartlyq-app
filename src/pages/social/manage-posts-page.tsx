@@ -192,6 +192,11 @@ export function ManagePostsPage() {
 													👁 Pending
 												</span>
 											)}
+											{post.approval_status === "approved" && post.status === "draft" && (
+												<span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-emerald-50 text-emerald-600">
+													✅ Approved
+												</span>
+											)}
 											{post.approval_status !== "pending" && (
 												<span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${sc?.bg} ${sc?.text}`}>
 													{sc?.emoji} {sc?.label}
