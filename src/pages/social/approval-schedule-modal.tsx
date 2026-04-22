@@ -1,58 +1,39 @@
 import { useState } from "react";
-import { CalendarDays, Clock, CheckSquare } from "lucide-react";
+import { format } from "date-fns";
+import { CalendarDays, CheckSquare } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/cn";
 
 interface Props {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	isSubmitting?: boolean;
-	/** Called with an ISO datetime string if the user set a date, or undefined to send without a scheduled time. */
 	onConfirm: (scheduledTime?: string) => void;
 }
 
-export function ApprovalScheduleModal({ open, onOpenChange, isSubmitting, onConfirm }: Props) {
-	const [date, setDate] = useState("");
-	const [time, setTime] = useState("");
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const MINUTES = ["00", "15", "30", "45"];
 
-	function parseScheduledTime(): string | undefined {
-		if (!date.trim() && !time.trim()) return undefined;
-		if (!date.trim()) { toast.error("Please enter a date or leave both fields empty."); return null as unknown as undefined; }
-		const parts = date.split("/");
-		if (parts.length !== 3) { toast.error("Date must be in DD/MM/YYYY format."); return null as unknown as undefined; }
-		const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-		const raw = (time || "").trim() || "09:00";
-		const ampmMatch = raw.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i);
-		let h24: number;
-		let min: number;
-		if (ampmMatch) {
-			const h = parseInt(ampmMatch[1]!, 10);
-			min = parseInt(ampmMatch[2]!, 10);
-			const isPm = ampmMatch[3]!.toLowerCase() === "pm";
-			h24 = h % 12 + (isPm ? 12 : 0);
-		} else {
-			const m24 = raw.match(/^(\d{1,2}):(\d{2})$/);
-			if (!m24) { toast.error("Time must be HH:MM AM/PM or 24-hour HH:MM."); return null as unknown as undefined; }
-			h24 = parseInt(m24[1]!, 10);
-			min = parseInt(m24[2]!, 10);
-		}
-		if (isNaN(h24) || isNaN(min) || h24 > 23 || min > 59) { toast.error("Invalid time."); return null as unknown as undefined; }
-		const hh = String(h24).padStart(2, "0");
-		const mm = String(min).padStart(2, "0");
-		return `${isoDate}T${hh}:${mm}:00`;
+export function ApprovalScheduleModal({ open, onOpenChange, isSubmitting, onConfirm }: Props) {
+	const [date, setDate] = useState<Date | undefined>(undefined);
+	const [hour, setHour] = useState(9);
+	const [minute, setMinute] = useState("00");
+	const [calOpen, setCalOpen] = useState(false);
+
+	function buildIso(): string | undefined {
+		if (!date) return undefined;
+		const hh = String(hour).padStart(2, "0");
+		return `${format(date, "yyyy-MM-dd")}T${hh}:${minute}:00`;
 	}
 
 	function handleConfirm(withDate: boolean) {
-		if (withDate) {
-			const scheduled = parseScheduledTime();
-			if (scheduled === null) return;
-			onConfirm(scheduled);
-		} else {
-			onConfirm(undefined);
-		}
-		setDate("");
-		setTime("");
+		onConfirm(withDate ? buildIso() : undefined);
+		setDate(undefined);
+		setHour(9);
+		setMinute("00");
 		onOpenChange(false);
 	}
 
@@ -65,47 +46,80 @@ export function ApprovalScheduleModal({ open, onOpenChange, isSubmitting, onConf
 						<DialogTitle className="text-xl font-semibold">Send for Approval</DialogTitle>
 					</div>
 					<p className="text-sm text-muted-foreground pt-1">
-						Optionally propose a publish date. The approver can approve without changing it, or you can leave this blank and schedule after approval.
+						Optionally propose a publish date. You can also skip this and schedule after approval.
 					</p>
 				</DialogHeader>
 
 				<div className="space-y-4 py-1">
+					{/* Date picker */}
 					<div className="space-y-2">
-						<label className="text-sm font-medium text-foreground">Proposed date <span className="text-muted-foreground font-normal">(optional)</span></label>
-						<div className="relative">
-							<input
-								type="text"
-								value={date}
-								onChange={(e) => setDate(e.target.value)}
-								className="w-full px-4 py-3 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-								placeholder="DD/MM/YYYY"
-							/>
-							<CalendarDays className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-						</div>
+						<label className="text-sm font-medium text-foreground">
+							Proposed date <span className="text-muted-foreground font-normal">(optional)</span>
+						</label>
+						<Popover open={calOpen} onOpenChange={setCalOpen}>
+							<PopoverTrigger asChild>
+								<button
+									type="button"
+									className={cn(
+										"w-full flex items-center gap-2 px-4 py-3 border border-border rounded-lg text-sm bg-background text-left transition-colors hover:bg-muted/40",
+										!date && "text-muted-foreground",
+									)}
+								>
+									<CalendarDays className="w-4 h-4 shrink-0" />
+									{date ? format(date, "MMMM d, yyyy") : "Pick a date"}
+								</button>
+							</PopoverTrigger>
+							<PopoverContent className="w-auto p-0" align="start">
+								<Calendar
+									mode="single"
+									selected={date}
+									onSelect={(d) => { setDate(d); setCalOpen(false); }}
+									disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+								/>
+							</PopoverContent>
+						</Popover>
 					</div>
 
-					<div className="space-y-2">
-						<label className="text-sm font-medium text-foreground">Proposed time <span className="text-muted-foreground font-normal">(optional, defaults to 09:00)</span></label>
-						<div className="relative">
-							<input
-								type="text"
-								value={time}
-								onChange={(e) => setTime(e.target.value)}
-								className="w-full px-4 py-3 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-								placeholder="HH:MM AM/PM"
-							/>
-							<Clock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+					{/* Time picker — only shown when a date is selected */}
+					{date && (
+						<div className="space-y-2">
+							<label className="text-sm font-medium text-foreground">Proposed time</label>
+							<div className="flex gap-2">
+								<select
+									value={hour}
+									onChange={(e) => setHour(Number(e.target.value))}
+									className="flex-1 px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+								>
+									{HOURS.map((h) => (
+										<option key={h} value={h}>
+											{String(h).padStart(2, "0")}:00
+										</option>
+									))}
+								</select>
+								<select
+									value={minute}
+									onChange={(e) => setMinute(e.target.value)}
+									className="w-28 px-3 py-2.5 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+								>
+									{MINUTES.map((m) => (
+										<option key={m} value={m}>:{m}</option>
+									))}
+								</select>
+							</div>
+							<p className="text-xs text-muted-foreground">
+								Proposed: {format(date, "MMM d, yyyy")} at {String(hour).padStart(2, "0")}:{minute}
+							</p>
 						</div>
-					</div>
+					)}
 				</div>
 
 				<div className="flex flex-col gap-2 mt-2">
 					<Button className="w-full" disabled={isSubmitting} onClick={() => handleConfirm(true)}>
 						<CheckSquare className="w-4 h-4" />
-						{date.trim() ? "Send for Approval with Proposed Date" : "Send for Approval"}
+						{date ? `Send for Approval — ${format(date, "MMM d")} at ${String(hour).padStart(2, "0")}:${minute}` : "Send for Approval"}
 					</Button>
-					{date.trim() && (
-						<Button variant="outline" className="w-full" disabled={isSubmitting} onClick={() => handleConfirm(false)}>
+					{date && (
+						<Button variant="outline" className="w-full text-muted-foreground" disabled={isSubmitting} onClick={() => handleConfirm(false)}>
 							Send Without a Date
 						</Button>
 					)}
