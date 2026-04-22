@@ -37,6 +37,7 @@ export function InboxPage() {
 	const replyMut = useInboxReply();
 	const typingMut = useInboxTyping();
 	const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const lastTypingSentRef = useRef<number>(0);
 	const syncMut = useInboxSync();
 	const archiveMut = useInboxArchive();
 	const unarchiveMut = useInboxUnarchive();
@@ -367,10 +368,17 @@ export function InboxPage() {
 												setReply(e.target.value);
 												const convPlatform = thread?.conversation.platform ?? "";
 												if (activeConvId && (convPlatform === "facebook" || convPlatform === "instagram")) {
+													const now = Date.now();
+													// Fire immediately on first keystroke, then throttle to every 5s
+													if (now - lastTypingSentRef.current > 5000) {
+														lastTypingSentRef.current = now;
+														typingMut.mutate(activeConvId);
+													}
+													// Reset throttle 6s after last keystroke so next typing session fires immediately
 													if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
 													typingTimerRef.current = setTimeout(() => {
-														typingMut.mutate(activeConvId);
-													}, 1500);
+														lastTypingSentRef.current = 0;
+													}, 6000);
 												}
 											}}
 											onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !sendBlocked) { e.preventDefault(); handleSendReply(); } }}
