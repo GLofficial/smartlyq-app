@@ -167,7 +167,7 @@ export const TAB_FIELDS: Record<string, FieldDef[]> = {
 		{ key: "_elevenlabs", label: "ElevenLabs", type: "heading",
 		  description: "Get your API key from", link: { label: "elevenlabs.io", url: "https://elevenlabs.io/app/settings/api-keys" } },
 		{ key: "elevenlabs_apikey", label: "API Key", type: "password", half: true },
-		{ key: "elevenlabs_default_model", label: "Default model", type: "text", placeholder: "eleven_multilingual_sts_v2", half: true },
+		{ key: "elevenlabs_default_model", label: "Default model", type: "text", placeholder: "eleven_multilingual_v2", half: true },
 
 		{ key: "_freepik", label: "Freepik", type: "heading",
 		  description: "Get your API key from", link: { label: "freepik.com", url: "https://www.freepik.com/api/dashboard" } },
