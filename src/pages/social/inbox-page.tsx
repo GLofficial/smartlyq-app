@@ -43,6 +43,7 @@ export function InboxPage() {
 	const socketStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const [remoteTyping, setRemoteTyping] = useState(false);
 	const remoteTypingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const socketRef = useRef<ReturnType<typeof getRealtimeSocket>>(null);
 	const user = useAuthStore((s) => s.user);
 	const workspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
 	const syncMut = useInboxSync();
@@ -93,21 +94,22 @@ export function InboxPage() {
 		queryClient.invalidateQueries({ queryKey: ["social", "inbox"] });
 	}, [activeConvId]);
 
-	// Subscribe to WebSocket typing events for the active conversation.
+	// Subscribe to WebSocket typing events. Store socket in a ref so onChange can emit without re-calling getRealtimeSocket.
 	useEffect(() => {
 		setRemoteTyping(false);
-		if (!user || !workspaceId || !activeConvId) return;
+		if (!user || !workspaceId) return;
 		const socket = getRealtimeSocket({ uid: user.id, workspaceId });
+		socketRef.current = socket;
 		if (!socket) return;
 
 		const showTyping = (data: { conversation_id: number }) => {
-			if (data?.conversation_id !== activeConvId) return;
+			if (!activeConvId || data?.conversation_id !== activeConvId) return;
 			setRemoteTyping(true);
 			if (remoteTypingTimerRef.current) clearTimeout(remoteTypingTimerRef.current);
 			remoteTypingTimerRef.current = setTimeout(() => setRemoteTyping(false), 5000);
 		};
 		const hideTyping = (data: { conversation_id: number }) => {
-			if (data?.conversation_id !== activeConvId) return;
+			if (!activeConvId || data?.conversation_id !== activeConvId) return;
 			setRemoteTyping(false);
 		};
 
@@ -409,9 +411,9 @@ export function InboxPage() {
 											onChange={(e) => {
 												setReply(e.target.value);
 												if (!activeConvId) return;
-												// Emit typing via WebSocket (shows indicator to other agents on our platform)
-												const socket = user && workspaceId ? getRealtimeSocket({ uid: user.id, workspaceId }) : null;
-												if (socket) {
+												// Emit via stored socket ref — avoids re-calling getRealtimeSocket on every keystroke
+												const socket = socketRef.current;
+												if (socket?.connected) {
 													socket.emit("inbox:typing", { conversation_id: activeConvId });
 													if (socketStopTimerRef.current) clearTimeout(socketStopTimerRef.current);
 													socketStopTimerRef.current = setTimeout(() => {
