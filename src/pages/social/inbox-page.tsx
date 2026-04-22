@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, ChevronRight, MessageSquare, Send, Search, Archive, ArchiveRestore, Mail, AlertTriangle, WifiOff, Smile, Image as ImageIcon, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageSquare, Send, Search, Archive, ArchiveRestore, Mail, AlertTriangle, WifiOff, Smile, Image as ImageIcon, X, Video, Loader2 } from "lucide-react";
 import { useSocialInbox, useInboxThread, useInboxSync, useInboxArchive, useInboxUnarchive } from "@/api/social";
 import { useInboxReply } from "@/api/social-posts";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -17,6 +17,13 @@ import { PlatformBadge } from "./PlatformIcons";
 import { SocialFilterSidebar } from "./social-filter-sidebar";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { toast } from "sonner";
+
+function SnippetPreview({ snippet }: { snippet: string }) {
+	const s = snippet ?? "";
+	if (!s || s === "0" || s === "[Image]") return <><ImageIcon size={11} className="shrink-0" /><span>Image</span></>;
+	if (s === "[Video]") return <><Video size={11} className="shrink-0" /><span>Video</span></>;
+	return <span className="truncate">{s}</span>;
+}
 
 export function InboxPage() {
 	const [page, setPage] = useState(1);
@@ -190,7 +197,9 @@ export function InboxPage() {
 												{conv.last_message_at ? new Date(conv.last_message_at).toLocaleDateString() : ""}
 											</span>
 										</div>
-										<p className="text-xs text-[var(--muted-foreground)] truncate mt-0.5">{conv.snippet === "0" || conv.snippet === "" ? "📷 Image" : conv.snippet}</p>
+										<p className="text-xs text-[var(--muted-foreground)] truncate mt-0.5 flex items-center gap-1">
+											<SnippetPreview snippet={conv.snippet} />
+										</p>
 									</div>
 									{conv.unread_count > 0 && (
 										<span className="shrink-0 min-w-[20px] h-5 rounded-full bg-[var(--sq-primary)] text-white text-[10px] font-bold flex items-center justify-center px-1.5">
@@ -318,7 +327,13 @@ export function InboxPage() {
 										<div className="px-3 pt-2 flex flex-wrap gap-2">
 											{mediaItems.map((item, i) => (
 												<div key={i} className="relative inline-block">
-													<img src={item.previewUrl} alt="" className="h-16 w-16 rounded object-cover border border-[var(--border)]" />
+													{item.type === "video" ? (
+														<div className="h-16 w-16 rounded border border-[var(--border)] bg-black flex items-center justify-center">
+															<Video size={20} className="text-white opacity-80" />
+														</div>
+													) : (
+														<img src={item.previewUrl} alt="" className="h-16 w-16 rounded object-cover border border-[var(--border)]" />
+													)}
 													<button onClick={() => setMediaItems(prev => prev.filter((_, idx) => idx !== i))} className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-[var(--foreground)] text-[var(--background)] flex items-center justify-center">
 														<X size={10} />
 													</button>
@@ -351,10 +366,10 @@ export function InboxPage() {
 											onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !sendBlocked) { e.preventDefault(); handleSendReply(); } }}
 											placeholder={placeholder}
 											className="flex-1"
-											disabled={sendBlocked}
+											disabled={sendBlocked || replyMut.isPending}
 										/>
 										<Button onClick={handleSendReply} disabled={replyMut.isPending || (!reply.trim() && mediaItems.length === 0) || sendBlocked}>
-											<Send size={14} /> Send
+											{replyMut.isPending ? <><Loader2 size={14} className="animate-spin" />Sending…</> : <><Send size={14} />Send</>}
 										</Button>
 									</div>
 								</div>
