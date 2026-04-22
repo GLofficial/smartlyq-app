@@ -145,6 +145,8 @@ interface DemoPost {
   platformOverrides?: Record<string, string | { content?: string; media_urls?: string[] }>;
   /** Approval lifecycle: 'none' | 'pending' | 'approved' | 'rejected'. */
   approvalStatus?: string;
+  /** ISO-UTC proposed publish time for pending-approval posts. Used for overdue detection. */
+  scheduledTime?: string | null;
   /** Non-null when the post was added to a named queue. */
   queueId?: number | null;
   /** Non-null when the post was materialized from a recurring schedule. */
@@ -291,6 +293,7 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
         platformPostTypes,
         platformOverrides,
         approvalStatus: (ep.approvalStatus as string) || "none",
+        scheduledTime: (ep.scheduledTime as string) || null,
         queueId: typeof ep.queueId === "number" ? (ep.queueId as number) : null,
         recurrenceId: typeof ep.recurrenceId === "number" ? (ep.recurrenceId as number) : null,
       };
@@ -612,6 +615,11 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                                 Pending
                               </span>
                             )}
+                            {post.approvalStatus === "pending" && post.scheduledTime && new Date(post.scheduledTime) < new Date() && (
+                              <span className="inline-flex items-center gap-0.5 px-1 py-[1px] rounded bg-red-100 text-red-700 text-[8px] font-semibold uppercase tracking-wide">
+                                Overdue
+                              </span>
+                            )}
                             {post.approvalStatus === "approved" && post.status === "draft" && (
                               <span className="inline-flex items-center gap-0.5 px-1 py-[1px] rounded bg-emerald-100 text-emerald-700 text-[8px] font-semibold uppercase tracking-wide">
                                 Approved
@@ -686,9 +694,16 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                     {selectedPost.status === "published" ? "Published on" : selectedPost.status === "partial" ? "Partially published on" : selectedPost.status === "scheduled" ? "Scheduled for" : "Created"}: {new Date(selectedPost.date + "T" + selectedPost.time).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} at {selectedPost.time}
                   </span>
                   {selectedPost.approvalStatus === "pending" ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-purple-100 text-purple-700 border-purple-200">
-                      👁 PENDING
-                    </span>
+                    <>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-purple-100 text-purple-700 border-purple-200">
+                        👁 PENDING
+                      </span>
+                      {selectedPost.scheduledTime && new Date(selectedPost.scheduledTime) < new Date() && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-red-100 text-red-700 border-red-200">
+                          ⚠️ OVERDUE
+                        </span>
+                      )}
+                    </>
                   ) : selectedPost.approvalStatus === "approved" && selectedPost.status === "draft" ? (
                     <>
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-emerald-100 text-emerald-700 border-emerald-200">
