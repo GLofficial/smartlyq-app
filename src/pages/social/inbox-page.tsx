@@ -20,8 +20,7 @@ import { toast } from "sonner";
 
 function SnippetPreview({ snippet }: { snippet: string }) {
 	const s = snippet ?? "";
-	if (!s || s === "0" || s === "[Image]") return <><ImageIcon size={11} className="shrink-0" /><span>Image</span></>;
-	if (s === "[Video]") return <><Video size={11} className="shrink-0" /><span>Video</span></>;
+	if (!s || s === "0" || s === "[Image]" || s === "[Video]") return <><ImageIcon size={11} className="shrink-0" /><span>Media</span></>;
 	return <span className="truncate">{s}</span>;
 }
 
