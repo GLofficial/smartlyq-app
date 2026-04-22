@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, MessageSquare, Send, Search, Archive, ArchiveRestore, Mail, AlertTriangle, WifiOff, Smile, Image as ImageIcon, X, Video, Loader2 } from "lucide-react";
 import { useSocialInbox, useInboxThread, useInboxSync, useInboxArchive, useInboxUnarchive } from "@/api/social";
-import { useInboxReply } from "@/api/social-posts";
+import { useInboxReply, useInboxTyping } from "@/api/social-posts";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { InboxMediaPicker, type MediaItem } from "./InboxMediaPicker";
 import emojiData from "@emoji-mart/data";
@@ -35,6 +35,8 @@ export function InboxPage() {
 	const { data: accountsData, isLoading: accountsLoading } = useSocialAccounts();
 	const { data: thread, isLoading: threadLoading } = useInboxThread(activeConvId);
 	const replyMut = useInboxReply();
+	const typingMut = useInboxTyping();
+	const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const syncMut = useInboxSync();
 	const archiveMut = useInboxArchive();
 	const unarchiveMut = useInboxUnarchive();
@@ -361,7 +363,16 @@ export function InboxPage() {
 										/>
 										<Input
 											value={reply}
-											onChange={(e) => setReply(e.target.value)}
+											onChange={(e) => {
+												setReply(e.target.value);
+												const convPlatform = thread?.conversation.platform ?? "";
+												if (activeConvId && (convPlatform === "facebook" || convPlatform === "instagram")) {
+													if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+													typingTimerRef.current = setTimeout(() => {
+														typingMut.mutate(activeConvId);
+													}, 1500);
+												}
+											}}
 											onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !sendBlocked) { e.preventDefault(); handleSendReply(); } }}
 											placeholder={placeholder}
 											className="flex-1"

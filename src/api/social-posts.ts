@@ -159,6 +159,13 @@ export function useInboxReply() {
 	});
 }
 
+export function useInboxTyping() {
+	return useMutation({
+		mutationFn: (conversationId: number) =>
+			apiClient.post<{ ok: boolean }>("/api/spa/social/inbox/typing", { conversation_id: conversationId }),
+	});
+}
+
 export function useInboxUploadMedia() {
 	return useMutation({
 		mutationFn: (file: File) => {
