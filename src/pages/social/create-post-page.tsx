@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { AlertTriangle, Info } from "lucide-react";
 import PostComposer from "./PostComposer";
 import PostPreview from "./PostPreview";
+import { ApprovalScheduleModal } from "./approval-schedule-modal";
 
 interface LocationState {
   prefillDate?: string;
@@ -39,6 +40,7 @@ export function CreatePostPage() {
   const state = location.state as LocationState | null;
   const accounts = Array.isArray(hubData?.accounts) ? hubData.accounts : [];
 
+  const [approvalModalOpen, setApprovalModalOpen] = useState(false);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(
     state?.editPost?.platforms || [],
   );
@@ -233,15 +235,7 @@ export function CreatePostPage() {
       extras?: { queue_id?: number; recurrence?: CreatePostData["recurrence"] },
     ) => {
       if (!validatePost(action, scheduledTime)) return;
-      // Always send the user's IANA timezone so the backend can convert local → UTC correctly.
-      // Avoids the classic "scheduled Friday post lands on Saturday" bug from manual offset math.
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-      // Per-platform overrides — when Customize channel is on, each platform may
-      // have its own text AND its own media subset. Items with no `targetPlatforms`
-      // tag are global (apply to every platform); items with the tag only apply
-      // to the listed platforms. If ANY media is tagged, we must emit media_urls
-      // for every selected platform — otherwise un-overridden platforms fall back
-      // to the top-level mediaUrls which contains the tagged items too.
       const overrides: Record<string, string | { content?: string; media_urls?: string[] }> = {};
       if (customizeChannel) {
         const globalMedia = uploadedMediaFull
@@ -270,10 +264,6 @@ export function CreatePostPage() {
         }
       }
 
-      // Derive a sensible post title — never send an empty string, because the
-      // social_posts.title column appears to coerce empty to "0" somewhere downstream,
-      // which then leaks into platform APIs (saw a YouTube upload land as title "0").
-      // Priority: YouTube title override → Pinterest title → first line of content.
       const ytTitle = (platformOptions.youtube as Record<string, unknown> | undefined)?.title;
       const pinTitle = (platformOptions.pinterest as Record<string, unknown> | undefined)?.title;
       const firstLine = content.split("\n").find((l) => l.trim() !== "")?.slice(0, 200) ?? "";
@@ -440,7 +430,7 @@ export function CreatePostPage() {
             onSelectedAccountIdsChange={setSelectedAccountIds}
             onSaveDraft={() => handleSubmit("save_draft")}
             onPostNow={() => handleSubmit("post_now")}
-            onSendForApproval={() => handleSubmit("send_for_approval")}
+            onSendForApproval={() => setApprovalModalOpen(true)}
             onAddToQueue={(queueId: number) => handleSubmit("add_to_queue", undefined, { queue_id: queueId })}
             onScheduleRecurring={(recurrence) => handleSubmit("recurring", undefined, { recurrence })}
             onSchedulePost={(date, time) => {
@@ -493,6 +483,12 @@ export function CreatePostPage() {
           />
         </div>
       </div>
+      <ApprovalScheduleModal
+        open={approvalModalOpen}
+        onOpenChange={setApprovalModalOpen}
+        isSubmitting={createPost.isPending}
+        onConfirm={(scheduledTime) => handleSubmit("send_for_approval", scheduledTime)}
+      />
     </div>
   );
 }
