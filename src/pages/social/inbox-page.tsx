@@ -413,7 +413,7 @@ export function InboxPage() {
 												if (!activeConvId) return;
 												// Emit via stored socket ref — avoids re-calling getRealtimeSocket on every keystroke
 												const socket = socketRef.current;
-												if (socket?.connected) {
+												if (socket) {
 													socket.emit("inbox:typing", { conversation_id: activeConvId });
 													if (socketStopTimerRef.current) clearTimeout(socketStopTimerRef.current);
 													socketStopTimerRef.current = setTimeout(() => {
