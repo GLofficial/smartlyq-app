@@ -163,6 +163,25 @@ export const TAB_FIELDS: Record<string, FieldDef[]> = {
 		  description: "Get your API key from", link: { label: "console.x.ai", url: "https://console.x.ai/" } },
 		{ key: "xai_apikey", label: "API Key", type: "password", half: true },
 
+		// Video editor AI providers (proxied through PHP backend, no keys on Vercel)
+		{ key: "_elevenlabs", label: "ElevenLabs", type: "heading",
+		  description: "Get your API key from", link: { label: "elevenlabs.io", url: "https://elevenlabs.io/app/settings/api-keys" } },
+		{ key: "elevenlabs_apikey", label: "API Key", type: "password", half: true },
+		{ key: "elevenlabs_default_model", label: "Default model", type: "text", placeholder: "eleven_multilingual_sts_v2", half: true },
+
+		{ key: "_freepik", label: "Freepik", type: "heading",
+		  description: "Get your API key from", link: { label: "freepik.com", url: "https://www.freepik.com/api/dashboard" } },
+		{ key: "freepik_apikey", label: "API Key", type: "password" },
+
+		{ key: "_pexels", label: "Pexels", type: "heading",
+		  description: "Get your API key from", link: { label: "pexels.com", url: "https://www.pexels.com/api/" } },
+		{ key: "pexels_apikey", label: "API Key", type: "password" },
+
+		{ key: "_deepgram", label: "Deepgram", type: "heading",
+		  description: "Get your API key from", link: { label: "deepgram.com", url: "https://console.deepgram.com/" } },
+		{ key: "deepgram_apikey", label: "API Key", type: "password", half: true },
+		{ key: "deepgram_default_model", label: "Default model", type: "text", placeholder: "nova-2", half: true },
+
 		// Image generation
 		{ key: "_image_gen", label: "Image Generation", type: "heading" },
 		{ key: "bfl_apikey", label: "BFL (Flux) API Key", type: "password", half: true },
