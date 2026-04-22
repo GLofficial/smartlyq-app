@@ -51,7 +51,8 @@ export function VideoEditorPage() {
 				src={src}
 				title="Video Editor"
 				className="h-full w-full border-0"
-				allow="clipboard-write; camera; microphone"
+				allow="clipboard-write; camera; microphone; fullscreen"
+				allowFullScreen
 			/>
 		</div>
 	);
