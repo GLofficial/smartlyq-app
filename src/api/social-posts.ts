@@ -73,7 +73,7 @@ export function useCreatePost() {
 
 export function useEditPost() {
 	return useMutation({
-		mutationFn: (data: { post_id: number; content?: string; platforms?: string[]; scheduled_time?: string; timezone?: string; account_ids?: number[]; media_urls?: string[] }) =>
+		mutationFn: (data: { post_id: number; content?: string; platforms?: string[]; scheduled_time?: string; timezone?: string; account_ids?: number[]; media_urls?: string[]; platform_overrides?: Record<string, unknown>; approval_status?: string }) =>
 			apiClient.post<{ message: string; post: Record<string, unknown> }>("/api/spa/social/posts/edit", data),
 		onSuccess: invalidatePosts,
 	});

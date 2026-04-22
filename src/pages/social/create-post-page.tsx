@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSocialHub, usePostingLimits } from "@/api/social";
 import { useMediaList } from "@/api/media-library";
-import { useCreatePost, usePostForEdit, type CreatePostData } from "@/api/social-posts";
+import { useCreatePost, useEditPost, usePostForEdit, type CreatePostData } from "@/api/social-posts";
 import { useAiRewrite, useAiImage } from "@/api/ai-generate";
 import { useGenerateVideo } from "@/api/video-gen";
 import { apiClient } from "@/lib/api-client";
@@ -31,6 +31,7 @@ export function CreatePostPage() {
   const { data: hubData, isLoading: hubLoading } = useSocialHub();
   const { data: limits } = usePostingLimits();
   const createPost = useCreatePost();
+  const editPost = useEditPost();
   const { data: imageLib } = useMediaList(0, "image", "", 1);
   const { data: videoLib } = useMediaList(0, "video", "", 1);
   const aiRewrite = useAiRewrite();
@@ -76,7 +77,6 @@ export function CreatePostPage() {
     if (state) window.history.replaceState({}, document.title);
   }, [state]);
 
-  // Edit mode: ?edit=123 loads an existing draft/scheduled post and prefills the composer.
   const editId = (() => {
     const p = new URLSearchParams(location.search).get("edit");
     const n = p ? parseInt(p, 10) : 0;
@@ -84,7 +84,6 @@ export function CreatePostPage() {
   })();
   const { data: editData } = usePostForEdit(editId);
 
-  // Composer media + post-type seeds (separate state so we can bump the reference on new editData arrival).
   const [initialUploadedMedia, setInitialUploadedMedia] = useState<{ id: string; type: "image" | "video"; name: string; url?: string }[]>([]);
   const [initialPlatformPostType, setInitialPlatformPostType] = useState<Record<string, string>>({});
 
@@ -95,8 +94,6 @@ export function CreatePostPage() {
     setSelectedPlatforms(Array.isArray(p.platforms) ? p.platforms : []);
     setSelectedAccountIds(Array.isArray(p.selected_account_ids) ? p.selected_account_ids : []);
     setMediaUrls(Array.isArray(p.media_urls) ? p.media_urls : []);
-
-    // Build previewMedia + composer-internal uploadedMedia seed from URLs.
     const typed = (p.media_urls || []).map((url, idx) => ({
       url,
       type: (/\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url) ? "video" : "image") as "image" | "video",
@@ -111,7 +108,6 @@ export function CreatePostPage() {
       url,
     })));
 
-    // Pull per-platform post type from platform_overrides if backend provides it.
     const overrides = (p.platform_overrides ?? {}) as Record<string, unknown>;
     const postTypes: Record<string, string> = {};
     for (const [platformKey, val] of Object.entries(overrides)) {
@@ -123,7 +119,6 @@ export function CreatePostPage() {
     setInitialPlatformPostType(postTypes);
   }, [editData]);
 
-  // Validate before posting
   const validatePost = useCallback((action: string, scheduledTime?: string): boolean => {
     if (selectedAccountIds.length === 0) {
       toast.error("Please select at least one account");
@@ -162,7 +157,6 @@ export function CreatePostPage() {
           toast.error(`${brand} ${type} requires a video. Upload a video or switch post type.`);
           return false;
         }
-        // Pinterest Photo / YouTube Photo / TikTok Photo rules — if labeled Photo must have an image
         if (type === "Photo" && !hasImage) {
           const brand = pid.charAt(0).toUpperCase() + pid.slice(1).replace(/_page$/, "");
           toast.error(`${brand} ${type} requires an image.`);
@@ -170,8 +164,6 @@ export function CreatePostPage() {
         }
       }
 
-      // YouTube requires a non-empty title. Without it the video lands on the channel
-      // with the literal title "0" (because social_posts.title column casts empty string → 0).
       if (selectedPlatforms.includes("youtube")) {
         const yt = platformOptions.youtube as Record<string, unknown> | undefined;
         const ytTitle = (typeof yt?.title === "string" ? yt.title : "").trim();
@@ -181,8 +173,6 @@ export function CreatePostPage() {
         }
       }
 
-      // TikTok requires explicit privacy selection — TikTok's API defaults unsubmitted
-      // privacy to SELF_ONLY which is why test posts never surfaced on the profile.
       if (selectedPlatforms.includes("tiktok")) {
         const tk = platformOptions.tiktok as Record<string, unknown> | undefined;
         if (!tk || !tk.visibility) {
@@ -272,36 +262,52 @@ export function CreatePostPage() {
         || firstLine
         || "Untitled";
 
-      createPost.mutate(
-        {
-          title: typeof derivedTitle === "string" ? derivedTitle : "Untitled",
-          content,
-          platforms: selectedPlatforms,
-          selected_accounts: selectedAccountIds,
-          action,
-          scheduled_time: scheduledTime ?? null,
-          media_urls: mediaUrls,
-          timezone: userTimezone,
-          platform_options: platformOptions,
-          platform_overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
-          queue_id: extras?.queue_id,
-          recurrence: extras?.recurrence,
-        },
-        {
-          onSuccess: () => {
-            toast.success(
-              action === "save_draft" ? "Draft saved" :
-              action === "scheduled" ? "Post scheduled" :
-              action === "send_for_approval" ? "Sent for approval" :
-              action === "add_to_queue" ? "Added to queue" :
-              action === "recurring" ? "Recurring schedule created" :
-              "Post queued for publishing",
-            );
-            navigate(wsHash ? `/w/${wsHash}/social-media/posts` : "/social-media/posts");
+      const successMsg =
+        action === "save_draft" ? "Draft saved" :
+        action === "scheduled" ? "Post scheduled" :
+        action === "send_for_approval" ? "Sent for approval" :
+        action === "add_to_queue" ? "Added to queue" :
+        action === "recurring" ? "Recurring schedule created" :
+        "Post queued for publishing";
+      const onSuccess = () => {
+        toast.success(successMsg);
+        navigate(wsHash ? `/w/${wsHash}/social-media/posts` : "/social-media/posts");
+      };
+      const onError = (err: unknown) => toast.error((err as Error).message || "Failed");
+      if (editId && (action === "save_draft" || action === "send_for_approval" || action === "scheduled")) {
+        editPost.mutate(
+          {
+            post_id: editId,
+            content,
+            platforms: selectedPlatforms,
+            account_ids: selectedAccountIds,
+            scheduled_time: scheduledTime ?? undefined,
+            timezone: userTimezone,
+            media_urls: mediaUrls,
+            platform_overrides: Object.keys(overrides).length > 0 ? overrides as Record<string, unknown> : undefined,
+            approval_status: action === "send_for_approval" ? "pending" : undefined,
           },
-          onError: (err) => toast.error((err as Error).message || "Failed"),
-        },
-      );
+          { onSuccess, onError },
+        );
+      } else {
+        createPost.mutate(
+          {
+            title: typeof derivedTitle === "string" ? derivedTitle : "Untitled",
+            content,
+            platforms: selectedPlatforms,
+            selected_accounts: selectedAccountIds,
+            action,
+            scheduled_time: scheduledTime ?? null,
+            media_urls: mediaUrls,
+            timezone: userTimezone,
+            platform_options: platformOptions,
+            platform_overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
+            queue_id: extras?.queue_id,
+            recurrence: extras?.recurrence,
+          },
+          { onSuccess, onError },
+        );
+      }
     },
     [content, selectedPlatforms, selectedAccountIds, createPost, navigate, wsHash, validatePost, customizeChannel, uploadedMediaFull, platformContent, platformOptions, mediaUrls],
   );

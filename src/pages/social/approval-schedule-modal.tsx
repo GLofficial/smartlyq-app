@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/cn";
+import { toast } from "sonner";
 
 interface Props {
 	open: boolean;
@@ -15,7 +16,7 @@ interface Props {
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const MINUTES = ["00", "15", "30", "45"];
+const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
 
 export function ApprovalScheduleModal({ open, onOpenChange, isSubmitting, onConfirm }: Props) {
 	const [date, setDate] = useState<Date | undefined>(undefined);
@@ -30,7 +31,17 @@ export function ApprovalScheduleModal({ open, onOpenChange, isSubmitting, onConf
 	}
 
 	function handleConfirm(withDate: boolean) {
-		onConfirm(withDate ? buildIso() : undefined);
+		if (withDate) {
+			const iso = buildIso();
+			if (!iso) return;
+			if (new Date(iso) <= new Date()) {
+				toast.error("Proposed date and time must be in the future.");
+				return;
+			}
+			onConfirm(iso);
+		} else {
+			onConfirm(undefined);
+		}
 		setDate(undefined);
 		setHour(9);
 		setMinute("00");
