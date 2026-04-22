@@ -16,8 +16,7 @@ import { PlatformIcon } from "./platform-icon";
 import { PlatformBadge } from "./PlatformIcons";
 import { SocialFilterSidebar } from "./social-filter-sidebar";
 import { useWorkspaceStore } from "@/stores/workspace-store";
-import { useAuthStore } from "@/stores/auth-store";
-import { getRealtimeSocket } from "@/lib/realtime";
+import { getCurrentSocket } from "@/lib/realtime";
 import { toast } from "sonner";
 
 function SnippetPreview({ snippet }: { snippet: string }) {
@@ -43,9 +42,7 @@ export function InboxPage() {
 	const socketStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const [remoteTyping, setRemoteTyping] = useState(false);
 	const remoteTypingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const socketRef = useRef<ReturnType<typeof getRealtimeSocket>>(null);
-	const user = useAuthStore((s) => s.user);
-	const workspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+	const socketRef = useRef<ReturnType<typeof getCurrentSocket>>(null);
 	const syncMut = useInboxSync();
 	const archiveMut = useInboxArchive();
 	const unarchiveMut = useInboxUnarchive();
@@ -94,11 +91,10 @@ export function InboxPage() {
 		queryClient.invalidateQueries({ queryKey: ["social", "inbox"] });
 	}, [activeConvId]);
 
-	// Subscribe to WebSocket typing events. Store socket in a ref so onChange can emit without re-calling getRealtimeSocket.
+	// Subscribe to WebSocket typing events for the active conversation.
 	useEffect(() => {
 		setRemoteTyping(false);
-		if (!user || !workspaceId) return;
-		const socket = getRealtimeSocket({ uid: user.id, workspaceId });
+		const socket = getCurrentSocket();
 		socketRef.current = socket;
 		if (!socket) return;
 
@@ -119,7 +115,7 @@ export function InboxPage() {
 			socket.off("inbox:typing", showTyping);
 			socket.off("inbox:typing_stop", hideTyping);
 		};
-	}, [user, workspaceId, activeConvId]);
+	}, [activeConvId]);
 
 	const wsHash = useWorkspaceStore((s) => s.activeWorkspaceHash);
 	const accountsPath = wsHash ? `/w/${wsHash}/social-media/accounts` : "/social-media/accounts";

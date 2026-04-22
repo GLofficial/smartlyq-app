@@ -58,6 +58,11 @@ export function getRealtimeSocket(k: RealtimeKey): Socket | null {
 	return socket;
 }
 
+/** Return the current socket without any side effects (no teardown, no creation). */
+export function getCurrentSocket(): Socket | null {
+	return current?.socket ?? null;
+}
+
 /** Disconnect and drop the singleton — call on logout. */
 export function disconnectRealtime(): void {
 	if (!current) return;
