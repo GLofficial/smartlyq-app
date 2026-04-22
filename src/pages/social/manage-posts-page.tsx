@@ -186,9 +186,18 @@ export function ManagePostsPage() {
 												</div>
 											);
 										})()}
-										<span className={`inline-flex items-center gap-1 mt-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${sc?.bg} ${sc?.text}`}>
-											{sc?.emoji} {sc?.label}
-										</span>
+										<div className="flex items-center gap-1 mt-1 flex-wrap">
+											{post.approval_status === "pending" && (
+												<span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-purple-50 text-purple-600">
+													👁 Pending
+												</span>
+											)}
+											{post.approval_status !== "pending" && (
+												<span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${sc?.bg} ${sc?.text}`}>
+													{sc?.emoji} {sc?.label}
+												</span>
+											)}
+										</div>
 									</div>
 
 									{/* Right side: platforms + account + date + actions */}

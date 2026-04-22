@@ -631,7 +631,9 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                         )}
                         <div className="flex items-center justify-between gap-1 mt-1 min-w-0">
                           <PlatformIcons platforms={post.platforms} maxVisible={3} size={16} />
-                          <div className="shrink-0 scale-90 origin-right"><StatusBadge status={post.status} /></div>
+                          {post.approvalStatus !== "pending" && (
+                            <div className="shrink-0 scale-90 origin-right"><StatusBadge status={post.status} /></div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -678,7 +680,13 @@ export default function ContentCalendar({ realEvents, onDeletePost, onRetryPost,
                   <span className="text-xs text-muted-foreground">
                     {selectedPost.status === "published" ? "Published on" : selectedPost.status === "partial" ? "Partially published on" : selectedPost.status === "scheduled" ? "Scheduled for" : "Created"}: {new Date(selectedPost.date + "T" + selectedPost.time).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} at {selectedPost.time}
                   </span>
-                  <StatusBadge status={selectedPost.status} />
+                  {selectedPost.approvalStatus === "pending" ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border bg-purple-100 text-purple-700 border-purple-200">
+                      👁 PENDING
+                    </span>
+                  ) : (
+                    <StatusBadge status={selectedPost.status} />
+                  )}
                 </div>
               </DialogHeader>
 
