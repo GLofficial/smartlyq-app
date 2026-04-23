@@ -328,8 +328,8 @@ export function CreatePostPage() {
   }, [aiImage]);
 
   const handleAiVideo = useCallback(async (prompt: string, config: Record<string, string>) => {
-    const result = await aiVideo.mutateAsync({ prompt, type: config.type, model: config.model });
-    return `Video generation started (ID: ${result.video_id}). Check Media Library when complete.`;
+    const result = await aiVideo.mutateAsync({ prompt, model: config.model });
+    return `Video generation started (ID: ${result.ids[0]}). Check Media Library when complete.`;
   }, [aiVideo]);
 
   const handleMediaUpload = useCallback(async (file: File) => {
