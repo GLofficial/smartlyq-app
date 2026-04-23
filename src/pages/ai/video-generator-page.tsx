@@ -1,184 +1,143 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Video, Wand2, ChevronDown, Database } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Database, Sparkles, Video, Wand2 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { useVideoConfig, useGenerateVideo, type VideoModel, type VideoPricingRow } from "@/api/video-gen";
+import { ModelSelector, OptionGroup, Toggle, AiPromptDialog, SeedInput } from "./video-generator-options";
 import { toast } from "sonner";
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function fmtModelName(m: string): string {
-	return m
-		.replace(/-(?:text|image)$/, "")
-		.replace(/[_-]/g, " ")
-		.replace(/\b\w/g, (c) => c.toUpperCase());
+function parse(s: string): string[] {
+	return s ? s.split(",").map((x) => x.trim()).filter(Boolean) : [];
 }
 
-function fmtMode(m: string): string {
-	const map: Record<string, string> = {
-		std: "Standard", standard: "Standard", basic: "Basic",
-		pro: "Pro", professional: "Pro",
-		hq: "HQ", high: "HQ", quality: "HQ",
-		turbo: "Turbo", fast: "Fast",
-	};
-	return map[m] ?? (m.charAt(0).toUpperCase() + m.slice(1));
+const MODE_MAP: Record<string, string> = {
+	std: "Standard", standard: "Standard", normal: "Normal",
+	pro: "Pro", professional: "Pro", hq: "HQ",
+	fast: "Fast", turbo: "Turbo",
+};
+function fmtMode(m: string) { return MODE_MAP[m] ?? (m.charAt(0).toUpperCase() + m.slice(1)); }
+function fmtStyle(s: string) {
+	return s.replace(/_/g, " ").replace(/\b(\w)/g, (c) => c.toUpperCase()).replace(/^3d /i, "3D ");
 }
+function fmtMovement(m: string) { return m.charAt(0).toUpperCase() + m.slice(1); }
+function fmtLength(v: string) { return `${v}s`; }
+function fmtResolution(r: string) { return r.toUpperCase(); }
 
-function uniqueVals<T>(arr: T[]): T[] { return [...new Set(arr)]; }
-
-function minCredits(pricing: VideoPricingRow[]): number {
-	if (!pricing.length) return 0;
-	return Math.min(...pricing.map((p) => p.credits));
-}
-
-function resolveCredits(pricing: VideoPricingRow[], opts: GenOptions): number {
+function resolveCredits(pricing: VideoPricingRow[], opts: FullOpts): number {
 	const exact = pricing.find(
 		(p) => p.length === opts.length && p.resolution === opts.resolution && p.mode === opts.mode && p.audio === (opts.audio ? 1 : 0),
 	);
 	if (exact) return exact.credits;
-	const noAudio = pricing.find(
+	const partial = pricing.find(
 		(p) => p.length === opts.length && p.resolution === opts.resolution && p.mode === opts.mode,
 	);
-	return noAudio?.credits ?? pricing[0]?.credits ?? 0;
+	return partial?.credits ?? pricing[0]?.credits ?? 0;
 }
 
-function defaultOpts(pricing: VideoPricingRow[]): GenOptions {
-	const p = pricing[0];
-	if (!p) return { length: "5", resolution: "720p", mode: "std", audio: false };
-	return { length: p.length, resolution: p.resolution, mode: p.mode, audio: p.audio === 1 };
-}
-
-function statusInfo(s: number): { label: string; cls: string } {
-	if (s === 1) return { label: "Done",       cls: "bg-green-500/15 text-green-600 dark:text-green-400" };
-	if (s === 3) return { label: "Failed",     cls: "bg-red-500/15   text-red-600   dark:text-red-400"   };
-	return            { label: "Processing", cls: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400" };
+function statusInfo(s: number) {
+	if (s === 1) return { label: "Done",       cls: "bg-green-500/15 text-green-600" };
+	if (s === 3) return { label: "Failed",     cls: "bg-red-500/15 text-red-600" };
+	return            { label: "Processing", cls: "bg-yellow-500/15 text-yellow-700" };
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface GenOptions { length: string; resolution: string; mode: string; audio: boolean; }
-
-interface VideoListData {
-	videos: { id: number; url: string; prompt: string; status: number; created: string }[];
-	total: number; page: number; pages: number;
+interface FullOpts {
+	length: string; resolution: string; mode: string; style: string;
+	aspect_ratio: string; movement: string; audio: boolean;
+	fixed_camera: boolean; sound_effects: boolean; director_mode: boolean;
+	prompt_strength: number; seed: string;
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+interface VideoItem { id: number; url: string; prompt: string; status: number; created: string; }
 
-const TRIGGER_CLS = "w-full h-10 flex items-center gap-2 px-3 border border-border rounded-lg bg-background text-sm text-left hover:bg-muted/40 transition-colors disabled:opacity-50";
-
-function ModelSelector({ models, value, onChange }: { models: VideoModel[]; value: string; onChange: (m: string) => void }) {
-	const [open, setOpen] = useState(false);
-	const active = models.find((m) => m.model === value) ?? models[0];
-
-	return (
-		<Popover open={open} onOpenChange={setOpen}>
-			<PopoverTrigger asChild>
-				<button type="button" className={TRIGGER_CLS} disabled={!models.length}>
-					<Video size={16} className="shrink-0 text-muted-foreground" />
-					<span className="flex-1 truncate">
-						{active ? fmtModelName(active.model) : "Select model"}
-					</span>
-					{active && active.pricing.length > 0 && (
-						<span className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded px-1.5 py-0.5 shrink-0">
-							<Database size={10} /> {minCredits(active.pricing)}+
-						</span>
-					)}
-					<ChevronDown size={14} className="text-muted-foreground shrink-0" />
-				</button>
-			</PopoverTrigger>
-			<PopoverContent align="start" className="w-80 p-1 max-h-72 overflow-y-auto">
-				{models.map((m) => (
-					<button
-						key={m.model}
-						type="button"
-						onClick={() => { onChange(m.model); setOpen(false); }}
-						className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors ${m.model === value ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"}`}
-					>
-						<Video size={16} className="shrink-0 text-muted-foreground" />
-						<span className="flex-1 truncate min-w-0">{fmtModelName(m.model)}</span>
-						{m.pricing.length > 0 && (
-							<span className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded px-1.5 py-0.5 shrink-0">
-								<Database size={10} /> {minCredits(m.pricing)}+
-							</span>
-						)}
-					</button>
-				))}
-				{!models.length && <p className="px-3 py-2 text-sm text-muted-foreground">No models available.</p>}
-			</PopoverContent>
-		</Popover>
-	);
+function defaultFullOpts(md: VideoModel): FullOpts {
+	const p = md.pricing[0];
+	return {
+		length:          p?.length         ?? parse(md.length)[0]       ?? "5",
+		resolution:      p?.resolution     ?? parse(md.resolution)[0]   ?? "720p",
+		mode:            p?.mode           ?? parse(md.mode)[0]         ?? "std",
+		style:           parse(md.style)[0]         ?? "",
+		aspect_ratio:    parse(md.aspect_ratio)[0]  ?? "16:9",
+		movement:        parse(md.movement)[0]       ?? "",
+		audio:           false,
+		fixed_camera:    false,
+		sound_effects:   false,
+		director_mode:   false,
+		prompt_strength: md.prompt_strength ?? 50,
+		seed:            "",
+	};
 }
 
-function OptBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-	return (
-		<button
-			type="button"
-			onClick={onClick}
-			className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${active ? "border-primary bg-primary/10 text-primary font-medium" : "border-border bg-background text-foreground hover:bg-muted/60"}`}
-		>
-			{children}
-		</button>
-	);
-}
+// ── Inline toggle button (label-free, for inline placement) ───────────────────
 
-function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+function TglBtn({ on, onToggle }: { on: boolean; onToggle: () => void }) {
 	return (
 		<button
 			type="button"
 			onClick={onToggle}
-			className={`relative h-6 w-11 rounded-full transition-colors ${on ? "bg-primary" : "bg-muted"}`}
+			className={`relative h-6 w-11 rounded-full transition-colors shrink-0 ${on ? "bg-primary" : "bg-muted"}`}
 		>
 			<span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all duration-200 ${on ? "left-[calc(100%-1.375rem)]" : "left-0.5"}`} />
 		</button>
 	);
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export function VideoGeneratorPage() {
 	const configQuery = useVideoConfig();
-	const gen = useGenerateVideo();
+	const gen         = useGenerateVideo();
+	const models      = configQuery.data?.models ?? [];
 
-	const models: VideoModel[] = configQuery.data?.models ?? [];
-	const [selectedModel, setSelectedModel] = useState<string>("");
-	const [opts, setOpts] = useState<GenOptions>({ length: "5", resolution: "720p", mode: "std", audio: false });
-	const [prompt, setPrompt] = useState("");
+	const [selectedModel,   setSelectedModel]   = useState("");
+	const [prompt,          setPrompt]          = useState("");
+	const [translatePrompt, setTranslatePrompt] = useState(false);
+	const [aiPromptOpen,    setAiPromptOpen]    = useState(false);
+	const [negativePrompt,  setNegativePrompt]  = useState("");
+	const [translateNeg,    setTranslateNeg]    = useState(false);
+	const [outputs,         setOutputs]         = useState(1);
+	const [opts, setOpts] = useState<FullOpts>({
+		length: "5", resolution: "720p", mode: "std", style: "", aspect_ratio: "16:9",
+		movement: "", audio: false, fixed_camera: false, sound_effects: false,
+		director_mode: false, prompt_strength: 50, seed: "",
+	});
 
-	const model = selectedModel || models[0]?.model || "";
-	const modelData = models.find((m) => m.model === model);
-	const pricing = modelData?.pricing ?? [];
+	const modelId = selectedModel || models[0]?.model || "";
+	const md      = models.find((m) => m.model === modelId);
 
-	const lengths     = useMemo(() => uniqueVals(pricing.map((p) => p.length)).sort(), [pricing]);
-	const resolutions = useMemo(() => uniqueVals(pricing.map((p) => p.resolution)).filter(Boolean).sort(), [pricing]);
-	const modes       = useMemo(() => uniqueVals(pricing.map((p) => p.mode)).filter(Boolean), [pricing]);
-	const hasAudio    = useMemo(() => pricing.some((p) => p.audio === 1), [pricing]);
-	const credits     = resolveCredits(pricing, opts);
-
-	function handleModelChange(m: string) {
-		setSelectedModel(m);
-		const md = models.find((x) => x.model === m);
-		if (md) setOpts(defaultOpts(md.pricing));
-	}
-
-	// Auto-reset opts when config first loads
 	useEffect(() => {
 		if (models.length > 0 && !selectedModel) {
-			const md = models[0];
-			if (md?.pricing.length) setOpts(defaultOpts(md.pricing));
+			const first = models[0];
+			if (first) { setSelectedModel(first.model); setOpts(defaultFullOpts(first)); }
 		}
 	}, [models.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-	// Polled video list — refetch every 5s while any video is still processing
+	function handleModelChange(m: VideoModel) {
+		setSelectedModel(m.model);
+		setOpts(defaultFullOpts(m));
+	}
+
+	const pricing     = md?.pricing ?? [];
+	const lengths     = md ? parse(md.length) : [];
+	const resolutions = md ? parse(md.resolution) : [];
+	const modes       = md ? parse(md.mode) : [];
+	const styles      = md ? parse(md.style) : [];
+	const arRatios    = md ? parse(md.aspect_ratio) : [];
+	const movements   = md ? parse(md.movement) : [];
+	const credits     = resolveCredits(pricing, opts);
+	const total       = credits * outputs;
+
 	const videosQuery = useQuery({
 		queryKey: ["videos", 1],
-		queryFn: () => apiClient.get<VideoListData>("/api/spa/videos?page=1"),
-		refetchInterval: (query) => {
-			const vids = (query.state.data as VideoListData | undefined)?.videos ?? [];
+		queryFn: () => apiClient.get<{ videos: VideoItem[] }>("/api/spa/videos?page=1"),
+		refetchInterval: (q) => {
+			const vids = (q.state.data as { videos: VideoItem[] } | undefined)?.videos ?? [];
 			return vids.some((v) => v.status !== 1 && v.status !== 3) ? 5000 : false;
 		},
 	});
@@ -186,16 +145,29 @@ export function VideoGeneratorPage() {
 
 	function handleGenerate() {
 		if (!prompt.trim()) { toast.error("Enter a prompt."); return; }
-		if (!model)         { toast.error("Select a model."); return; }
+		if (!modelId)       { toast.error("Select a model."); return; }
 		gen.mutate(
-			{ prompt, model, type: "text_video", length: opts.length, resolution: opts.resolution, mode: opts.mode, audio: opts.audio ? 1 : 0 },
+			{
+				prompt, model: modelId,
+				length: opts.length, resolution: opts.resolution, mode: opts.mode,
+				style: opts.style || undefined,
+				audio: opts.audio ? 1 : 0, aspect_ratio: opts.aspect_ratio,
+				negative_prompt: negativePrompt || undefined,
+				movement: opts.movement || undefined,
+				camera_fixed: opts.fixed_camera || undefined,
+				director_mode: opts.director_mode || undefined,
+				sound_effects: opts.sound_effects || undefined,
+				prompt_strength: md?.prompt_strength !== null ? opts.prompt_strength : null,
+				seed: opts.seed ? parseInt(opts.seed, 10) : null,
+				outputs,
+			},
 			{
 				onSuccess: () => {
 					toast.success("Video generation started! It may take a few minutes.");
 					setPrompt("");
 					videosQuery.refetch();
 				},
-				onError: (e) => toast.error((e as { message?: string })?.message ?? "Failed to start generation."),
+				onError: (e) => toast.error((e as { message?: string })?.message ?? "Generation failed."),
 			},
 		);
 	}
@@ -205,165 +177,249 @@ export function VideoGeneratorPage() {
 			<h1 className="text-2xl font-bold">Video Generator</h1>
 
 			<div className="grid gap-6 lg:grid-cols-5">
-				{/* ── Left: settings ──────────────────────────────── */}
-				<div className="lg:col-span-2 space-y-4">
+				{/* ── Left: options ──────────────────────────────── */}
+				<div className="lg:col-span-2">
 					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-base">Text to Video</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
+						<CardContent className="pt-6 space-y-5">
 							{/* Model */}
 							<div className="space-y-1.5">
-								<label className="text-sm font-medium">Model</label>
-								{configQuery.isLoading ? (
-									<div className="h-10 rounded-lg bg-muted animate-pulse" />
-								) : (
-									<ModelSelector models={models} value={model} onChange={handleModelChange} />
-								)}
+								<p className="text-sm font-medium">Model</p>
+								{configQuery.isLoading
+									? <div className="h-14 rounded-lg bg-muted animate-pulse" />
+									: <ModelSelector models={models} value={modelId} onChange={handleModelChange} />
+								}
 							</div>
 
-							{/* Prompt */}
+							{/* Prompt + translate toggle */}
 							<div className="space-y-1.5">
-								<label className="text-sm font-medium">Prompt</label>
+								<div className="flex items-center justify-between">
+									<p className="text-sm font-medium">Prompt</p>
+									<div className="flex items-center gap-1.5">
+										<span className="text-xs text-muted-foreground">Translate Prompt</span>
+										<TglBtn on={translatePrompt} onToggle={() => setTranslatePrompt((t) => !t)} />
+									</div>
+								</div>
 								<Textarea
 									placeholder="Describe your video in detail..."
 									value={prompt}
 									onChange={(e) => setPrompt(e.target.value)}
-									className="min-h-[100px] resize-none"
+									className="resize-none min-h-[100px]"
+									maxLength={md?.prompt_max_length ?? 2000}
 								/>
+								<button
+									type="button"
+									onClick={() => setAiPromptOpen(true)}
+									className="flex items-center gap-1.5 text-xs text-primary hover:underline mt-0.5"
+								>
+									<Sparkles size={12} /> Generate with AI
+								</button>
 							</div>
 
-							{/* Options */}
-							{pricing.length > 0 && (
-								<div className="space-y-3 border-t border-border pt-3">
-									{lengths.length > 1 && (
-										<div className="space-y-1.5">
-											<p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Length</p>
-											<div className="flex flex-wrap gap-2">
-												{lengths.map((l) => (
-													<OptBtn key={l} active={opts.length === l} onClick={() => setOpts((o) => ({ ...o, length: l }))}>
-														{l}s
-													</OptBtn>
-												))}
-											</div>
-										</div>
-									)}
-
-									{resolutions.length > 1 && (
-										<div className="space-y-1.5">
-											<p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Resolution</p>
-											<div className="flex flex-wrap gap-2">
-												{resolutions.map((r) => (
-													<OptBtn key={r} active={opts.resolution === r} onClick={() => setOpts((o) => ({ ...o, resolution: r }))}>
-														{r}
-													</OptBtn>
-												))}
-											</div>
-										</div>
-									)}
-
-									{modes.length > 1 && (
-										<div className="space-y-1.5">
-											<p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Mode</p>
-											<div className="flex flex-wrap gap-2">
-												{modes.map((m) => (
-													<OptBtn key={m} active={opts.mode === m} onClick={() => setOpts((o) => ({ ...o, mode: m }))}>
-														{fmtMode(m)}
-													</OptBtn>
-												))}
-											</div>
-										</div>
-									)}
-
-									{hasAudio && (
-										<div className="flex items-center justify-between">
-											<p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Audio</p>
-											<Toggle on={opts.audio} onToggle={() => setOpts((o) => ({ ...o, audio: !o.audio }))} />
-										</div>
-									)}
+							{/* Video Length — radio style */}
+							{lengths.length > 0 && (
+								<div className="flex items-center gap-4 flex-wrap">
+									<p className="text-sm font-medium shrink-0">Video Length</p>
+									{lengths.map((l) => (
+										<label key={l} className="flex items-center gap-1.5 cursor-pointer text-sm">
+											<input
+												type="radio"
+												name="vlen"
+												checked={opts.length === l}
+												onChange={() => setOpts((o) => ({ ...o, length: l }))}
+												className="accent-primary"
+											/>
+											{fmtLength(l)}
+										</label>
+									))}
 								</div>
 							)}
 
+							{/* Mode */}
+							{modes.length > 0 && (
+								<OptionGroup label="Mode" options={modes} value={opts.mode}
+									onChange={(v) => setOpts((o) => ({ ...o, mode: v }))} fmt={fmtMode} />
+							)}
+
+							{/* Style */}
+							{styles.length > 0 && (
+								<OptionGroup label="Style" options={styles} value={opts.style}
+									onChange={(v) => setOpts((o) => ({ ...o, style: v }))} fmt={fmtStyle} />
+							)}
+
+							{/* Resolution */}
+							{resolutions.length > 0 && (
+								<OptionGroup label="Resolution" options={resolutions} value={opts.resolution}
+									onChange={(v) => setOpts((o) => ({ ...o, resolution: v }))} fmt={fmtResolution} />
+							)}
+
+							{/* Aspect Ratio */}
+							{arRatios.length > 0 && (
+								<OptionGroup label="Aspect Ratio" options={arRatios} value={opts.aspect_ratio}
+									onChange={(v) => setOpts((o) => ({ ...o, aspect_ratio: v }))} />
+							)}
+
+							{/* Motion Range */}
+							{movements.length > 0 && (
+								<OptionGroup label="Motion Range" options={movements} value={opts.movement}
+									onChange={(v) => setOpts((o) => ({ ...o, movement: v }))} fmt={fmtMovement} />
+							)}
+
+							{/* Generate Audio */}
+							{md?.generate_audio && (
+								<Toggle on={opts.audio} onToggle={() => setOpts((o) => ({ ...o, audio: !o.audio }))} label="Generate Audio" />
+							)}
+
+							{/* Fixed Camera */}
+							{md?.fixed_camera && (
+								<Toggle on={opts.fixed_camera} onToggle={() => setOpts((o) => ({ ...o, fixed_camera: !o.fixed_camera }))} label="Fixed Camera" />
+							)}
+
+							{/* Sound Effects */}
+							{md?.sound_effects && (
+								<Toggle on={opts.sound_effects} onToggle={() => setOpts((o) => ({ ...o, sound_effects: !o.sound_effects }))} label="Sound Effects" />
+							)}
+
+							{/* Director Mode */}
+							{md?.director_mode && (
+								<Toggle on={opts.director_mode} onToggle={() => setOpts((o) => ({ ...o, director_mode: !o.director_mode }))} label="Director Mode" />
+							)}
+
+							{/* Negative Prompt */}
+							{md?.negative_prompt && (
+								<div className="space-y-1.5">
+									<div className="flex items-center justify-between">
+										<p className="text-sm font-medium">
+											Negative Prompt{" "}
+											<span className="text-muted-foreground font-normal text-xs">(Optional)</span>
+										</p>
+										<div className="flex items-center gap-1.5">
+											<span className="text-xs text-muted-foreground">Translate</span>
+											<TglBtn on={translateNeg} onToggle={() => setTranslateNeg((t) => !t)} />
+										</div>
+									</div>
+									<Textarea
+										placeholder="List all elements and effects you don't want to see in the generated video, for example, cartoonish characters, dark colors, explosions, animals, blurring, slow motion, distortion, animation, etc."
+										value={negativePrompt}
+										onChange={(e) => setNegativePrompt(e.target.value)}
+										className="resize-none min-h-[80px] text-sm"
+									/>
+								</div>
+							)}
+
+							{/* Prompt Strength */}
+							{md !== undefined && md.prompt_strength !== null && (
+								<div className="space-y-1.5">
+									<div className="flex items-center justify-between">
+										<p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Prompt Strength</p>
+										<span className="text-sm tabular-nums">{opts.prompt_strength}</span>
+									</div>
+									<input
+										type="range" min={0} max={100}
+										value={opts.prompt_strength}
+										onChange={(e) => setOpts((o) => ({ ...o, prompt_strength: parseInt(e.target.value, 10) }))}
+										className="w-full accent-primary"
+									/>
+								</div>
+							)}
+
+							{/* Seed */}
+							{md?.seed && (
+								<SeedInput value={opts.seed} onChange={(v) => setOpts((o) => ({ ...o, seed: v }))} />
+							)}
+
+							{/* Output Video Number */}
+							<div className="space-y-1.5">
+								<p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Output Video Number</p>
+								<div className="grid grid-cols-4 gap-2">
+									{[1, 2, 3, 4].map((n) => (
+										<button
+											key={n} type="button" onClick={() => setOutputs(n)}
+											className={`py-1.5 rounded-lg text-sm border transition-all ${outputs === n ? "border-primary bg-primary/10 text-primary font-medium" : "border-border bg-background hover:bg-muted/60"}`}
+										>
+											{n}
+										</button>
+									))}
+								</div>
+							</div>
+
 							{/* Credits + Generate */}
-							<div className="flex items-center gap-3 pt-1">
-								{credits > 0 && (
-									<span className="flex items-center gap-1.5 text-sm text-muted-foreground border border-border rounded-lg px-3 py-2 shrink-0">
-										<Database size={13} /> {credits} credits
-									</span>
+							<div className="space-y-3 border-t border-border pt-3">
+								{total > 0 && (
+									<p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+										<Database size={13} /> Credits required: {total}
+									</p>
 								)}
-								<Button className="flex-1 gap-2" disabled={gen.isPending || !model} onClick={handleGenerate}>
+								<Button className="w-full gap-2" disabled={gen.isPending || !modelId} onClick={handleGenerate}>
 									{gen.isPending
 										? <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent shrink-0" />
-										: <Wand2 size={16} />}
-									{gen.isPending ? "Generating..." : "Generate Video"}
+										: <Wand2 size={16} />
+									}
+									{gen.isPending ? "Generating..." : "Create"}
 								</Button>
 							</div>
 						</CardContent>
 					</Card>
 				</div>
 
-				{/* ── Right: video gallery ────────────────────────── */}
+				{/* ── Right: sample video ─────────────────────────── */}
 				<div className="lg:col-span-3">
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle className="text-base flex items-center justify-between">
-								Generated Videos
-								{videos.some((v) => v.status !== 1 && v.status !== 3) && (
-									<span className="text-xs text-muted-foreground font-normal flex items-center gap-1.5">
-										<span className="h-2 w-2 rounded-full bg-yellow-400 animate-pulse" />
-										Processing
-									</span>
-								)}
-							</CardTitle>
-						</CardHeader>
-						<CardContent>
-							{videosQuery.isLoading ? (
-								<div className="flex h-40 items-center justify-center">
-									<div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-								</div>
-							) : !videos.length ? (
-								<div className="flex flex-col items-center gap-3 py-16">
-									<Video size={48} className="text-muted-foreground" />
-									<p className="text-muted-foreground text-sm">No videos yet. Generate your first video!</p>
-								</div>
-							) : (
-								<div className="grid gap-4 sm:grid-cols-2">
-									{videos.map((v) => {
-										const st = statusInfo(v.status);
-										return (
-											<div key={v.id} className="rounded-xl border border-border overflow-hidden bg-card">
-												{v.url ? (
-													<video src={v.url} controls className="w-full aspect-video bg-black" />
-												) : (
-													<div className="flex aspect-video items-center justify-center bg-muted">
-														{v.status !== 1 && v.status !== 3 ? (
-															<div className="flex flex-col items-center gap-2">
-																<div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-																<span className="text-xs text-muted-foreground">Processing…</span>
-															</div>
-														) : (
-															<Video size={32} className="text-muted-foreground" />
-														)}
-													</div>
-												)}
-												<div className="p-3 flex items-start justify-between gap-2">
-													<p className="text-sm line-clamp-2 flex-1">{v.prompt || "Untitled"}</p>
-													<span className={`text-xs px-1.5 py-0.5 rounded shrink-0 ${st.cls}`}>{st.label}</span>
-												</div>
-												<div className="px-3 pb-3">
-													<p className="text-xs text-muted-foreground">
-														{new Date(v.created).toLocaleDateString()}
-													</p>
-												</div>
-											</div>
-										);
-									})}
-								</div>
-							)}
-						</CardContent>
+					<Card className="overflow-hidden">
+						<video
+							src="https://cdn.smartlyq.com/video-sample.mp4"
+							autoPlay muted loop playsInline
+							className="w-full block"
+						/>
 					</Card>
 				</div>
 			</div>
+
+			{/* ── Generated Videos Gallery ──────────────────────────── */}
+			{videos.length > 0 && (
+				<Card>
+					<CardHeader className="pb-3">
+						<CardTitle className="text-base flex items-center justify-between">
+							Generated Videos
+							{videos.some((v) => v.status !== 1 && v.status !== 3) && (
+								<span className="text-xs text-muted-foreground font-normal flex items-center gap-1.5">
+									<span className="h-2 w-2 rounded-full bg-yellow-400 animate-pulse" /> Processing
+								</span>
+							)}
+						</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+							{videos.map((v) => {
+								const st = statusInfo(v.status);
+								return (
+									<div key={v.id} className="rounded-xl border border-border overflow-hidden">
+										{v.url ? (
+											<video src={v.url} controls className="w-full aspect-video bg-black" />
+										) : (
+											<div className="flex aspect-video items-center justify-center bg-muted">
+												{v.status !== 1 && v.status !== 3 ? (
+													<div className="flex flex-col items-center gap-2">
+														<div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+														<span className="text-xs text-muted-foreground">Processing…</span>
+													</div>
+												) : <Video size={32} className="text-muted-foreground" />}
+											</div>
+										)}
+										<div className="p-3 flex items-start justify-between gap-2">
+											<p className="text-sm line-clamp-2 flex-1">{v.prompt || "Untitled"}</p>
+											<span className={`text-xs px-1.5 py-0.5 rounded shrink-0 ${st.cls}`}>{st.label}</span>
+										</div>
+										<div className="px-3 pb-3">
+											<p className="text-xs text-muted-foreground">{new Date(v.created).toLocaleDateString()}</p>
+										</div>
+									</div>
+								);
+							})}
+						</div>
+					</CardContent>
+				</Card>
+			)}
+
+			<AiPromptDialog open={aiPromptOpen} onClose={() => setAiPromptOpen(false)} onSelect={(p) => setPrompt(p)} />
 		</div>
 	);
 }
