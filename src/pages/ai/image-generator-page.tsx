@@ -167,8 +167,8 @@ export function ImageGeneratorPage() {
 
 					<div className="flex-1 overflow-y-auto flex flex-col min-h-0">
 						{lastImageUrl && (
-							<div className="shrink-0 bg-muted">
-								<img src={lastImageUrl} alt="Generated image" className="w-full object-cover max-h-80" />
+							<div className="shrink-0 px-5 pt-4 pb-2">
+								<img src={lastImageUrl} alt="Generated image" className="w-full object-contain rounded-xl border border-border" />
 							</div>
 						)}
 						<div className="flex flex-col gap-4 px-6 py-4">
