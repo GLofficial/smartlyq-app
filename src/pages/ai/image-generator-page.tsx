@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Database, Image, Megaphone, Wand2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Database, Image, Megaphone, PlusCircle, Wand2 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { apiClient } from "@/lib/api-client";
 import { queryClient } from "@/lib/query-client";
 import { toast } from "sonner";
@@ -31,6 +32,7 @@ function SelectField({ label, value, onChange, options, hint }: { label: string;
 }
 
 export function ImageGeneratorPage() {
+	const [sheetOpen, setSheetOpen] = useState(false);
 	const [tab, setTab] = useState<Tab>("image");
 	const [aspect, setAspect] = useState<Aspect>("Square");
 	const [model, setModel] = useState("");
@@ -96,97 +98,104 @@ export function ImageGeneratorPage() {
 
 	return (
 		<div className="space-y-6">
-			<h1 className="text-2xl font-bold">Image Generator</h1>
+			<div className="flex items-center justify-between">
+				<h1 className="text-2xl font-bold">Image Generator</h1>
+				<Button onClick={() => setSheetOpen(true)}>
+					<PlusCircle size={16} />
+					Generate new image
+				</Button>
+			</div>
 
-			<Card>
-				<CardHeader className="pb-3">
-					<div className="flex gap-1 p-1 bg-muted rounded-xl">
-						<button onClick={() => setTab("image")} className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${tab === "image" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-							<Image size={15} /> Image
-						</button>
-						<button onClick={() => setTab("ad")} className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${tab === "ad" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-							<Megaphone size={15} /> Ad Image
-						</button>
-					</div>
-				</CardHeader>
+			<Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+				<SheetContent side="right" className="sm:max-w-[480px] flex flex-col gap-0 p-0">
+					<SheetHeader className="px-6 py-4 border-b border-border shrink-0">
+						<SheetTitle>AI Images</SheetTitle>
+					</SheetHeader>
 
-				<CardContent className="space-y-4">
-					{tab === "image" ? (
-						<>
-							<div className="space-y-1.5">
-								<label className="text-sm font-medium">Prompt</label>
-								<Textarea placeholder="Describe the image you want to generate..." value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={3} className="resize-none" />
-								<p className="text-xs text-muted-foreground">Enter your image description and use options below to adjust style and size.</p>
-							</div>
+					<div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+						{/* Image / Ad Image tabs */}
+						<div className="flex gap-1 p-1 bg-muted rounded-xl">
+							<button onClick={() => setTab("image")} className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${tab === "image" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+								<Image size={15} /> Image
+							</button>
+							<button onClick={() => setTab("ad")} className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${tab === "ad" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+								<Megaphone size={15} /> Ad Image
+							</button>
+						</div>
 
-							<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+						{tab === "image" ? (
+							<>
+								<div className="space-y-1.5">
+									<label className="text-sm font-medium">Prompt</label>
+									<Textarea placeholder="Describe the image you want to generate..." value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={3} className="resize-none" />
+									<p className="text-xs text-muted-foreground">Enter your image description and use options below to adjust style and size.</p>
+								</div>
+
 								<div className="space-y-1.5">
 									<label className="text-sm font-medium">Style</label>
-									<StyleSelector
-										styles={styles}
-										value={style}
-										onChange={(v, p) => { setStyle(v); setStylePrompt(p); }}
-									/>
+									<StyleSelector styles={styles} value={style} onChange={(v, p) => { setStyle(v); setStylePrompt(p); }} />
 								</div>
-								<div className="space-y-1.5">
-									<label className="text-sm font-medium">Aspect ratio</label>
-									<AspectSelector value={aspect} onChange={setAspect} />
-								</div>
-								<div className="space-y-1.5">
-									<label className="text-sm font-medium">Model</label>
-									<ModelSelector models={models} value={activeModel} onChange={setModel} disabled={configLoading} />
-								</div>
-							</div>
-
-							{generateButton}
-						</>
-					) : (
-						<>
-							<div className="rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 p-4 text-white">
-								<p className="font-semibold text-base">Ad Creative Brief (SaaS)</p>
-								<p className="text-sm text-white/80 mt-0.5">Fill in the brief — we'll craft an optimized ad image prompt.</p>
-							</div>
-
-							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-								<SelectField label="Use case" value={ad.use_case} onChange={setAdField("use_case")} options={config?.ad_use_cases ?? [{ key: "saas", label: "SaaS (default)" }]} hint="Applies a proven prompt recipe for this use case." />
-								<SelectField label="Ad objective" value={ad.objective} onChange={setAdField("objective")} options={config?.ad_objectives ?? []} />
-								<SelectField label="Audience temperature" value={ad.audience_temp} onChange={setAdField("audience_temp")} options={config?.ad_audience_temps ?? []} />
-								<SelectField label="Visual angle" value={ad.visual_angle} onChange={setAdField("visual_angle")} options={config?.ad_visual_angles ?? []} />
-
-								<div className="space-y-1">
-									<label className="text-sm font-medium">Product name</label>
-									<input type="text" value={ad.product_name} onChange={(e) => setAdField("product_name")(e.target.value)} maxLength={120} placeholder="e.g. SmartlyQ" className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+								<div className="grid grid-cols-2 gap-3">
+									<div className="space-y-1.5">
+										<label className="text-sm font-medium">Aspect ratio</label>
+										<AspectSelector value={aspect} onChange={setAspect} />
+									</div>
+									<div className="space-y-1.5">
+										<label className="text-sm font-medium">Model</label>
+										<ModelSelector models={models} value={activeModel} onChange={setModel} disabled={configLoading} />
+									</div>
 								</div>
 
-								<div className="space-y-1">
-									<label className="text-sm font-medium">Headline / offer</label>
-									<input type="text" value={ad.offer} onChange={(e) => setAdField("offer")(e.target.value)} maxLength={80} placeholder="e.g. 14 DAYS FREE TRIAL" className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+								{generateButton}
+							</>
+						) : (
+							<>
+								<div className="rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 p-4 text-white">
+									<p className="font-semibold text-base">Ad Creative Brief (SaaS)</p>
+									<p className="text-sm text-white/80 mt-0.5">Fill in the brief — we'll craft an optimized ad image prompt.</p>
 								</div>
 
-								<div className="space-y-1">
-									<label className="text-sm font-medium">Target audience</label>
-									<input type="text" value={ad.audience} onChange={(e) => setAdField("audience")(e.target.value)} maxLength={180} placeholder="e.g. founders, growth marketers" className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+								<div className="grid grid-cols-1 gap-3">
+									<SelectField label="Use case" value={ad.use_case} onChange={setAdField("use_case")} options={config?.ad_use_cases ?? [{ key: "saas", label: "SaaS (default)" }]} hint="Applies a proven prompt recipe for this use case." />
+									<SelectField label="Ad objective" value={ad.objective} onChange={setAdField("objective")} options={config?.ad_objectives ?? []} />
+									<SelectField label="Audience temperature" value={ad.audience_temp} onChange={setAdField("audience_temp")} options={config?.ad_audience_temps ?? []} />
+									<SelectField label="Visual angle" value={ad.visual_angle} onChange={setAdField("visual_angle")} options={config?.ad_visual_angles ?? []} />
+
+									<div className="space-y-1">
+										<label className="text-sm font-medium">Product name</label>
+										<input type="text" value={ad.product_name} onChange={(e) => setAdField("product_name")(e.target.value)} maxLength={120} placeholder="e.g. SmartlyQ" className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+									</div>
+
+									<div className="space-y-1">
+										<label className="text-sm font-medium">Headline / offer</label>
+										<input type="text" value={ad.offer} onChange={(e) => setAdField("offer")(e.target.value)} maxLength={80} placeholder="e.g. 14 DAYS FREE TRIAL" className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+									</div>
+
+									<div className="space-y-1">
+										<label className="text-sm font-medium">Target audience</label>
+										<input type="text" value={ad.audience} onChange={(e) => setAdField("audience")(e.target.value)} maxLength={180} placeholder="e.g. founders, growth marketers" className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+									</div>
+
+									<SelectField label="Placement" value={ad.placement} onChange={setAdField("placement")} options={config?.ad_placements ?? []} />
 								</div>
 
-								<SelectField label="Placement" value={ad.placement} onChange={setAdField("placement")} options={config?.ad_placements ?? []} />
-							</div>
-
-							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-								<div className="space-y-1.5">
-									<label className="text-sm font-medium">Aspect ratio</label>
-									<AspectSelector value={aspect} onChange={setAspect} />
+								<div className="grid grid-cols-2 gap-3">
+									<div className="space-y-1.5">
+										<label className="text-sm font-medium">Aspect ratio</label>
+										<AspectSelector value={aspect} onChange={setAspect} />
+									</div>
+									<div className="space-y-1.5">
+										<label className="text-sm font-medium">Model</label>
+										<ModelSelector models={models} value={activeModel} onChange={setModel} disabled={configLoading} />
+									</div>
 								</div>
-								<div className="space-y-1.5">
-									<label className="text-sm font-medium">Model</label>
-									<ModelSelector models={models} value={activeModel} onChange={setModel} disabled={configLoading} />
-								</div>
-							</div>
 
-							{generateButton}
-						</>
-					)}
-				</CardContent>
-			</Card>
+								{generateButton}
+							</>
+						)}
+					</div>
+				</SheetContent>
+			</Sheet>
 
 			<Card>
 				<CardHeader>
