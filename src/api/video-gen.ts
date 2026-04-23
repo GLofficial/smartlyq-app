@@ -76,7 +76,7 @@ export function useGenerateVideo() {
 			seed?: number | null;
 			outputs?: number;
 		}) =>
-			apiClient.post<{ message: string; ids: number[] }>(
+			apiClient.post<{ message: string; ids: string[] }>(
 				"/api/spa/video/generate",
 				data,
 			),

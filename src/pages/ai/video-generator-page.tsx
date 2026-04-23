@@ -50,7 +50,7 @@ interface FullOpts {
 
 function randomSeed() { return String(Math.floor(Math.random() * 2147483648)); }
 
-interface VideoItem { id: number; url: string; status: number; }
+interface VideoItem { id: string; url: string; status: number; }
 
 function defaultFullOpts(md: VideoModel): FullOpts {
 	const p = md.pricing[0];
@@ -98,7 +98,7 @@ export function VideoGeneratorPage() {
 	const [negativePrompt,  setNegativePrompt]  = useState("");
 	const [translateNeg,    setTranslateNeg]    = useState(false);
 	const [outputs,         setOutputs]         = useState(1);
-	const [pendingIds,      setPendingIds]      = useState<number[]>([]);
+	const [pendingIds,      setPendingIds]      = useState<string[]>([]);
 	const [completedUrl,    setCompletedUrl]    = useState<string | null>(null);
 	const [progress,        setProgress]        = useState(0);
 	const [opts, setOpts] = useState<FullOpts>({
