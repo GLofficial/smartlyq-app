@@ -17,6 +17,7 @@ type Tab = "image" | "ad";
 type Aspect = "Square" | "Portrait" | "Landscape";
 
 interface AdBrief {
+	description: string;
 	use_case: string; objective: string; audience_temp: string; visual_angle: string;
 	product_name: string; category: string; one_liner: string; offer: string;
 	audience: string; placement: string; goal: string; visual_style: string; mood: string;
@@ -51,6 +52,7 @@ export function ImageGeneratorPage() {
 	const [ratings, setRatings] = useState<Record<string, 1 | -1>>({});
 	const [advancedOpen, setAdvancedOpen] = useState(false);
 	const [ad, setAd] = useState<AdBrief>({
+		description: "",
 		use_case: "saas", objective: "scroll_stopper", audience_temp: "cold",
 		visual_angle: "auto", product_name: "", category: "", one_liner: "", offer: "",
 		audience: "", placement: "linkedin_feed", goal: "free_trial",
@@ -70,6 +72,7 @@ export function ImageGeneratorPage() {
 
 	const handleGenerate = async () => {
 		if (tab === "image" && !prompt.trim()) { toast.error("Enter a prompt."); return; }
+		if (tab === "ad" && !ad.description.trim()) { toast.error("Enter a product description."); return; }
 		if (!activeModel) { toast.error("No model available for your plan."); return; }
 		setGenerating(true);
 		try {
@@ -78,7 +81,7 @@ export function ImageGeneratorPage() {
 				body.prompt = prompt;
 			} else {
 				body.ad_image = true;
-				body.prompt = ad.product_name ? `${ad.product_name} ad creative` : "premium ad creative";
+				body.prompt = ad.description;
 				Object.assign(body, {
 					ad_use_case: ad.use_case, ad_objective: ad.objective, ad_audience_temp: ad.audience_temp,
 					ad_visual_angle: ad.visual_angle, ad_product_name: ad.product_name,
@@ -226,6 +229,11 @@ export function ImageGeneratorPage() {
 								</div>
 
 								<div className="grid grid-cols-1 gap-3">
+									<div className="space-y-1.5">
+										<label className="text-sm font-medium">Product description <span className="text-destructive">*</span></label>
+										<Textarea placeholder="Describe your product, its key features, and what makes it unique..." value={ad.description} onChange={(e) => setAdField("description")(e.target.value)} rows={3} className="resize-none" />
+										<p className="text-xs text-muted-foreground">Details for the AI model to craft the creative brief.</p>
+									</div>
 									<SelectField label="Use case" value={ad.use_case} onChange={setAdField("use_case")} options={config?.ad_use_cases ?? [{ key: "saas", label: "SaaS (default)" }]} hint="Applies a proven prompt recipe for this use case." />
 									<SelectField label="Ad objective" value={ad.objective} onChange={setAdField("objective")} options={config?.ad_objectives ?? []} />
 									<SelectField label="Audience temperature" value={ad.audience_temp} onChange={setAdField("audience_temp")} options={config?.ad_audience_temps ?? []} />
