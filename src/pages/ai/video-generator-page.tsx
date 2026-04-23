@@ -46,6 +46,8 @@ interface FullOpts {
 	prompt_strength: number; seed: string;
 }
 
+function randomSeed() { return String(Math.floor(Math.random() * 2147483648)); }
+
 function defaultFullOpts(md: VideoModel): FullOpts {
 	const p = md.pricing[0];
 	return {
@@ -60,7 +62,7 @@ function defaultFullOpts(md: VideoModel): FullOpts {
 		sound_effects:   false,
 		director_mode:   false,
 		prompt_strength: md.prompt_strength ?? 50,
-		seed:            "",
+		seed:            randomSeed(),
 	};
 }
 
@@ -95,7 +97,7 @@ export function VideoGeneratorPage() {
 	const [opts, setOpts] = useState<FullOpts>({
 		length: "5", resolution: "720p", mode: "std", style: "", aspect_ratio: "16:9",
 		movement: "", audio: false, fixed_camera: false, sound_effects: false,
-		director_mode: false, prompt_strength: 50, seed: "",
+		director_mode: false, prompt_strength: 50, seed: randomSeed(),
 	});
 
 	const modelId = selectedModel || models[0]?.model || "";
