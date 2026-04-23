@@ -51,7 +51,7 @@ export function AppProviders({ children }: AppProvidersProps) {
 					<ConfirmProvider>
 						{children}
 					</ConfirmProvider>
-					<Toaster position="top-right" richColors closeButton />
+					<Toaster position="top-right" richColors closeButton style={{ pointerEvents: "auto" }} />
 					<AdCooldownDialog />
 				</TenantProvider>
 			</AuthProvider>

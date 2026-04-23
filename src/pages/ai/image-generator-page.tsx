@@ -135,7 +135,11 @@ export function ImageGeneratorPage() {
 
 	const generateButton = (
 		<Button className="w-full mt-4" onClick={handleGenerate} disabled={generating || !activeModel}>
-			<Wand2 size={16} />
+			{generating ? (
+				<span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent shrink-0" />
+			) : (
+				<Wand2 size={16} />
+			)}
 			{generating ? "Generating..." : "Generate image"}
 			{credits !== null && !generating && (
 				<span className="ml-2 flex items-center gap-1 opacity-90 text-sm">
@@ -161,12 +165,13 @@ export function ImageGeneratorPage() {
 						<SheetTitle>AI Images</SheetTitle>
 					</SheetHeader>
 
-					<div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+					<div className="flex-1 overflow-y-auto flex flex-col min-h-0">
 						{lastImageUrl && (
-							<div className="rounded-xl overflow-hidden border border-border bg-muted">
-								<img src={lastImageUrl} alt="Generated image" className="w-full object-contain max-h-72" />
+							<div className="shrink-0 bg-muted">
+								<img src={lastImageUrl} alt="Generated image" className="w-full object-cover max-h-80" />
 							</div>
 						)}
+						<div className="flex flex-col gap-4 px-6 py-4">
 						{/* Image / Ad Image tabs */}
 						<div className="flex gap-1 p-1 bg-muted rounded-xl">
 							<button onClick={() => setTab("image")} className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${tab === "image" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
@@ -247,6 +252,7 @@ export function ImageGeneratorPage() {
 								{generateButton}
 							</>
 						)}
+						</div>
 					</div>
 				</SheetContent>
 			</Sheet>
