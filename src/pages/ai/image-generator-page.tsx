@@ -18,7 +18,9 @@ type Aspect = "Square" | "Portrait" | "Landscape";
 
 interface AdBrief {
 	use_case: string; objective: string; audience_temp: string; visual_angle: string;
-	product_name: string; offer: string; audience: string; placement: string;
+	product_name: string; category: string; one_liner: string; offer: string;
+	audience: string; placement: string; goal: string; visual_style: string; mood: string;
+	leave_space: boolean; render_text: boolean; banner_text: string; banner_pos: string; negative: string;
 }
 
 function SelectField({ label, value, onChange, options, hint }: { label: string; value: string; onChange: (v: string) => void; options: AdOption[]; hint?: string }) {
@@ -47,9 +49,13 @@ export function ImageGeneratorPage() {
 	const [page, setPage] = useState(1);
 	const [zoomImg, setZoomImg] = useState<{ id: string; thumb: string; description: string } | null>(null);
 	const [ratings, setRatings] = useState<Record<string, 1 | -1>>({});
+	const [advancedOpen, setAdvancedOpen] = useState(false);
 	const [ad, setAd] = useState<AdBrief>({
 		use_case: "saas", objective: "scroll_stopper", audience_temp: "cold",
-		visual_angle: "auto", product_name: "", offer: "", audience: "", placement: "linkedin_feed",
+		visual_angle: "auto", product_name: "", category: "", one_liner: "", offer: "",
+		audience: "", placement: "linkedin_feed", goal: "free_trial",
+		visual_style: "saas_premium_ui", mood: "clean_modern",
+		leave_space: false, render_text: false, banner_text: "", banner_pos: "top", negative: "",
 	});
 	const setAdField = (k: keyof AdBrief) => (v: string) => setAd((p) => ({ ...p, [k]: v }));
 
@@ -75,8 +81,13 @@ export function ImageGeneratorPage() {
 				body.prompt = ad.product_name ? `${ad.product_name} ad creative` : "premium ad creative";
 				Object.assign(body, {
 					ad_use_case: ad.use_case, ad_objective: ad.objective, ad_audience_temp: ad.audience_temp,
-					ad_visual_angle: ad.visual_angle, ad_product_name: ad.product_name, ad_offer: ad.offer,
-					ad_audience: ad.audience, ad_placement: ad.placement,
+					ad_visual_angle: ad.visual_angle, ad_product_name: ad.product_name,
+					ad_category: ad.category, ad_one_liner: ad.one_liner, ad_offer: ad.offer,
+					ad_audience: ad.audience, ad_placement: ad.placement, ad_goal: ad.goal,
+					ad_visual_style: ad.visual_style, ad_mood: ad.mood,
+					ad_leave_space: ad.leave_space, ad_render_text: ad.render_text,
+					ad_banner_text: ad.banner_text, ad_banner_position: ad.banner_pos,
+					ad_negative: ad.negative,
 				});
 			}
 			const res = await apiClient.post<{ image_url: string }>("/api/spa/ai/image", body);
@@ -220,14 +231,25 @@ export function ImageGeneratorPage() {
 									<SelectField label="Audience temperature" value={ad.audience_temp} onChange={setAdField("audience_temp")} options={config?.ad_audience_temps ?? []} />
 									<SelectField label="Visual angle" value={ad.visual_angle} onChange={setAdField("visual_angle")} options={config?.ad_visual_angles ?? []} />
 
+									<div className="grid grid-cols-2 gap-3">
+										<div className="space-y-1">
+											<label className="text-sm font-medium">Product name</label>
+											<input type="text" value={ad.product_name} onChange={(e) => setAdField("product_name")(e.target.value)} maxLength={120} placeholder="e.g. SmartlyQ" className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+										</div>
+										<div className="space-y-1">
+											<label className="text-sm font-medium">Category</label>
+											<input type="text" value={ad.category} onChange={(e) => setAdField("category")(e.target.value)} maxLength={120} placeholder="e.g. Project Management" className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+										</div>
+									</div>
+
 									<div className="space-y-1">
-										<label className="text-sm font-medium">Product name</label>
-										<input type="text" value={ad.product_name} onChange={(e) => setAdField("product_name")(e.target.value)} maxLength={120} placeholder="e.g. SmartlyQ" className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+										<label className="text-sm font-medium">Value proposition / one-liner</label>
+										<input type="text" value={ad.one_liner} onChange={(e) => setAdField("one_liner")(e.target.value)} maxLength={220} placeholder="e.g. Publish 10× faster with AI-powered scheduling" className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
 									</div>
 
 									<div className="space-y-1">
 										<label className="text-sm font-medium">Headline / offer</label>
-										<input type="text" value={ad.offer} onChange={(e) => setAdField("offer")(e.target.value)} maxLength={80} placeholder="e.g. 14 DAYS FREE TRIAL" className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+										<input type="text" value={ad.offer} onChange={(e) => setAdField("offer")(e.target.value)} maxLength={180} placeholder="e.g. 14 DAYS FREE TRIAL" className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
 									</div>
 
 									<div className="space-y-1">
@@ -235,7 +257,51 @@ export function ImageGeneratorPage() {
 										<input type="text" value={ad.audience} onChange={(e) => setAdField("audience")(e.target.value)} maxLength={180} placeholder="e.g. founders, growth marketers" className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
 									</div>
 
-									<SelectField label="Placement" value={ad.placement} onChange={setAdField("placement")} options={config?.ad_placements ?? []} />
+									<div className="grid grid-cols-2 gap-3">
+										<SelectField label="Placement" value={ad.placement} onChange={setAdField("placement")} options={config?.ad_placements ?? []} />
+										<SelectField label="Goal" value={ad.goal} onChange={setAdField("goal")} options={config?.ad_goals ?? []} />
+									</div>
+									<div className="grid grid-cols-2 gap-3">
+										<SelectField label="Visual style" value={ad.visual_style} onChange={setAdField("visual_style")} options={config?.ad_visual_styles ?? []} />
+										<SelectField label="Mood" value={ad.mood} onChange={setAdField("mood")} options={config?.ad_moods ?? []} />
+									</div>
+
+									{/* Advanced options */}
+									<button type="button" onClick={() => setAdvancedOpen((o) => !o)} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors pt-1">
+										<ChevronRight size={14} className={`transition-transform ${advancedOpen ? "rotate-90" : ""}`} />
+										Advanced options
+									</button>
+									{advancedOpen && (
+										<div className="grid grid-cols-1 gap-3 pl-2 border-l-2 border-border">
+											<label className="flex items-center gap-2 cursor-pointer">
+												<input type="checkbox" checked={ad.leave_space} onChange={(e) => setAd((p) => ({ ...p, leave_space: e.target.checked }))} className="rounded" />
+												<span className="text-sm">Leave ~25% canvas empty for headline/CTA overlay</span>
+											</label>
+											<label className="flex items-center gap-2 cursor-pointer">
+												<input type="checkbox" checked={ad.render_text} onChange={(e) => setAd((p) => ({ ...p, render_text: e.target.checked }))} className="rounded" />
+												<span className="text-sm">Render headline text in the image</span>
+											</label>
+											{ad.render_text && (
+												<div className="grid grid-cols-3 gap-2">
+													<div className="col-span-2 space-y-1">
+														<label className="text-sm font-medium">Banner headline text</label>
+														<input type="text" value={ad.banner_text} onChange={(e) => setAdField("banner_text")(e.target.value)} maxLength={180} placeholder="Exact text to render" className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+													</div>
+													<div className="space-y-1">
+														<label className="text-sm font-medium">Position</label>
+														<select value={ad.banner_pos} onChange={(e) => setAdField("banner_pos")(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+															<option value="top">Top</option>
+															<option value="bottom">Bottom</option>
+														</select>
+													</div>
+												</div>
+											)}
+											<div className="space-y-1">
+												<label className="text-sm font-medium">Negative prompt <span className="text-muted-foreground font-normal">(things to avoid)</span></label>
+												<Textarea value={ad.negative} onChange={(e) => setAdField("negative")(e.target.value)} maxLength={400} rows={2} placeholder="e.g. blurry backgrounds, text clutter, low quality" className="resize-none text-sm" />
+											</div>
+										</div>
+									)}
 								</div>
 
 								<div className="grid grid-cols-2 gap-3">

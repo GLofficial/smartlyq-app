@@ -12,6 +12,9 @@ export interface ImageConfig {
 	ad_audience_temps: AdOption[];
 	ad_visual_angles: AdOption[];
 	ad_placements: AdOption[];
+	ad_goals: AdOption[];
+	ad_visual_styles: AdOption[];
+	ad_moods: AdOption[];
 }
 
 export function useImageConfig(aspectRatio = "Square") {
