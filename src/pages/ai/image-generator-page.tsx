@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Database, Image, Megaphone, PlusCircle, Wand2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Database, Download, Image, Megaphone, PlusCircle, ThumbsDown, ThumbsUp, Trash2, Wand2, ZoomIn } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { apiClient } from "@/lib/api-client";
 import { queryClient } from "@/lib/query-client";
 import { toast } from "sonner";
 import { useImages, useImageConfig } from "@/api/tools";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import type { AdOption } from "@/api/tools";
 import { StyleSelector, AspectSelector, ModelSelector } from "./image-selector-inputs";
 
@@ -32,6 +34,7 @@ function SelectField({ label, value, onChange, options, hint }: { label: string;
 }
 
 export function ImageGeneratorPage() {
+	const confirm = useConfirm();
 	const [sheetOpen, setSheetOpen] = useState(false);
 	const [tab, setTab] = useState<Tab>("image");
 	const [aspect, setAspect] = useState<Aspect>("Square");
@@ -42,6 +45,8 @@ export function ImageGeneratorPage() {
 	const [generating, setGenerating] = useState(false);
 	const [lastImageUrl, setLastImageUrl] = useState<string | null>(null);
 	const [page, setPage] = useState(1);
+	const [zoomImg, setZoomImg] = useState<{ id: string; thumb: string; description: string } | null>(null);
+	const [ratings, setRatings] = useState<Record<string, 1 | -1>>({});
 	const [ad, setAd] = useState<AdBrief>({
 		use_case: "saas", objective: "scroll_stopper", audience_temp: "cold",
 		visual_angle: "auto", product_name: "", offer: "", audience: "", placement: "linkedin_feed",
@@ -83,6 +88,48 @@ export function ImageGeneratorPage() {
 			toast.error((err as { message?: string })?.message ?? "Generation failed.");
 		} finally {
 			setGenerating(false);
+		}
+	};
+
+	const handleDelete = async (id: string) => {
+		const ok = await confirm({ title: "Delete image", message: "This image will be permanently deleted.", confirmLabel: "Delete", variant: "destructive" });
+		if (!ok) return;
+		try {
+			await apiClient.post("/api/spa/images/delete", { id });
+			queryClient.invalidateQueries({ queryKey: ["images"] });
+			toast.success("Image deleted.");
+		} catch (err) {
+			toast.error((err as { message?: string })?.message ?? "Delete failed.");
+		}
+	};
+
+	const handleRate = async (id: string, rating: 1 | -1) => {
+		const current = ratings[id];
+		const newRating = current === rating ? undefined : rating;
+		setRatings((prev) => {
+			const next = { ...prev };
+			if (newRating === undefined) delete next[id]; else next[id] = newRating;
+			return next;
+		});
+		if (newRating !== undefined) {
+			try {
+				await apiClient.post("/api/spa/images/rate", { id, rating: newRating });
+			} catch {}
+		}
+	};
+
+	const handleDownload = async (thumb: string, description: string) => {
+		try {
+			const res = await fetch(thumb);
+			const blob = await res.blob();
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = (description.slice(0, 40).replace(/[^a-z0-9]/gi, "-") || "ai-image") + ".png";
+			a.click();
+			URL.revokeObjectURL(url);
+		} catch {
+			window.open(thumb, "_blank");
 		}
 	};
 
@@ -204,6 +251,13 @@ export function ImageGeneratorPage() {
 				</SheetContent>
 			</Sheet>
 
+			{/* Zoom lightbox */}
+			<Dialog open={!!zoomImg} onOpenChange={(o) => { if (!o) setZoomImg(null); }}>
+				<DialogContent className="max-w-3xl p-2 bg-black border-0">
+					{zoomImg && <img src={zoomImg.thumb} alt={zoomImg.description} className="w-full max-h-[85vh] object-contain rounded" />}
+				</DialogContent>
+			</Dialog>
+
 			<Card>
 				<CardHeader>
 					<h2 className="text-lg font-semibold">Generated Images ({gallery?.total ?? 0})</h2>
@@ -222,12 +276,55 @@ export function ImageGeneratorPage() {
 						<>
 							<div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
 								{gallery?.images.map((img) => (
-									<a key={img.id} href={img.thumb} target="_blank" rel="noopener noreferrer" className="group">
+									<div key={img.id} className="group relative">
 										<div className="aspect-square overflow-hidden rounded-lg border border-border bg-muted transition-all group-hover:border-primary">
 											<img src={img.thumb} alt={img.description} className="h-full w-full object-cover" />
+											{/* Hover overlay */}
+											<div className="absolute inset-0 rounded-lg bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-3 gap-1.5">
+												<button
+													type="button"
+													title="Zoom"
+													onClick={() => setZoomImg(img)}
+													className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 text-white transition-colors"
+												>
+													<ZoomIn size={15} />
+												</button>
+												<button
+													type="button"
+													title="Download"
+													onClick={() => handleDownload(img.thumb, img.description)}
+													className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 text-white transition-colors"
+												>
+													<Download size={15} />
+												</button>
+												<button
+													type="button"
+													title="Thumbs up"
+													onClick={() => handleRate(img.id, 1)}
+													className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${ratings[img.id] === 1 ? "bg-green-500 text-white" : "bg-white/20 hover:bg-white/40 text-white"}`}
+												>
+													<ThumbsUp size={15} />
+												</button>
+												<button
+													type="button"
+													title="Thumbs down"
+													onClick={() => handleRate(img.id, -1)}
+													className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${ratings[img.id] === -1 ? "bg-red-500 text-white" : "bg-white/20 hover:bg-white/40 text-white"}`}
+												>
+													<ThumbsDown size={15} />
+												</button>
+												<button
+													type="button"
+													title="Delete"
+													onClick={() => handleDelete(img.id)}
+													className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 hover:bg-red-500 text-white transition-colors"
+												>
+													<Trash2 size={15} />
+												</button>
+											</div>
 										</div>
 										<p className="mt-1 truncate text-xs text-muted-foreground">{img.description}</p>
-									</a>
+									</div>
 								))}
 							</div>
 							{(gallery?.pages ?? 0) > 1 && (

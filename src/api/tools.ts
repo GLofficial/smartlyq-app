@@ -44,7 +44,7 @@ export function useImages(page = 1) {
 		queryKey: ["images", page],
 		queryFn: () =>
 			apiClient.get<{
-				images: { id: number; thumb: string; description: string; provider: string; model: string; created: string }[];
+				images: { id: string; thumb: string; description: string; provider: string; model: string; created: string }[];
 				total: number; page: number; pages: number;
 			}>(`/api/spa/images?page=${page}`),
 	});
