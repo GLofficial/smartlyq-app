@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 
-export interface ImageModel { name: string; model: string; provider: string; credits: number | null; }
-export interface ImageStyle { value: string; prompt: string; }
+export interface ImageModel { name: string; model: string; provider: string; credits: number | null; icon_url: string; tier: "basic" | "advanced" | "premium" | "ultra"; }
+export interface ImageStyle { value: string; prompt: string; icon_url: string; }
 export interface AdOption { key: string; label: string; }
 export interface ImageConfig {
 	models: ImageModel[];
