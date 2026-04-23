@@ -186,7 +186,7 @@ export function VideoGeneratorPage() {
 									placeholder="Describe your video in detail..."
 									value={prompt}
 									onChange={(e) => setPrompt(e.target.value)}
-									className="resize-none min-h-[100px]"
+									className="min-h-[100px]"
 									maxLength={md?.prompt_max_length ?? 2000}
 								/>
 								<button
@@ -275,7 +275,7 @@ export function VideoGeneratorPage() {
 										placeholder="List all elements and effects you don't want to see in the generated video, for example, cartoonish characters, dark colors, explosions, animals, blurring, slow motion, distortion, animation, etc."
 										value={negativePrompt}
 										onChange={(e) => setNegativePrompt(e.target.value)}
-										className="resize-none min-h-[80px] text-sm"
+										className="min-h-[80px] text-sm"
 									/>
 								</div>
 							)}
@@ -344,7 +344,7 @@ export function VideoGeneratorPage() {
 							<video
 								src="https://cdn.smartlyq.com/video-sample.mp4"
 								autoPlay muted loop playsInline
-								style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+								style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", background: "#000" }}
 							/>
 						</CardContent>
 					</Card>
