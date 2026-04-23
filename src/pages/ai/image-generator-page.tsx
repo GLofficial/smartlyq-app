@@ -253,8 +253,15 @@ export function ImageGeneratorPage() {
 
 			{/* Zoom lightbox */}
 			<Dialog open={!!zoomImg} onOpenChange={(o) => { if (!o) setZoomImg(null); }}>
-				<DialogContent className="max-w-3xl p-2 bg-black border-0">
-					{zoomImg && <img src={zoomImg.thumb} alt={zoomImg.description} className="w-full max-h-[85vh] object-contain rounded" />}
+				<DialogContent className="max-w-3xl p-0 bg-black border-0 overflow-hidden [&>button]:text-white [&>button]:opacity-100 [&>button]:bg-white/20 [&>button]:rounded-full [&>button]:p-1 [&>button]:hover:bg-white/40 [&>button]:right-3 [&>button]:top-3">
+					{zoomImg && (
+						<>
+							<img src={zoomImg.thumb} alt={zoomImg.description} className="w-full max-h-[80vh] object-contain" />
+							{zoomImg.description && (
+								<p className="text-white/90 text-sm text-center px-6 py-3 bg-black">{zoomImg.description}</p>
+							)}
+						</>
+					)}
 				</DialogContent>
 			</Dialog>
 
