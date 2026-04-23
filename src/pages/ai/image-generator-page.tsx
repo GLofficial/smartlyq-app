@@ -40,6 +40,7 @@ export function ImageGeneratorPage() {
 	const [stylePrompt, setStylePrompt] = useState("");
 	const [prompt, setPrompt] = useState("");
 	const [generating, setGenerating] = useState(false);
+	const [lastImageUrl, setLastImageUrl] = useState<string | null>(null);
 	const [page, setPage] = useState(1);
 	const [ad, setAd] = useState<AdBrief>({
 		use_case: "saas", objective: "scroll_stopper", audience_temp: "cold",
@@ -73,7 +74,8 @@ export function ImageGeneratorPage() {
 					ad_audience: ad.audience, ad_placement: ad.placement,
 				});
 			}
-			await apiClient.post<{ image_url: string }>("/api/spa/ai/image", body);
+			const res = await apiClient.post<{ image_url: string }>("/api/spa/ai/image", body);
+			setLastImageUrl(res.image_url ?? null);
 			toast.success("Image generated!");
 			if (tab === "image") setPrompt("");
 			queryClient.invalidateQueries({ queryKey: ["images"] });
@@ -106,13 +108,18 @@ export function ImageGeneratorPage() {
 				</Button>
 			</div>
 
-			<Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+			<Sheet open={sheetOpen} onOpenChange={(o) => { setSheetOpen(o); if (!o) setLastImageUrl(null); }}>
 				<SheetContent side="right" className="sm:max-w-[480px] flex flex-col gap-0 p-0">
 					<SheetHeader className="px-6 py-4 border-b border-border shrink-0">
 						<SheetTitle>AI Images</SheetTitle>
 					</SheetHeader>
 
 					<div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+						{lastImageUrl && (
+							<div className="rounded-xl overflow-hidden border border-border bg-muted">
+								<img src={lastImageUrl} alt="Generated image" className="w-full object-contain max-h-72" />
+							</div>
+						)}
 						{/* Image / Ad Image tabs */}
 						<div className="flex gap-1 p-1 bg-muted rounded-xl">
 							<button onClick={() => setTab("image")} className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${tab === "image" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
