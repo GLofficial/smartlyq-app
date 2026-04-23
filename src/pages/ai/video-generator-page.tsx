@@ -137,7 +137,7 @@ export function VideoGeneratorPage() {
 		queryKey: ["videos-poll", pendingIds],
 		queryFn: () => apiClient.get<{ videos: VideoItem[] }>("/api/spa/videos?page=1"),
 		enabled: isGenerating,
-		refetchInterval: 5000,
+		refetchInterval: 30000,
 	});
 	useEffect(() => {
 		if (!isGenerating) return;
@@ -384,7 +384,9 @@ export function VideoGeneratorPage() {
 								</div>
 							</div>
 							<p className="text-sm text-muted-foreground max-w-sm">
-								Once finished, the video will be saved in the Media Library. You can leave this page and check it later, or stay here.
+								Once finished, the video will be saved in the{" "}
+							<a href="/my/media" className="underline hover:opacity-80">Media Library</a>.{" "}
+							You can leave this page and check it later, or stay here.
 							</p>
 						</Card>
 					) : completedUrl ? (
