@@ -27,6 +27,12 @@ function fmtStyle(s: string) {
 function fmtMovement(m: string) { return m.charAt(0).toUpperCase() + m.slice(1); }
 function fmtLength(v: string) { return `${v}s`; }
 function fmtResolution(r: string) { return r.toUpperCase(); }
+function arMaxWidth(ar: string): string {
+	if (ar === "9:16") return "45%";
+	if (ar === "1:1")  return "65%";
+	if (ar === "4:3" || ar === "3:4") return "80%";
+	return "100%";
+}
 
 function resolveCredits(pricing: VideoPricingRow[], opts: FullOpts): number {
 	const exact = pricing.find(
@@ -50,7 +56,7 @@ interface FullOpts {
 
 function randomSeed() { return String(Math.floor(Math.random() * 2147483648)); }
 
-interface VideoItem { id: string; url: string; status: number; }
+interface VideoItem { id: string; url: string; status: number; aspect_ratio?: string; }
 
 function defaultFullOpts(md: VideoModel): FullOpts {
 	const p = md.pricing[0];
@@ -98,9 +104,10 @@ export function VideoGeneratorPage() {
 	const [negativePrompt,  setNegativePrompt]  = useState("");
 	const [translateNeg,    setTranslateNeg]    = useState(false);
 	const [outputs,         setOutputs]         = useState(1);
-	const [pendingIds,      setPendingIds]      = useState<string[]>([]);
-	const [completedUrl,    setCompletedUrl]    = useState<string | null>(null);
-	const [progress,        setProgress]        = useState(0);
+	const [pendingIds,           setPendingIds]           = useState<string[]>([]);
+	const [completedUrl,         setCompletedUrl]         = useState<string | null>(null);
+	const [completedAspectRatio, setCompletedAspectRatio] = useState<string>("16:9");
+	const [progress,             setProgress]             = useState(0);
 	const [opts, setOpts] = useState<FullOpts>({
 		length: "5", resolution: "720p", mode: "std", style: "", aspect_ratio: "16:9",
 		movement: "", audio: false, fixed_camera: false, sound_effects: false,
@@ -142,7 +149,7 @@ export function VideoGeneratorPage() {
 	useEffect(() => {
 		if (!isGenerating) return;
 		const done = (pollQuery.data?.videos ?? []).find((v) => pendingIds.includes(v.id) && v.status === 1 && v.url);
-		if (done) { setProgress(100); setCompletedUrl(done.url); setPendingIds([]); }
+		if (done) { setProgress(100); setCompletedUrl(done.url); setCompletedAspectRatio(done.aspect_ratio ?? "16:9"); setPendingIds([]); }
 	}, [pollQuery.data]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const pricing     = md?.pricing ?? [];
@@ -174,7 +181,7 @@ export function VideoGeneratorPage() {
 				outputs,
 			},
 			{
-				onSuccess: (data) => { setPrompt(""); setCompletedUrl(null); setPendingIds(data.ids ?? []); },
+				onSuccess: (data) => { setPrompt(""); setCompletedUrl(null); setCompletedAspectRatio("16:9"); setPendingIds(data.ids ?? []); },
 				onError: (e) => toast.error((e as { message?: string })?.message ?? "Generation failed."),
 			},
 		);
@@ -403,7 +410,7 @@ export function VideoGeneratorPage() {
 								<video
 									src={completedUrl}
 									controls autoPlay
-									style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", background: "#000" }}
+									style={{ width: arMaxWidth(completedAspectRatio), height: "100%", objectFit: "contain", display: "block", background: "#000", margin: "0 auto" }}
 								/>
 							</CardContent>
 						</Card>
