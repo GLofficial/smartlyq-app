@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Database, Sparkles, Wand2 } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
 import { useVideoConfig, useGenerateVideo, type VideoModel, type VideoPricingRow } from "@/api/video-gen";
 import { ModelSelector, OptionGroup, Toggle, AiPromptDialog, SeedInput } from "./video-generator-options";
 import { toast } from "sonner";
@@ -47,6 +49,8 @@ interface FullOpts {
 }
 
 function randomSeed() { return String(Math.floor(Math.random() * 2147483648)); }
+
+interface VideoItem { id: number; url: string; status: number; }
 
 function defaultFullOpts(md: VideoModel): FullOpts {
 	const p = md.pricing[0];
@@ -94,6 +98,9 @@ export function VideoGeneratorPage() {
 	const [negativePrompt,  setNegativePrompt]  = useState("");
 	const [translateNeg,    setTranslateNeg]    = useState(false);
 	const [outputs,         setOutputs]         = useState(1);
+	const [pendingIds,      setPendingIds]      = useState<number[]>([]);
+	const [completedUrl,    setCompletedUrl]    = useState<string | null>(null);
+	const [progress,        setProgress]        = useState(0);
 	const [opts, setOpts] = useState<FullOpts>({
 		length: "5", resolution: "720p", mode: "std", style: "", aspect_ratio: "16:9",
 		movement: "", audio: false, fixed_camera: false, sound_effects: false,
@@ -114,6 +121,29 @@ export function VideoGeneratorPage() {
 		setSelectedModel(m.model);
 		setOpts(defaultFullOpts(m));
 	}
+
+	const isGenerating = pendingIds.length > 0 && completedUrl === null;
+
+	// Animate progress bar from 0 → 90 over 90s while generating
+	useEffect(() => {
+		if (!isGenerating) return;
+		setProgress(0);
+		const iv = setInterval(() => setProgress((p) => (p >= 90 ? (clearInterval(iv), 90) : p + 1)), 1000);
+		return () => clearInterval(iv);
+	}, [isGenerating]);
+
+	// Poll videos every 5s while pending, stop when one of our IDs is done
+	const pollQuery = useQuery({
+		queryKey: ["videos-poll", pendingIds],
+		queryFn: () => apiClient.get<{ videos: VideoItem[] }>("/api/spa/videos?page=1"),
+		enabled: isGenerating,
+		refetchInterval: 5000,
+	});
+	useEffect(() => {
+		if (!isGenerating) return;
+		const done = (pollQuery.data?.videos ?? []).find((v) => pendingIds.includes(v.id) && v.status === 1 && v.url);
+		if (done) { setProgress(100); setCompletedUrl(done.url); setPendingIds([]); }
+	}, [pollQuery.data]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const pricing     = md?.pricing ?? [];
 	const lengths     = md ? parse(md.length) : [];
@@ -144,7 +174,7 @@ export function VideoGeneratorPage() {
 				outputs,
 			},
 			{
-				onSuccess: () => { toast.success("Video generation started! It may take a few minutes."); setPrompt(""); },
+				onSuccess: (data) => { setPrompt(""); setCompletedUrl(null); setPendingIds(data.ids ?? []); },
 				onError: (e) => toast.error((e as { message?: string })?.message ?? "Generation failed."),
 			},
 		);
@@ -336,20 +366,59 @@ export function VideoGeneratorPage() {
 					</Card>
 				</div>
 
-				{/* ── Right: sample video ─────────────────────────── */}
+				{/* ── Right: sample / loader / result ─────────────── */}
 				<div className="lg:col-span-3 h-[calc(100vh-120px)]">
-					<Card className="h-full flex flex-col overflow-hidden">
-						<CardHeader className="shrink-0 pb-3">
-							<CardTitle className="text-base">Sample Video</CardTitle>
-						</CardHeader>
-						<CardContent className="flex-1 min-h-0 p-0">
-							<video
-								src="https://cdn.smartlyq.com/video-sample.mp4"
-								autoPlay muted loop playsInline
-								style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", background: "#000" }}
-							/>
-						</CardContent>
-					</Card>
+					{isGenerating ? (
+						<Card className="h-full flex flex-col items-center justify-center p-8 text-center gap-6">
+							<p className="text-lg font-semibold max-w-sm">
+								SmartlyQ is generating your video, which may take 90 seconds.
+							</p>
+							<div className="w-full max-w-sm">
+								<div className="w-full bg-muted rounded-full h-4 overflow-hidden">
+									<div
+										className="h-4 bg-primary rounded-full transition-all duration-1000 flex items-center justify-center text-[10px] text-primary-foreground font-medium"
+										style={{ width: `${Math.max(progress, 4)}%` }}
+									>
+										{progress >= 10 ? `${progress}%` : ""}
+									</div>
+								</div>
+							</div>
+							<p className="text-sm text-muted-foreground max-w-sm">
+								Once finished, the video will be saved in the Media Library. You can leave this page and check it later, or stay here.
+							</p>
+						</Card>
+					) : completedUrl ? (
+						<Card className="h-full flex flex-col overflow-hidden">
+							<CardHeader className="shrink-0 pb-3">
+								<CardTitle className="text-base flex items-center justify-between">
+									Generated Video
+									<button type="button" onClick={() => setCompletedUrl(null)} className="text-xs text-muted-foreground hover:text-foreground font-normal">
+										← Back to sample
+									</button>
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="flex-1 min-h-0 p-0">
+								<video
+									src={completedUrl}
+									controls autoPlay
+									style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", background: "#000" }}
+								/>
+							</CardContent>
+						</Card>
+					) : (
+						<Card className="h-full flex flex-col overflow-hidden">
+							<CardHeader className="shrink-0 pb-3">
+								<CardTitle className="text-base">Sample Video</CardTitle>
+							</CardHeader>
+							<CardContent className="flex-1 min-h-0 p-0">
+								<video
+									src="https://cdn.smartlyq.com/video-sample.mp4"
+									autoPlay muted loop playsInline
+									style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", background: "#000" }}
+								/>
+							</CardContent>
+						</Card>
+					)}
 				</div>
 
 			</div>
