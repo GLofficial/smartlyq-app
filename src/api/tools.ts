@@ -1,6 +1,27 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 
+export interface ImageModel { name: string; model: string; provider: string; credits: number | null; }
+export interface ImageStyle { value: string; prompt: string; }
+export interface AdOption { key: string; label: string; }
+export interface ImageConfig {
+	models: ImageModel[];
+	styles: ImageStyle[];
+	ad_use_cases: AdOption[];
+	ad_objectives: AdOption[];
+	ad_audience_temps: AdOption[];
+	ad_visual_angles: AdOption[];
+	ad_placements: AdOption[];
+}
+
+export function useImageConfig(aspectRatio = "Square") {
+	return useQuery({
+		queryKey: ["image-config", aspectRatio],
+		queryFn: () => apiClient.get<ImageConfig>(`/api/spa/ai/image-config?aspect_ratio=${encodeURIComponent(aspectRatio)}`),
+		staleTime: 60_000,
+	});
+}
+
 export interface Template {
 	id: number;
 	name: string;
