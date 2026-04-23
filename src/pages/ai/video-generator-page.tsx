@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Database, Sparkles, Video, Wand2 } from "lucide-react";
-import { apiClient } from "@/lib/api-client";
+import { Database, Sparkles, Wand2 } from "lucide-react";
 import { useVideoConfig, useGenerateVideo, type VideoModel, type VideoPricingRow } from "@/api/video-gen";
 import { ModelSelector, OptionGroup, Toggle, AiPromptDialog, SeedInput } from "./video-generator-options";
 import { toast } from "sonner";
@@ -39,12 +37,6 @@ function resolveCredits(pricing: VideoPricingRow[], opts: FullOpts): number {
 	return partial?.credits ?? pricing[0]?.credits ?? 0;
 }
 
-function statusInfo(s: number) {
-	if (s === 1) return { label: "Done",       cls: "bg-green-500/15 text-green-600" };
-	if (s === 3) return { label: "Failed",     cls: "bg-red-500/15 text-red-600" };
-	return            { label: "Processing", cls: "bg-yellow-500/15 text-yellow-700" };
-}
-
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface FullOpts {
@@ -53,8 +45,6 @@ interface FullOpts {
 	fixed_camera: boolean; sound_effects: boolean; director_mode: boolean;
 	prompt_strength: number; seed: string;
 }
-
-interface VideoItem { id: number; url: string; prompt: string; status: number; created: string; }
 
 function defaultFullOpts(md: VideoModel): FullOpts {
 	const p = md.pricing[0];
@@ -133,16 +123,6 @@ export function VideoGeneratorPage() {
 	const credits     = resolveCredits(pricing, opts);
 	const total       = credits * outputs;
 
-	const videosQuery = useQuery({
-		queryKey: ["videos", 1],
-		queryFn: () => apiClient.get<{ videos: VideoItem[] }>("/api/spa/videos?page=1"),
-		refetchInterval: (q) => {
-			const vids = (q.state.data as { videos: VideoItem[] } | undefined)?.videos ?? [];
-			return vids.some((v) => v.status !== 1 && v.status !== 3) ? 5000 : false;
-		},
-	});
-	const videos = videosQuery.data?.videos ?? [];
-
 	function handleGenerate() {
 		if (!prompt.trim()) { toast.error("Enter a prompt."); return; }
 		if (!modelId)       { toast.error("Select a model."); return; }
@@ -162,11 +142,7 @@ export function VideoGeneratorPage() {
 				outputs,
 			},
 			{
-				onSuccess: () => {
-					toast.success("Video generation started! It may take a few minutes.");
-					setPrompt("");
-					videosQuery.refetch();
-				},
+				onSuccess: () => { toast.success("Video generation started! It may take a few minutes."); setPrompt(""); },
 				onError: (e) => toast.error((e as { message?: string })?.message ?? "Generation failed."),
 			},
 		);
@@ -176,11 +152,18 @@ export function VideoGeneratorPage() {
 		<div className="space-y-6">
 			<h1 className="text-2xl font-bold">Video Generator</h1>
 
-			<div className="grid gap-6 lg:grid-cols-5">
+			<div className="grid gap-6 lg:grid-cols-5 items-stretch">
+
 				{/* ── Left: options ──────────────────────────────── */}
-				<div className="lg:col-span-2">
-					<Card>
-						<CardContent className="pt-6 space-y-5">
+				<div className="lg:col-span-2 flex flex-col">
+					<Card className="flex flex-col flex-1">
+						<CardHeader className="shrink-0 pb-3">
+							<CardTitle className="text-base">Text to Video</CardTitle>
+						</CardHeader>
+
+						{/* Scrollable options body */}
+						<CardContent className="flex-1 overflow-y-auto min-h-0 px-6 pt-0 pb-4 space-y-5">
+
 							{/* Model */}
 							<div className="space-y-1.5">
 								<p className="text-sm font-medium">Model</p>
@@ -234,52 +217,43 @@ export function VideoGeneratorPage() {
 								</div>
 							)}
 
-							{/* Mode */}
 							{modes.length > 0 && (
 								<OptionGroup label="Mode" options={modes} value={opts.mode}
 									onChange={(v) => setOpts((o) => ({ ...o, mode: v }))} fmt={fmtMode} />
 							)}
 
-							{/* Style */}
 							{styles.length > 0 && (
 								<OptionGroup label="Style" options={styles} value={opts.style}
 									onChange={(v) => setOpts((o) => ({ ...o, style: v }))} fmt={fmtStyle} />
 							)}
 
-							{/* Resolution */}
 							{resolutions.length > 0 && (
 								<OptionGroup label="Resolution" options={resolutions} value={opts.resolution}
 									onChange={(v) => setOpts((o) => ({ ...o, resolution: v }))} fmt={fmtResolution} />
 							)}
 
-							{/* Aspect Ratio */}
 							{arRatios.length > 0 && (
 								<OptionGroup label="Aspect Ratio" options={arRatios} value={opts.aspect_ratio}
 									onChange={(v) => setOpts((o) => ({ ...o, aspect_ratio: v }))} />
 							)}
 
-							{/* Motion Range */}
 							{movements.length > 0 && (
 								<OptionGroup label="Motion Range" options={movements} value={opts.movement}
 									onChange={(v) => setOpts((o) => ({ ...o, movement: v }))} fmt={fmtMovement} />
 							)}
 
-							{/* Generate Audio */}
 							{md?.generate_audio && (
 								<Toggle on={opts.audio} onToggle={() => setOpts((o) => ({ ...o, audio: !o.audio }))} label="Generate Audio" />
 							)}
 
-							{/* Fixed Camera */}
 							{md?.fixed_camera && (
 								<Toggle on={opts.fixed_camera} onToggle={() => setOpts((o) => ({ ...o, fixed_camera: !o.fixed_camera }))} label="Fixed Camera" />
 							)}
 
-							{/* Sound Effects */}
 							{md?.sound_effects && (
 								<Toggle on={opts.sound_effects} onToggle={() => setOpts((o) => ({ ...o, sound_effects: !o.sound_effects }))} label="Sound Effects" />
 							)}
 
-							{/* Director Mode */}
 							{md?.director_mode && (
 								<Toggle on={opts.director_mode} onToggle={() => setOpts((o) => ({ ...o, director_mode: !o.director_mode }))} label="Director Mode" />
 							)}
@@ -322,7 +296,6 @@ export function VideoGeneratorPage() {
 								</div>
 							)}
 
-							{/* Seed */}
 							{md?.seed && (
 								<SeedInput value={opts.seed} onChange={(v) => setOpts((o) => ({ ...o, seed: v }))} />
 							)}
@@ -341,83 +314,43 @@ export function VideoGeneratorPage() {
 									))}
 								</div>
 							</div>
-
-							{/* Credits + Generate */}
-							<div className="space-y-3 border-t border-border pt-3">
-								{total > 0 && (
-									<p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-										<Database size={13} /> Credits required: {total}
-									</p>
-								)}
-								<Button className="w-full gap-2" disabled={gen.isPending || !modelId} onClick={handleGenerate}>
-									{gen.isPending
-										? <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent shrink-0" />
-										: <Wand2 size={16} />
-									}
-									{gen.isPending ? "Generating..." : "Create"}
-								</Button>
-							</div>
 						</CardContent>
+
+						{/* Sticky footer — credits + button */}
+						<div className="shrink-0 border-t border-border px-6 py-4 space-y-3">
+							{total > 0 && (
+								<p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+									<Database size={13} /> Credits required: {total}
+								</p>
+							)}
+							<Button className="w-full gap-2" disabled={gen.isPending || !modelId} onClick={handleGenerate}>
+								{gen.isPending
+									? <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent shrink-0" />
+									: <Wand2 size={16} />
+								}
+								{gen.isPending ? "Generating..." : "Create"}
+							</Button>
+						</div>
 					</Card>
 				</div>
 
 				{/* ── Right: sample video ─────────────────────────── */}
-				<div className="lg:col-span-3">
-					<Card className="overflow-hidden">
-						<video
-							src="https://cdn.smartlyq.com/video-sample.mp4"
-							autoPlay muted loop playsInline
-							className="w-full block"
-						/>
+				<div className="lg:col-span-3 flex flex-col">
+					<Card className="flex flex-col flex-1 overflow-hidden">
+						<CardHeader className="shrink-0 pb-3">
+							<CardTitle className="text-base">Sample Video</CardTitle>
+						</CardHeader>
+						<CardContent className="flex-1 min-h-0 p-0">
+							<video
+								src="https://cdn.smartlyq.com/video-sample.mp4"
+								autoPlay muted loop playsInline
+								className="w-full h-full object-cover block"
+							/>
+						</CardContent>
 					</Card>
 				</div>
-			</div>
 
-			{/* ── Generated Videos Gallery ──────────────────────────── */}
-			{videos.length > 0 && (
-				<Card>
-					<CardHeader className="pb-3">
-						<CardTitle className="text-base flex items-center justify-between">
-							Generated Videos
-							{videos.some((v) => v.status !== 1 && v.status !== 3) && (
-								<span className="text-xs text-muted-foreground font-normal flex items-center gap-1.5">
-									<span className="h-2 w-2 rounded-full bg-yellow-400 animate-pulse" /> Processing
-								</span>
-							)}
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-							{videos.map((v) => {
-								const st = statusInfo(v.status);
-								return (
-									<div key={v.id} className="rounded-xl border border-border overflow-hidden">
-										{v.url ? (
-											<video src={v.url} controls className="w-full aspect-video bg-black" />
-										) : (
-											<div className="flex aspect-video items-center justify-center bg-muted">
-												{v.status !== 1 && v.status !== 3 ? (
-													<div className="flex flex-col items-center gap-2">
-														<div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-														<span className="text-xs text-muted-foreground">Processing…</span>
-													</div>
-												) : <Video size={32} className="text-muted-foreground" />}
-											</div>
-										)}
-										<div className="p-3 flex items-start justify-between gap-2">
-											<p className="text-sm line-clamp-2 flex-1">{v.prompt || "Untitled"}</p>
-											<span className={`text-xs px-1.5 py-0.5 rounded shrink-0 ${st.cls}`}>{st.label}</span>
-										</div>
-										<div className="px-3 pb-3">
-											<p className="text-xs text-muted-foreground">{new Date(v.created).toLocaleDateString()}</p>
-										</div>
-									</div>
-								);
-							})}
-						</div>
-					</CardContent>
-				</Card>
-			)}
+			</div>
 
 			<AiPromptDialog open={aiPromptOpen} onClose={() => setAiPromptOpen(false)} onSelect={(p) => setPrompt(p)} />
 		</div>
