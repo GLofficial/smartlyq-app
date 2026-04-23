@@ -156,7 +156,7 @@ export function ImageGeneratorPage() {
 			</div>
 
 			<Sheet open={sheetOpen} onOpenChange={(o) => { setSheetOpen(o); if (!o) setLastImageUrl(null); }}>
-				<SheetContent side="right" className="sm:max-w-[480px] flex flex-col gap-0 p-0">
+				<SheetContent side="right" className="sm:max-w-[620px] flex flex-col gap-0 p-0">
 					<SheetHeader className="px-6 py-4 border-b border-border shrink-0">
 						<SheetTitle>AI Images</SheetTitle>
 					</SheetHeader>

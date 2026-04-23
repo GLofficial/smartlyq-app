@@ -31,7 +31,7 @@ export function StyleSelector({ styles, value, onChange }: StyleSelectorProps) {
 					<ChevronDown size={14} className="text-muted-foreground shrink-0" />
 				</button>
 			</PopoverTrigger>
-			<PopoverContent align="start" className="w-80 p-3 max-h-96 overflow-y-auto">
+			<PopoverContent align="start" className="w-80 p-3 max-h-96 overflow-y-auto" onWheel={(e) => e.stopPropagation()}>
 				<div className="grid grid-cols-3 gap-2">
 					{styles.map((s) => (
 						<button
@@ -143,7 +143,7 @@ export function ModelSelector({ models, value, onChange, disabled }: ModelSelect
 					<ChevronDown size={14} className="text-muted-foreground shrink-0" />
 				</button>
 			</PopoverTrigger>
-			<PopoverContent align="start" className="w-80 p-1 max-h-80 overflow-y-auto">
+			<PopoverContent align="start" className="w-80 p-1 max-h-80 overflow-y-auto" onWheel={(e) => e.stopPropagation()}>
 				{TIER_ORDER.filter((t) => (grouped[t]?.length ?? 0) > 0).map((tier, i) => (
 					<div key={tier}>
 						{i > 0 && <div className="my-1 border-t border-border" />}
