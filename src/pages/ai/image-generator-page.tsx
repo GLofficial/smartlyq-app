@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Database, Download, Image, Megaphone, PlusCircle, ThumbsDown, ThumbsUp, Trash2, Wand2, ZoomIn } from "lucide-react";
+import { ChevronLeft, ChevronRight, Database, Download, Image, Megaphone, PlusCircle, ThumbsDown, ThumbsUp, Trash2, Wand2, X, ZoomIn } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -253,14 +253,19 @@ export function ImageGeneratorPage() {
 
 			{/* Zoom lightbox */}
 			<Dialog open={!!zoomImg} onOpenChange={(o) => { if (!o) setZoomImg(null); }}>
-				<DialogContent className="max-w-3xl p-0 bg-black border-0 overflow-hidden [&>button]:text-white [&>button]:opacity-100 [&>button]:bg-white/20 [&>button]:rounded-full [&>button]:p-1 [&>button]:hover:bg-white/40 [&>button]:right-3 [&>button]:top-3">
+				<DialogContent className="max-w-3xl p-0 bg-black border-0 overflow-hidden [&>button:last-of-type]:hidden">
 					{zoomImg && (
-						<>
-							<img src={zoomImg.thumb} alt={zoomImg.description} className="w-full max-h-[80vh] object-contain" />
+						<div className="flex flex-col">
+							<div className="flex items-center justify-end px-3 pt-3 pb-2">
+								<button type="button" onClick={() => setZoomImg(null)} className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 text-white transition-colors">
+									<X size={16} />
+								</button>
+							</div>
+							<img src={zoomImg.thumb} alt={zoomImg.description} className="w-full max-h-[75vh] object-contain px-4 pb-2" />
 							{zoomImg.description && (
-								<p className="text-white/90 text-sm text-center px-6 py-3 bg-black">{zoomImg.description}</p>
+								<p className="text-white/90 text-sm text-center px-6 py-3">{zoomImg.description}</p>
 							)}
-						</>
+						</div>
 					)}
 				</DialogContent>
 			</Dialog>
@@ -286,12 +291,15 @@ export function ImageGeneratorPage() {
 									<div key={img.id} className="group relative">
 										<div className="aspect-square overflow-hidden rounded-lg border border-border bg-muted transition-all group-hover:border-primary">
 											<img src={img.thumb} alt={img.description} className="h-full w-full object-cover" />
-											{/* Hover overlay */}
-											<div className="absolute inset-0 rounded-lg bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-3 gap-1.5">
+											{/* Hover overlay — clicking background opens side panel */}
+											<div
+												className="absolute inset-0 rounded-lg bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-3 gap-1.5 cursor-pointer"
+												onClick={() => { setLastImageUrl(img.thumb); setSheetOpen(true); }}
+											>
 												<button
 													type="button"
 													title="Zoom"
-													onClick={() => setZoomImg(img)}
+													onClick={(e) => { e.stopPropagation(); setZoomImg(img); }}
 													className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 text-white transition-colors"
 												>
 													<ZoomIn size={15} />
@@ -299,7 +307,7 @@ export function ImageGeneratorPage() {
 												<button
 													type="button"
 													title="Download"
-													onClick={() => handleDownload(img.thumb, img.description)}
+													onClick={(e) => { e.stopPropagation(); handleDownload(img.thumb, img.description); }}
 													className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 text-white transition-colors"
 												>
 													<Download size={15} />
@@ -307,7 +315,7 @@ export function ImageGeneratorPage() {
 												<button
 													type="button"
 													title="Thumbs up"
-													onClick={() => handleRate(img.id, 1)}
+													onClick={(e) => { e.stopPropagation(); handleRate(img.id, 1); }}
 													className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${ratings[img.id] === 1 ? "bg-green-500 text-white" : "bg-white/20 hover:bg-white/40 text-white"}`}
 												>
 													<ThumbsUp size={15} />
@@ -315,7 +323,7 @@ export function ImageGeneratorPage() {
 												<button
 													type="button"
 													title="Thumbs down"
-													onClick={() => handleRate(img.id, -1)}
+													onClick={(e) => { e.stopPropagation(); handleRate(img.id, -1); }}
 													className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${ratings[img.id] === -1 ? "bg-red-500 text-white" : "bg-white/20 hover:bg-white/40 text-white"}`}
 												>
 													<ThumbsDown size={15} />
@@ -323,14 +331,13 @@ export function ImageGeneratorPage() {
 												<button
 													type="button"
 													title="Delete"
-													onClick={() => handleDelete(img.id)}
+													onClick={(e) => { e.stopPropagation(); handleDelete(img.id); }}
 													className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 hover:bg-red-500 text-white transition-colors"
 												>
 													<Trash2 size={15} />
 												</button>
 											</div>
 										</div>
-										<p className="mt-1 truncate text-xs text-muted-foreground">{img.description}</p>
 									</div>
 								))}
 							</div>
