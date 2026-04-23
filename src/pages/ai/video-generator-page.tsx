@@ -103,8 +103,8 @@ export function VideoGeneratorPage() {
 
 	useEffect(() => {
 		if (models.length > 0 && !selectedModel) {
-			const first = models[0];
-			if (first) { setSelectedModel(first.model); setOpts(defaultFullOpts(first)); }
+			const preferred = models.find((m) => m.model === "pollo-v1-6") ?? models[0];
+			if (preferred) { setSelectedModel(preferred.model); setOpts(defaultFullOpts(preferred)); }
 		}
 	}, [models.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -152,11 +152,11 @@ export function VideoGeneratorPage() {
 		<div className="space-y-6">
 			<h1 className="text-2xl font-bold">Video Generator</h1>
 
-			<div className="grid gap-6 lg:grid-cols-5 items-stretch">
+			<div className="grid gap-6 lg:grid-cols-5">
 
 				{/* ── Left: options ──────────────────────────────── */}
-				<div className="lg:col-span-2 flex flex-col">
-					<Card className="flex flex-col flex-1">
+				<div className="lg:col-span-2 h-[calc(100vh-120px)] flex flex-col">
+					<Card className="flex flex-col h-full">
 						<CardHeader className="shrink-0 pb-3">
 							<CardTitle className="text-base">Text to Video</CardTitle>
 						</CardHeader>
@@ -335,8 +335,8 @@ export function VideoGeneratorPage() {
 				</div>
 
 				{/* ── Right: sample video ─────────────────────────── */}
-				<div className="lg:col-span-3 flex flex-col">
-					<Card className="flex flex-col flex-1 overflow-hidden">
+				<div className="lg:col-span-3 h-[calc(100vh-120px)]">
+					<Card className="h-full flex flex-col overflow-hidden">
 						<CardHeader className="shrink-0 pb-3">
 							<CardTitle className="text-base">Sample Video</CardTitle>
 						</CardHeader>
@@ -344,7 +344,7 @@ export function VideoGeneratorPage() {
 							<video
 								src="https://cdn.smartlyq.com/video-sample.mp4"
 								autoPlay muted loop playsInline
-								className="w-full h-full object-cover block"
+								style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
 							/>
 						</CardContent>
 					</Card>
