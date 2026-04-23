@@ -3,6 +3,9 @@ import { ChevronDown, Database } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { ImageModel, ImageStyle } from "@/api/tools";
 
+const TRIGGER_CLS = "w-full h-10 flex items-center gap-2 px-3 border border-border rounded-lg bg-background text-sm text-left hover:bg-muted/40 transition-colors disabled:opacity-50";
+const ICON_CLS = "w-6 h-6 rounded object-contain shrink-0";
+
 // --- Style Selector ---
 
 interface StyleSelectorProps {
@@ -18,12 +21,11 @@ export function StyleSelector({ styles, value, onChange }: StyleSelectorProps) {
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
-				<button
-					type="button"
-					className="w-full flex items-center gap-2 px-3 py-2 border border-border rounded-lg bg-background text-sm text-left hover:bg-muted/40 transition-colors"
-				>
-					{active?.icon_url && (
-						<img src={active.icon_url} alt="" className="w-7 h-7 rounded object-cover shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+				<button type="button" className={TRIGGER_CLS}>
+					{active?.icon_url ? (
+						<img src={active.icon_url} alt="" className={ICON_CLS} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+					) : (
+						<div className="w-6 h-6 rounded bg-muted shrink-0" />
 					)}
 					<span className="flex-1 truncate">{active?.value ?? "None"}</span>
 					<ChevronDown size={14} className="text-muted-foreground shrink-0" />
@@ -56,11 +58,11 @@ export function StyleSelector({ styles, value, onChange }: StyleSelectorProps) {
 
 type Aspect = "Square" | "Portrait" | "Landscape";
 
-const ASPECT_SHAPES: Record<Aspect, { w: number; h: number; label: string }> = {
-	Square:    { w: 20, h: 20, label: "Square" },
-	Portrait:  { w: 14, h: 20, label: "Portrait" },
-	Landscape: { w: 28, h: 20, label: "Landscape" },
-};
+function AspectIcon({ ar }: { ar: Aspect }) {
+	if (ar === "Square")    return <svg width="18" height="18" viewBox="0 0 18 18" className="shrink-0"><rect x="1" y="1" width="16" height="16" rx="2" fill="none" stroke="currentColor" strokeWidth="2" /></svg>;
+	if (ar === "Portrait")  return <svg width="13" height="18" viewBox="0 0 13 18" className="shrink-0"><rect x="1" y="1" width="11" height="16" rx="2" fill="none" stroke="currentColor" strokeWidth="2" /></svg>;
+	return                         <svg width="22" height="16" viewBox="0 0 22 16" className="shrink-0"><rect x="1" y="1" width="20" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="2" /></svg>;
+}
 
 interface AspectSelectorProps {
 	value: Aspect;
@@ -69,39 +71,32 @@ interface AspectSelectorProps {
 
 export function AspectSelector({ value, onChange }: AspectSelectorProps) {
 	const [open, setOpen] = useState(false);
-	const active = ASPECT_SHAPES[value];
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
-				<button
-					type="button"
-					className="w-full flex items-center gap-2 px-3 py-2 border border-border rounded-lg bg-background text-sm text-left hover:bg-muted/40 transition-colors"
-				>
-					<svg width={active.w} height={active.h} viewBox={`0 0 ${active.w} ${active.h}`} className="shrink-0">
-						<rect x="1" y="1" width={active.w - 2} height={active.h - 2} rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
-					</svg>
+				<button type="button" className={TRIGGER_CLS}>
+					<span className="w-6 h-6 flex items-center justify-center shrink-0">
+						<AspectIcon ar={value} />
+					</span>
 					<span className="flex-1">{value}</span>
 					<ChevronDown size={14} className="text-muted-foreground shrink-0" />
 				</button>
 			</PopoverTrigger>
 			<PopoverContent align="start" className="w-44 p-1">
-				{(["Square", "Portrait", "Landscape"] as Aspect[]).map((ar) => {
-					const s = ASPECT_SHAPES[ar];
-					return (
-						<button
-							key={ar}
-							type="button"
-							onClick={() => { onChange(ar); setOpen(false); }}
-							className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${ar === value ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted text-foreground"}`}
-						>
-							<svg width={s.w} height={s.h} viewBox={`0 0 ${s.w} ${s.h}`} className="shrink-0">
-								<rect x="1" y="1" width={s.w - 2} height={s.h - 2} rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
-							</svg>
-							{ar}
-						</button>
-					);
-				})}
+				{(["Square", "Portrait", "Landscape"] as Aspect[]).map((ar) => (
+					<button
+						key={ar}
+						type="button"
+						onClick={() => { onChange(ar); setOpen(false); }}
+						className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition-colors ${ar === value ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted text-foreground"}`}
+					>
+						<span className="w-6 flex items-center justify-center shrink-0">
+							<AspectIcon ar={ar} />
+						</span>
+						{ar}
+					</button>
+				))}
 			</PopoverContent>
 		</Popover>
 	);
@@ -138,13 +133,9 @@ export function ModelSelector({ models, value, onChange, disabled }: ModelSelect
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
-				<button
-					type="button"
-					disabled={disabled}
-					className="w-full flex items-center gap-2 px-3 py-2 border border-border rounded-lg bg-background text-sm text-left hover:bg-muted/40 transition-colors disabled:opacity-50"
-				>
+				<button type="button" disabled={disabled} className={TRIGGER_CLS}>
 					{activeModel?.icon_url ? (
-						<img src={activeModel.icon_url} alt="" className="w-6 h-6 rounded object-contain shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+						<img src={activeModel.icon_url} alt="" className={ICON_CLS} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
 					) : (
 						<div className="w-6 h-6 rounded bg-muted shrink-0" />
 					)}
@@ -152,7 +143,7 @@ export function ModelSelector({ models, value, onChange, disabled }: ModelSelect
 					<ChevronDown size={14} className="text-muted-foreground shrink-0" />
 				</button>
 			</PopoverTrigger>
-			<PopoverContent align="start" className="w-72 p-1 max-h-80 overflow-y-auto">
+			<PopoverContent align="start" className="w-80 p-1 max-h-80 overflow-y-auto">
 				{TIER_ORDER.filter((t) => (grouped[t]?.length ?? 0) > 0).map((tier, i) => (
 					<div key={tier}>
 						{i > 0 && <div className="my-1 border-t border-border" />}
@@ -162,10 +153,10 @@ export function ModelSelector({ models, value, onChange, disabled }: ModelSelect
 								key={m.model}
 								type="button"
 								onClick={() => { onChange(m.model); setOpen(false); }}
-								className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${m.model === value ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"}`}
+								className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors ${m.model === value ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"}`}
 							>
 								{m.icon_url ? (
-									<img src={m.icon_url} alt="" className="w-6 h-6 rounded object-contain shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+									<img src={m.icon_url} alt="" className={ICON_CLS} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
 								) : (
 									<div className="w-6 h-6 rounded bg-muted shrink-0" />
 								)}
