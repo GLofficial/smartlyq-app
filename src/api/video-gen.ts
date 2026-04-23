@@ -2,6 +2,31 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { queryClient } from "@/lib/query-client";
 
+export interface VideoPricingRow {
+	length: string;
+	resolution: string;
+	mode: string;
+	audio: number;
+	credits: number;
+}
+
+export interface VideoModel {
+	model: string;
+	pricing: VideoPricingRow[];
+}
+
+export interface VideoConfig {
+	models: VideoModel[];
+}
+
+export function useVideoConfig() {
+	return useQuery({
+		queryKey: ["video", "config"],
+		queryFn: () => apiClient.get<VideoConfig>("/api/spa/video/config"),
+		staleTime: 60_000,
+	});
+}
+
 export function useVideoModels() {
 	return useQuery({
 		queryKey: ["video", "models"],
@@ -15,7 +40,16 @@ export function useVideoModels() {
 
 export function useGenerateVideo() {
 	return useMutation({
-		mutationFn: (data: { prompt: string; model?: string; type?: string; image_url?: string }) =>
+		mutationFn: (data: {
+			prompt: string;
+			model?: string;
+			type?: string;
+			image_url?: string;
+			length?: string;
+			resolution?: string;
+			mode?: string;
+			audio?: number;
+		}) =>
 			apiClient.post<{ message: string; video_id: number; task_id: string }>(
 				"/api/spa/video/generate",
 				data,
