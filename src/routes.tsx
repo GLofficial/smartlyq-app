@@ -28,6 +28,7 @@ const LiveAgentPage = lazy(() => import("@/pages/chatbot/live-agent-page").then(
 const TemplatesPage = lazy(() => import("@/pages/ai/templates-page").then((m) => ({ default: m.TemplatesPage })));
 const ImageGeneratorPage = lazy(() => import("@/pages/ai/image-generator-page").then((m) => ({ default: m.ImageGeneratorPage })));
 const VideoGeneratorPage = lazy(() => import("@/pages/ai/video-generator-page").then((m) => ({ default: m.VideoGeneratorPage })));
+const ImageToVideoPage = lazy(() => import("@/pages/ai/image-to-video-page").then((m) => ({ default: m.ImageToVideoPage })));
 const AudioPage = lazy(() => import("@/pages/ai/audio-page").then((m) => ({ default: m.AudioPage })));
 const ArticleGeneratorPage = lazy(() => import("@/pages/ai/article-generator-page").then((m) => ({ default: m.ArticleGeneratorPage })));
 const AdManagerPage = lazy(() => import("@/pages/ad-manager/ad-manager-page").then((m) => ({ default: m.AdManagerPage })));
@@ -187,7 +188,7 @@ export const router = createBrowserRouter([
 					{ path: "analyst", element: <S><AnalystPage /></S> },
 					{ path: "articles", element: <S><ArticlesPage /></S> },
 					{ path: "audio-to-text", element: <S><AudioPage /></S> },
-					{ path: "image-to-video", element: <S><VideoGeneratorPage /></S> },
+					{ path: "image-to-video", element: <S><ImageToVideoPage /></S> },
 
 					/* Ad Manager (wrapped in AdManagerProvider for shared filter state) */
 					{ path: "ad-manager", element: <S><AdManagerProvider><AdManagerPage /></AdManagerProvider></S> },

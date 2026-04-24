@@ -84,6 +84,43 @@ export function useGenerateVideo() {
 	});
 }
 
+export function useImageVideoConfig() {
+	return useQuery({
+		queryKey: ["video", "image-config"],
+		queryFn: () => apiClient.get<VideoConfig>("/api/spa/video/image-config"),
+		staleTime: 60_000,
+	});
+}
+
+export function useGenerateImageVideo() {
+	return useMutation({
+		mutationFn: (data: {
+			image: string;
+			image_tail?: string;
+			prompt?: string;
+			model?: string;
+			length?: string;
+			resolution?: string;
+			mode?: string;
+			audio?: number;
+			aspect_ratio?: string;
+			negative_prompt?: string;
+			movement?: string;
+			camera_fixed?: boolean;
+			director_mode?: boolean;
+			sound_effects?: boolean;
+			prompt_strength?: number | null;
+			seed?: number | null;
+			outputs?: number;
+		}) =>
+			apiClient.post<{ message: string; ids: string[] }>(
+				"/api/spa/video/image-generate",
+				data,
+			),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["videos"] }),
+	});
+}
+
 export function useGenerateVideoPrompt() {
 	return useMutation({
 		mutationFn: (idea: string) =>
