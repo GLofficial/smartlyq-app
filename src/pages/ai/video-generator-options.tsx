@@ -158,13 +158,13 @@ export function AiPromptDialog({ open, onClose, onSelect }: AiPromptDialogProps)
 
 	return (
 		<Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setPrompts([]); setIdea(""); } }}>
-			<DialogContent className="max-w-md">
+			<DialogContent className="max-w-2xl">
 				<DialogHeader>
 					<DialogTitle>Generate Prompt with AI</DialogTitle>
 				</DialogHeader>
 				<div className="space-y-3">
 					{prompts.length > 0 && (
-						<div className="space-y-2">
+						<div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
 							{prompts.map((p, i) => (
 								<button key={i} type="button" onClick={() => { onSelect(p); onClose(); setPrompts([]); setIdea(""); }} className="w-full text-left text-sm border border-border rounded-lg px-3 py-2 hover:bg-muted transition-colors">
 									{p}
