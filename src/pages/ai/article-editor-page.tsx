@@ -82,10 +82,8 @@ export function ArticleEditorPage() {
 
 	const keywordPills = (article.keywords || "").split(",").map((k) => k.trim()).filter(Boolean);
 
-	const btnClass = "p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors";
-
 	return (
-		<div className="max-w-4xl mx-auto pb-20 space-y-6">
+		<div className="max-w-6xl mx-auto pb-20 space-y-6">
 			{/* ── Header ── */}
 			<div className="flex items-center justify-between gap-3 py-4 border-b border-border">
 				<div className="flex items-center gap-3 min-w-0">
@@ -108,20 +106,20 @@ export function ArticleEditorPage() {
 								{saveArticle.isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
 								Save
 							</Button>
-							<button type="button" onClick={() => navigate(`/w/${hashId}/article-generator`)} title="Regenerate" className={btnClass}>
+							<Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate(`/w/${hashId}/article-generator`)} title="Regenerate">
 								<RefreshCw size={14} />
-							</button>
-							<button type="button" onClick={handleShare} title="Copy link" className={btnClass}>
+							</Button>
+							<Button size="sm" variant="outline" className="gap-1.5" onClick={handleShare} title="Copy link">
 								<Share2 size={14} />
-							</button>
-							<button type="button" onClick={handleDownload} title="Download HTML" className={btnClass}>
+							</Button>
+							<Button size="sm" variant="outline" className="gap-1.5" onClick={handleDownload} title="Download HTML">
 								<Download size={14} />
-							</button>
+							</Button>
 						</>
 					) : (
-						<button type="button" onClick={() => navigate(`/w/${hashId}/articles/${articleId}?edit`)} title="Edit article" className={btnClass}>
-							<Pencil size={14} />
-						</button>
+						<Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate(`/w/${hashId}/articles/${articleId}?edit`)}>
+							<Pencil size={14} /> Edit
+						</Button>
 					)}
 
 					<Button size="sm" variant="destructive" className="gap-1.5" onClick={handleDelete} disabled={deleteArticle.isPending}>
@@ -135,7 +133,7 @@ export function ArticleEditorPage() {
 			<div className="rounded-xl border border-border bg-card p-6 space-y-5">
 				<h2 className="text-base font-semibold">Article Information</h2>
 
-				{!pollDone && (
+				{isEditMode && !pollDone && (
 					<div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
 						<Loader2 size={12} className="animate-spin" /> Generating SEO fields in background...
 					</div>
@@ -155,7 +153,7 @@ export function ArticleEditorPage() {
 					<label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Keywords</label>
 					<div className="flex flex-wrap gap-1.5 min-h-9 px-3 py-2 border border-border rounded-lg bg-muted/20">
 						{keywordPills.length > 0
-							? keywordPills.map((k) => <span key={k} className="inline-flex items-center bg-muted rounded px-2 py-0.5 text-xs font-medium">{k}</span>)
+							? keywordPills.map((k) => <span key={k} className="inline-flex items-center bg-primary/10 text-primary rounded-full px-2.5 py-0.5 text-xs font-medium">{k}</span>)
 							: <span className="text-xs text-muted-foreground">—</span>
 						}
 					</div>
