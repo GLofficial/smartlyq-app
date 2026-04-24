@@ -90,6 +90,7 @@ const ContentRewriterPage = lazy(() => import("@/pages/ai/content-rewriter-page"
 const EditorPage = lazy(() => import("@/pages/ai/editor-page").then((m) => ({ default: m.EditorPage })));
 const AnalystPage = lazy(() => import("@/pages/ai/analyst-page").then((m) => ({ default: m.AnalystPage })));
 const ArticlesPage = lazy(() => import("@/pages/ai/articles-page").then((m) => ({ default: m.ArticlesPage })));
+const ArticleEditorPage = lazy(() => import("@/pages/ai/article-editor-page").then((m) => ({ default: m.ArticleEditorPage })));
 const PlansPage = lazy(() => import("@/pages/plans/plans-page").then((m) => ({ default: m.PlansPage })));
 const SuspendedPage = lazy(() => import("@/pages/misc/suspended-page").then((m) => ({ default: m.SuspendedPage })));
 const AdSetsPage = lazy(() => import("@/pages/ads/ad-sets-page").then((m) => ({ default: m.AdSetsPage })));
@@ -187,6 +188,7 @@ export const router = createBrowserRouter([
 					{ path: "chat/assistants", element: <S><ChatPage /></S> },
 					{ path: "analyst", element: <S><AnalystPage /></S> },
 					{ path: "articles", element: <S><ArticlesPage /></S> },
+					{ path: "articles/:id", element: <S><ArticleEditorPage /></S> },
 					{ path: "audio-to-text", element: <S><AudioPage /></S> },
 					{ path: "image-to-video", element: <S><ImageToVideoPage /></S> },
 
