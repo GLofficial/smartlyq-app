@@ -7,10 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { RichEditor } from "@/components/ui/rich-editor";
-import { useArticleDetail, useSaveArticle, useDeleteArticle, usePollArticle } from "@/api/articles";
+import { useArticleDetail, useSaveArticle, useDeleteArticle, useArticleConfig } from "@/api/articles";
 
 // ── Share modal ────────────────────────────────────────────────────────────────
-function ShareModal({ onClose }: { onClose: () => void }) {
+function ShareModal({ hasWebhook, onClose }: { hasWebhook: boolean; onClose: () => void }) {
+	const [zapier, setZapier] = useState(false);
+	const [pabbly, setPabbly] = useState(false);
+
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
 			<div className="bg-background rounded-xl shadow-2xl w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
@@ -18,18 +21,20 @@ function ShareModal({ onClose }: { onClose: () => void }) {
 					<h3 className="text-lg font-semibold">Share</h3>
 					<button type="button" onClick={onClose} className="p-1 rounded hover:bg-muted text-muted-foreground"><X size={16} /></button>
 				</div>
-				<div className="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 px-4 py-3 text-sm text-yellow-800 dark:text-yellow-300">
-					To access this feature, please <a href="/plans" className="underline font-medium">upgrade</a> your current plan.
-				</div>
-				<label className="flex items-center gap-3 text-sm text-muted-foreground cursor-not-allowed">
-					<input type="checkbox" disabled className="rounded" /> Share to Zapier
+				{!hasWebhook && (
+					<div className="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 px-4 py-3 text-sm text-yellow-800 dark:text-yellow-300">
+						To access this feature, please <a href="/plans" className="underline font-medium">upgrade</a> your current plan.
+					</div>
+				)}
+				<label className={`flex items-center gap-3 text-sm ${hasWebhook ? "cursor-pointer" : "text-muted-foreground cursor-not-allowed"}`}>
+					<input type="checkbox" disabled={!hasWebhook} checked={zapier} onChange={(e) => setZapier(e.target.checked)} className="rounded" /> Share to Zapier
 				</label>
-				<label className="flex items-center gap-3 text-sm text-muted-foreground cursor-not-allowed">
-					<input type="checkbox" disabled className="rounded" /> Share to Pabbly
+				<label className={`flex items-center gap-3 text-sm ${hasWebhook ? "cursor-pointer" : "text-muted-foreground cursor-not-allowed"}`}>
+					<input type="checkbox" disabled={!hasWebhook} checked={pabbly} onChange={(e) => setPabbly(e.target.checked)} className="rounded" /> Share to Pabbly
 				</label>
 				<div className="flex justify-end gap-2 pt-2">
 					<Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-					<Button size="sm" disabled>Share</Button>
+					<Button size="sm" disabled={!hasWebhook || (!zapier && !pabbly)}>Share</Button>
 				</div>
 			</div>
 		</div>
@@ -84,9 +89,11 @@ export function ArticleEditorPage() {
 	const articleId = id ?? "";
 	const isEditMode = searchParams.has("edit");
 
-	const { data, isLoading, refetch } = useArticleDetail(articleId);
+	const { data, isLoading } = useArticleDetail(articleId);
+	const { data: cfg } = useArticleConfig();
 	const saveArticle = useSaveArticle();
 	const deleteArticle = useDeleteArticle();
+	const hasWebhook = cfg?.has_webhook ?? false;
 
 	const article = data?.article;
 
@@ -97,13 +104,7 @@ export function ArticleEditorPage() {
 	const [content, setContent]     = useState("");
 	const [keywords, setKeywords]   = useState<string[]>([]);
 	const [dirty, setDirty]         = useState(false);
-	const [pollDone, setPollDone]   = useState(false);
 	const [shareOpen, setShareOpen] = useState(false);
-
-	const { data: pollData } = usePollArticle(articleId, !pollDone);
-	useEffect(() => {
-		if (pollData?.ready) { setPollDone(true); refetch(); }
-	}, [pollData?.ready]);
 
 	useEffect(() => {
 		if (!article) return;
@@ -114,7 +115,6 @@ export function ArticleEditorPage() {
 		setContent(article.content);
 		setKeywords((article.keywords || "").split(",").map((k) => k.trim()).filter(Boolean));
 		setDirty(false);
-		if (article.slug || article.tags || article.meta_description) setPollDone(true);
 	}, [article]);
 
 	const mark = (setter: (v: string) => void) => (v: string) => { setter(v); setDirty(true); };
@@ -162,7 +162,7 @@ export function ArticleEditorPage() {
 
 	return (
 		<>
-			{shareOpen && <ShareModal onClose={() => setShareOpen(false)} />}
+			{shareOpen && <ShareModal hasWebhook={hasWebhook} onClose={() => setShareOpen(false)} />}
 
 			<div className="max-w-6xl mx-auto pb-20 space-y-6">
 				{/* ── Header ── */}
@@ -216,12 +216,6 @@ export function ArticleEditorPage() {
 				<div className="rounded-xl border border-border bg-card p-6 space-y-5">
 					<h2 className="text-base font-semibold">Article Information</h2>
 
-					{isEditMode && !pollDone && (
-						<div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
-							<Loader2 size={12} className="animate-spin" /> Generating SEO fields in background...
-						</div>
-					)}
-
 					{/* Title */}
 					<div className="space-y-1.5">
 						<label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Title</label>
@@ -264,13 +258,6 @@ export function ArticleEditorPage() {
 						}
 					</div>
 
-					{/* Slug — edit only */}
-					{isEditMode && (
-						<div className="space-y-1.5">
-							<label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Slug</label>
-							<Input value={slug} onChange={(e) => mark(setSlug)(e.target.value)} placeholder="article-slug-here" className="text-sm" />
-						</div>
-					)}
 
 					{/* Featured image */}
 					{article.featured_media && (

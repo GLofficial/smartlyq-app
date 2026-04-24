@@ -3,6 +3,7 @@ import { apiClient } from "@/lib/api-client";
 
 export interface ArticleConfig {
 	has_access: boolean;
+	has_webhook: boolean;
 	total_limit: number | null;
 	languages: string[];
 	tones: string[];
