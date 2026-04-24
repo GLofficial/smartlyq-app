@@ -1,6 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 
+export interface ArticleModel {
+	model: string;
+	name: string;
+	provider: string;
+	icon_url?: string | null;
+}
+
+export interface BrandPreset {
+	id: number;
+	title: string;
+	content: string;
+	is_default: boolean;
+}
+
 export interface ArticleConfig {
 	has_access: boolean;
 	has_webhook: boolean;
@@ -9,8 +23,10 @@ export interface ArticleConfig {
 	total_limit: number | null;
 	languages: string[];
 	tones: string[];
-	text_models: { model: string; name: string; provider: string }[];
-	image_models: { model: string; name: string; provider: string }[];
+	text_models: ArticleModel[];
+	disabled_text_models: ArticleModel[];
+	image_models: ArticleModel[];
+	disabled_image_models: ArticleModel[];
 	brands: { id: number; name: string }[];
 }
 
@@ -71,7 +87,26 @@ export function useCreateArticle() {
 			image_source?: string;
 			video_source?: string;
 			brand_id?: number;
+			brand_preset_tone_id?: number;
+			brand_preset_audience_id?: number;
+			brand_preset_cta_id?: number;
+			brand_preset_rules_id?: number;
+			brand_preset_tagline_id?: number;
+			brand_preset_usp_id?: number;
+			brand_preset_about_id?: number;
 		}) => apiClient.post<{ id: string; credits: number }>("/api/spa/article/create", data),
+	});
+}
+
+export function useBrandPresets(brandId: number) {
+	return useQuery({
+		queryKey: ["article", "brand-presets", brandId],
+		queryFn: () =>
+			apiClient.get<{ presets: Record<string, BrandPreset[]> }>(
+				`/api/spa/article/brand-presets?brand_id=${brandId}`
+			),
+		enabled: brandId > 0,
+		staleTime: 60_000,
 	});
 }
 
