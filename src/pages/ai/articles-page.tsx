@@ -96,7 +96,7 @@ export function ArticlesPage() {
 											{new Date(a.created).toLocaleDateString()}
 										</td>
 										<td className="px-4 py-3">
-											<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+											<div className="flex items-center gap-1">
 												{a.publish_url ? (
 													<a
 														href={a.publish_url}
