@@ -1,57 +1,56 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, ChevronLeft, ChevronRight, Trash2, Pen, Plus, Loader2 } from "lucide-react";
+import { FileText, ChevronLeft, ChevronRight, Plus, Loader2, Search, Eye, Pen } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { useArticlesListFull, useDeleteArticle } from "@/api/articles";
+import { Input } from "@/components/ui/input";
+import { useArticlesListFull } from "@/api/articles";
 
-function StatusBadge({ status }: { status: string | number }) {
-	const s = String(status);
-	if (s === "2" || s === "ready") return <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Ready</span>;
-	if (s === "3") return <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">Processing</span>;
+function StatusBadge({ status, publishUrl }: { status: number; publishUrl: string }) {
+	if (publishUrl) return <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Published</span>;
+	if (status === 2) return <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Ready</span>;
+	if (status === 1 || status === 3) return <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">Processing</span>;
 	return <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground">Pending</span>;
 }
 
 export function ArticlesPage() {
 	const navigate = useNavigate();
 	const [page, setPage] = useState(1);
-	const { data, isLoading, isFetching } = useArticlesListFull(page);
-	const deleteArticle = useDeleteArticle();
-	const [deleting, setDeleting] = useState<string | null>(null);
+	const [search, setSearch] = useState("");
+	const [searchInput, setSearchInput] = useState("");
+	const { data, isLoading, isFetching } = useArticlesListFull(page, search);
 
-	const handleDelete = async (id: string, title: string) => {
-		if (!confirm(`Delete "${title || "this article"}"? This cannot be undone.`)) return;
-		setDeleting(id);
-		try {
-			await deleteArticle.mutateAsync(id);
-			toast.success("Article deleted.");
-		} catch {
-			toast.error("Failed to delete.");
-		} finally {
-			setDeleting(null);
-		}
-	};
+	const ws = () => location.pathname.split("/")[2] ?? "";
 
-	const handleOpen = (id: string) => {
-		const ws = location.pathname.split("/")[2] ?? "";
-		navigate(`/w/${ws}/ai/articles/${id}`);
-	};
+	const handleOpen = (id: string) => navigate(`/w/${ws()}/articles/${id}`);
+	const handleNew  = () => navigate(`/w/${ws()}/article-generator`);
 
-	const handleNew = () => {
-		const ws = location.pathname.split("/")[2] ?? "";
-		navigate(`/w/${ws}/ai/article-generator`);
+	const handleSearch = (e: React.FormEvent) => {
+		e.preventDefault();
+		setPage(1);
+		setSearch(searchInput);
 	};
 
 	return (
 		<div className="space-y-5">
-			<div className="flex items-center justify-between">
+			<div className="flex items-center justify-between gap-4">
 				<div>
 					<h1 className="text-2xl font-bold">Articles</h1>
 					{data && <p className="text-sm text-muted-foreground mt-0.5">{data.total} article{data.total !== 1 ? "s" : ""}</p>}
 				</div>
-				<Button onClick={handleNew} className="gap-1.5">
-					<Plus size={16} /> New Article
-				</Button>
+				<div className="flex items-center gap-2 flex-1 max-w-xs justify-end">
+					<form onSubmit={handleSearch} className="relative flex-1">
+						<Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+						<Input
+							value={searchInput}
+							onChange={(e) => setSearchInput(e.target.value)}
+							placeholder="Search articles..."
+							className="pl-8 h-9 text-sm"
+						/>
+					</form>
+					<Button onClick={handleNew} className="gap-1.5 shrink-0">
+						<Plus size={16} /> Create Article
+					</Button>
+				</div>
 			</div>
 
 			{isLoading ? (
@@ -61,63 +60,77 @@ export function ArticlesPage() {
 			) : !(data?.articles ?? []).length ? (
 				<div className="flex flex-col items-center gap-3 py-16 rounded-xl border border-dashed border-border">
 					<FileText size={40} className="text-muted-foreground" />
-					<p className="text-muted-foreground text-sm">No articles yet.</p>
-					<Button onClick={handleNew} size="sm" className="gap-1.5 mt-1">
-						<Plus size={14} /> Generate your first article
-					</Button>
+					<p className="text-muted-foreground text-sm">{search ? "No articles match your search." : "No articles yet."}</p>
+					{!search && (
+						<Button onClick={handleNew} size="sm" className="gap-1.5 mt-1">
+							<Plus size={14} /> Generate your first article
+						</Button>
+					)}
 				</div>
 			) : (
 				<>
 					{isFetching && !isLoading && <div className="h-0.5 bg-primary/20 rounded-full overflow-hidden"><div className="h-full w-1/3 bg-primary animate-pulse rounded-full" /></div>}
 
-					<div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
-						{(data?.articles ?? []).map((a) => (
-							<div key={a.id} className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors group">
-								{/* Thumbnail */}
-								{a.featured_media ? (
-									<img src={a.featured_media} alt="" className="h-14 w-20 rounded-lg object-cover shrink-0" />
-								) : (
-									<div className="h-14 w-20 rounded-lg bg-muted flex items-center justify-center shrink-0">
-										<FileText size={18} className="text-muted-foreground" />
-									</div>
-								)}
-
-								{/* Main info */}
-								<div className="min-w-0 flex-1 space-y-1">
-									<p className="font-medium text-sm truncate">{a.title || "Untitled"}</p>
-									{a.tags && (
-										<p className="text-xs text-muted-foreground truncate">
-											{a.tags.split(",").slice(0, 4).map((t) => t.trim()).filter(Boolean).map((t) => (
-												<span key={t} className="inline-block bg-muted rounded px-1.5 py-0.5 mr-1 mb-0.5">{t}</span>
-											))}
-										</p>
-									)}
-									<p className="text-xs text-muted-foreground">{new Date(a.created).toLocaleDateString()}</p>
-								</div>
-
-								{/* Status + Actions */}
-								<div className="flex items-center gap-2 shrink-0">
-									<StatusBadge status={a.status} />
-									<button
-										type="button"
-										onClick={() => handleOpen(a.id)}
-										className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
-										title="Edit"
-									>
-										<Pen size={14} />
-									</button>
-									<button
-										type="button"
-										onClick={() => handleDelete(a.id, a.title)}
-										disabled={deleting === a.id}
-										className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
-										title="Delete"
-									>
-										{deleting === a.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-									</button>
-								</div>
-							</div>
-						))}
+					<div className="rounded-xl border border-border overflow-hidden">
+						<table className="w-full text-sm">
+							<thead>
+								<tr className="border-b border-border bg-muted/40">
+									<th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Title</th>
+									<th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-32">Platform</th>
+									<th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-28">Status</th>
+									<th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-28">Created</th>
+									<th className="px-4 py-3 w-20">Actions</th>
+								</tr>
+							</thead>
+							<tbody className="divide-y divide-border">
+								{(data?.articles ?? []).map((a) => (
+									<tr key={a.id} className="hover:bg-muted/30 transition-colors group">
+										<td className="px-4 py-3">
+											<p className="font-medium truncate max-w-xs" title={a.title}>{a.title || "Untitled"}</p>
+										</td>
+										<td className="px-4 py-3 text-muted-foreground">{a.platform}</td>
+										<td className="px-4 py-3">
+											<StatusBadge status={a.status} publishUrl={a.publish_url} />
+										</td>
+										<td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+											{new Date(a.created).toLocaleDateString()}
+										</td>
+										<td className="px-4 py-3">
+											<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+												{a.publish_url ? (
+													<a
+														href={a.publish_url}
+														target="_blank"
+														rel="noreferrer"
+														className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+														title="View published"
+													>
+														<Eye size={14} />
+													</a>
+												) : (
+													<button
+														type="button"
+														onClick={() => handleOpen(a.id)}
+														className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+														title="View"
+													>
+														<Eye size={14} />
+													</button>
+												)}
+												<button
+													type="button"
+													onClick={() => handleOpen(a.id)}
+													className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+													title="Edit"
+												>
+													<Pen size={14} />
+												</button>
+											</div>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
 					</div>
 
 					{data && data.pages > 1 && (

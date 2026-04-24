@@ -63,7 +63,7 @@ export function getNavGroups(wsHash: string): NavGroup[] {
 				{ label: "Presentations", path: p("presentations"), icon: Presentation },
 				{ label: "Data Analyst", path: p("analyst"), icon: Database },
 				{ label: "Content Rewriter", path: p("content-rewriter"), icon: PenLine },
-				{ label: "Article Generator", path: p("article-generator"), icon: FileSearch },
+				{ label: "Article Generator", path: p("articles"), icon: FileSearch },
 				{ label: "Editor", path: p("editor"), icon: PenSquare },
 			],
 		},

@@ -33,9 +33,10 @@ export interface Article {
 export interface ArticleListItem {
 	id: string;
 	title: string;
-	status: string;
+	status: number;
+	platform: string;
+	publish_url: string;
 	featured_media: string;
-	tags: string;
 	created: string;
 }
 
@@ -133,15 +134,18 @@ export function useDeleteArticle() {
 	});
 }
 
-export function useArticlesListFull(page = 1) {
+export function useArticlesListFull(page = 1, search = "") {
 	return useQuery({
-		queryKey: ["articles", "full", page],
-		queryFn: () =>
-			apiClient.get<{
+		queryKey: ["articles", "full", page, search],
+		queryFn: () => {
+			const params = new URLSearchParams({ page: String(page) });
+			if (search) params.set("search", search);
+			return apiClient.get<{
 				articles: ArticleListItem[];
 				total: number;
 				pages: number;
 				page: number;
-			}>(`/api/spa/articles/list?page=${page}`),
+			}>(`/api/spa/articles/list?${params}`);
+		},
 	});
 }

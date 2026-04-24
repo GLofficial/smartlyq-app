@@ -163,7 +163,7 @@ export function ArticleGeneratorPage() {
 			await streamComplete.mutateAsync({ id, content: contentRef.current, output_tokens: tokenCountRef.current, model });
 			setStreamProgress(100);
 			setStep("done");
-			setTimeout(() => navigate(`/w/${encodeURIComponent(location.pathname.split("/")[2] ?? "")}/ai/articles/${id}`), 800);
+			setTimeout(() => navigate(`/w/${encodeURIComponent(location.pathname.split("/")[2] ?? "")}/articles/${id}`), 800);
 		} catch {
 			toast.error("Failed to save article.");
 			setStep("form");
