@@ -198,14 +198,13 @@ export function ArticleGeneratorPage() {
 	const [streamContent, setStreamContent] = useState("");
 	const [streamProgress, setStreamProgress] = useState(0);
 
-	const streamRef     = useRef<EventSource | null>(null);
+	const abortRef      = useRef<AbortController | null>(null);
 	const contentRef    = useRef("");
 	const tokenCountRef = useRef(0);
 
 	const { data: presetsData } = useBrandPresets(brandId);
 
 	useEffect(() => {
-		if (cfg?.text_models?.length && !textModel) setTextModel(cfg.text_models[0]?.model ?? "");
 		if (cfg?.languages?.length && !cfg.languages.includes(language)) setLanguage(cfg.languages[0] ?? "English");
 	}, [cfg]);
 
@@ -240,27 +239,6 @@ export function ArticleGeneratorPage() {
 		} catch { toast.error("Failed to create article."); setStep("form"); }
 	}, [title, keywords, language, tone, audience, context, textModel, imageSource, addImages, addVideo, brandId, brandPresets]);
 
-	const startStream = useCallback(async (id: string, model: string) => {
-		setStep("streaming"); setStreamContent(""); setStreamProgress(5);
-		contentRef.current = ""; tokenCountRef.current = 0;
-		try {
-			const prep = await streamPrepare.mutateAsync(id);
-			if (prep.stream_url && prep.stream_token) {
-				const es = new EventSource(`${prep.stream_url}?token=${encodeURIComponent(prep.stream_token)}`);
-				streamRef.current = es;
-				let settled = false;
-				es.onmessage = (ev) => {
-					if (ev.data === "[DONE]") { es.close(); if (!settled) { settled = true; finishStream(id, model); } return; }
-					try {
-						const chunk = JSON.parse(ev.data)?.choices?.[0]?.delta?.content ?? "";
-						if (chunk) { contentRef.current += chunk; tokenCountRef.current++; setStreamContent(contentRef.current); setStreamProgress(Math.min(95, 5 + tokenCountRef.current / 10)); }
-					} catch {}
-				};
-				es.onerror = () => { es.close(); if (!settled) { settled = true; finishStream(id, model); } };
-			} else { toast.error("Stream not available."); setStep("form"); }
-		} catch { toast.error("Failed to prepare stream."); setStep("form"); }
-	}, []);
-
 	const finishStream = useCallback(async (id: string, model: string) => {
 		setStreamProgress(97);
 		try {
@@ -270,7 +248,51 @@ export function ArticleGeneratorPage() {
 		} catch { toast.error("Failed to save article."); setStep("form"); }
 	}, [navigate]);
 
-	useEffect(() => () => { streamRef.current?.close(); }, []);
+	const startStream = useCallback(async (id: string, model: string) => {
+		setStep("streaming"); setStreamContent(""); setStreamProgress(5);
+		contentRef.current = ""; tokenCountRef.current = 0;
+		try {
+			const prep = await streamPrepare.mutateAsync(id);
+			if (prep.stream_url && prep.stream_token) {
+				const controller = new AbortController();
+				abortRef.current = controller;
+				let settled = false;
+				const finish = () => { if (!settled) { settled = true; finishStream(id, model); } };
+				try {
+					const response = await fetch(prep.stream_url, {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ stream_token: prep.stream_token }),
+						signal: controller.signal,
+					});
+					if (!response.ok || !response.body) { toast.error("Stream not available."); setStep("form"); return; }
+					const reader = response.body.getReader();
+					const decoder = new TextDecoder();
+					let buffer = "";
+					while (true) {
+						const { done, value } = await reader.read();
+						if (done) { finish(); break; }
+						buffer += decoder.decode(value, { stream: true });
+						const lines = buffer.split("\n");
+						buffer = lines.pop() ?? "";
+						for (const line of lines) {
+							if (!line.startsWith("data: ")) continue;
+							const payload = line.slice(6).trim();
+							if (payload === "[DONE]") { finish(); return; }
+							try {
+								const chunk = JSON.parse(payload)?.choices?.[0]?.delta?.content ?? "";
+								if (chunk) { contentRef.current += chunk; tokenCountRef.current++; setStreamContent(contentRef.current); setStreamProgress(Math.min(95, 5 + tokenCountRef.current / 10)); }
+							} catch {}
+						}
+					}
+				} catch (err: unknown) {
+					if (!(err instanceof Error && err.name === "AbortError")) finish();
+				}
+			} else { toast.error("Stream not available."); setStep("form"); }
+		} catch { toast.error("Failed to prepare stream."); setStep("form"); }
+	}, [finishStream]);
+
+	useEffect(() => () => { abortRef.current?.abort(); }, []);
 
 	if (cfgLoading) return <div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin text-primary" size={28} /></div>;
 	if (!cfg?.has_access) return <div className="flex h-64 items-center justify-center"><p className="text-muted-foreground">Article generator is not available on your current plan.</p></div>;
