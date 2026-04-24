@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Wand2, RotateCcw, ChevronDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -70,6 +70,7 @@ function ModelSelect({ label, models, value, onChange }: { label: string; models
 
 export function ArticleGeneratorPage() {
 	const navigate = useNavigate();
+	const { hashId } = useParams<{ hashId: string }>();
 	const { data: cfg, isLoading: cfgLoading } = useArticleConfig();
 	const generateTitle = useGenerateTitle();
 	const createArticle = useCreateArticle();
@@ -163,7 +164,7 @@ export function ArticleGeneratorPage() {
 			await streamComplete.mutateAsync({ id, content: contentRef.current, output_tokens: tokenCountRef.current, model });
 			setStreamProgress(100);
 			setStep("done");
-			setTimeout(() => navigate(`/w/${encodeURIComponent(location.pathname.split("/")[2] ?? "")}/articles/${id}`), 800);
+			setTimeout(() => navigate(`/w/${hashId}/articles/${id}`), 800);
 		} catch {
 			toast.error("Failed to save article.");
 			setStep("form");

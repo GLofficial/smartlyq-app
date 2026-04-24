@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { FileText, ChevronLeft, ChevronRight, Plus, Loader2, Search, Eye, Pen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,15 +14,14 @@ function StatusBadge({ status, publishUrl }: { status: number; publishUrl: strin
 
 export function ArticlesPage() {
 	const navigate = useNavigate();
+	const { hashId } = useParams<{ hashId: string }>();
 	const [page, setPage] = useState(1);
 	const [search, setSearch] = useState("");
 	const [searchInput, setSearchInput] = useState("");
 	const { data, isLoading, isFetching } = useArticlesListFull(page, search);
 
-	const ws = () => location.pathname.split("/")[2] ?? "";
-
-	const handleOpen = (id: string) => navigate(`/w/${ws()}/articles/${id}`);
-	const handleNew  = () => navigate(`/w/${ws()}/article-generator`);
+	const handleOpen = (id: string) => navigate(`/w/${hashId}/articles/${id}`);
+	const handleNew  = () => navigate(`/w/${hashId}/article-generator`);
 
 	const handleSearch = (e: React.FormEvent) => {
 		e.preventDefault();
