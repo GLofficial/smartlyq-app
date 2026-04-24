@@ -297,7 +297,7 @@ export function ArticleEditorPage() {
 					{article.featured_media && (
 						<div className="space-y-1.5">
 							<label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Featured Image</label>
-							<img src={article.featured_media} alt="" className="w-full max-h-52 object-cover rounded-lg" />
+							<img src={article.featured_media} alt="" className="max-w-[400px] h-auto rounded-lg" />
 						</div>
 					)}
 
