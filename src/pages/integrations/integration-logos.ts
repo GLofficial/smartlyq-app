@@ -66,4 +66,14 @@ export const INTEGRATION_BRANDS: Record<string, { logo: string; color: string; d
 		color: "#635BFF",
 		description: "Payment processing and subscription billing",
 	},
+	zapier: {
+		logo: "https://upload.wikimedia.org/wikipedia/commons/8/84/Zapier-logo.png",
+		color: "#FF4F00",
+		description: "Send article content to any app via Zapier webhooks",
+	},
+	pabbly: {
+		logo: "",
+		color: "#20B276",
+		description: "Automate article publishing workflows via Pabbly Connect",
+	},
 };

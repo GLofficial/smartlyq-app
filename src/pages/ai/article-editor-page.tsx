@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Save, Loader2, Trash2, Globe, RefreshCw, Share2, Download, Pencil, Copy, X } from "lucide-react";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
+import { ArrowLeft, Save, Loader2, Trash2, Globe, RefreshCw, Share2, Download, Pencil, Copy, X, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,9 +10,20 @@ import { RichEditor } from "@/components/ui/rich-editor";
 import { useArticleDetail, useSaveArticle, useDeleteArticle, useArticleConfig } from "@/api/articles";
 
 // ── Share modal ────────────────────────────────────────────────────────────────
-function ShareModal({ hasWebhook, onClose }: { hasWebhook: boolean; onClose: () => void }) {
+function ShareModal({ hasWebhook, hasZapierUrl, hasPabblyUrl, integrationsPath, onClose }: {
+	hasWebhook: boolean;
+	hasZapierUrl: boolean;
+	hasPabblyUrl: boolean;
+	integrationsPath: string;
+	onClose: () => void;
+}) {
 	const [zapier, setZapier] = useState(false);
 	const [pabbly, setPabbly] = useState(false);
+
+	const missingUrls = [
+		...(!hasZapierUrl ? ["Zapier"] : []),
+		...(!hasPabblyUrl ? ["Pabbly"] : []),
+	];
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
@@ -21,16 +32,25 @@ function ShareModal({ hasWebhook, onClose }: { hasWebhook: boolean; onClose: () 
 					<h3 className="text-lg font-semibold">Share</h3>
 					<button type="button" onClick={onClose} className="p-1 rounded hover:bg-muted text-muted-foreground"><X size={16} /></button>
 				</div>
-				{!hasWebhook && (
+				{!hasWebhook ? (
 					<div className="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 px-4 py-3 text-sm text-yellow-800 dark:text-yellow-300">
 						To access this feature, please <a href="/plans" className="underline font-medium">upgrade</a> your current plan.
 					</div>
+				) : missingUrls.length > 0 && (
+					<div className="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 px-4 py-3 text-sm text-yellow-800 dark:text-yellow-300 flex items-start gap-2">
+						<span className="flex-1">
+							{missingUrls.join(" and ")} webhook URL{missingUrls.length > 1 ? "s are" : " is"} not configured.{" "}
+							<Link to={integrationsPath} target="_blank" className="underline font-medium inline-flex items-center gap-0.5">
+								Set up in Integrations <ExternalLink size={11} />
+							</Link>
+						</span>
+					</div>
 				)}
-				<label className={`flex items-center gap-3 text-sm ${hasWebhook ? "cursor-pointer" : "text-muted-foreground cursor-not-allowed"}`}>
-					<input type="checkbox" disabled={!hasWebhook} checked={zapier} onChange={(e) => setZapier(e.target.checked)} className="rounded" /> Share to Zapier
+				<label className={`flex items-center gap-3 text-sm ${hasWebhook && hasZapierUrl ? "cursor-pointer" : "text-muted-foreground cursor-not-allowed"}`}>
+					<input type="checkbox" disabled={!hasWebhook || !hasZapierUrl} checked={zapier} onChange={(e) => setZapier(e.target.checked)} className="rounded" /> Share to Zapier
 				</label>
-				<label className={`flex items-center gap-3 text-sm ${hasWebhook ? "cursor-pointer" : "text-muted-foreground cursor-not-allowed"}`}>
-					<input type="checkbox" disabled={!hasWebhook} checked={pabbly} onChange={(e) => setPabbly(e.target.checked)} className="rounded" /> Share to Pabbly
+				<label className={`flex items-center gap-3 text-sm ${hasWebhook && hasPabblyUrl ? "cursor-pointer" : "text-muted-foreground cursor-not-allowed"}`}>
+					<input type="checkbox" disabled={!hasWebhook || !hasPabblyUrl} checked={pabbly} onChange={(e) => setPabbly(e.target.checked)} className="rounded" /> Share to Pabbly
 				</label>
 				<div className="flex justify-end gap-2 pt-2">
 					<Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
@@ -93,7 +113,9 @@ export function ArticleEditorPage() {
 	const { data: cfg } = useArticleConfig();
 	const saveArticle = useSaveArticle();
 	const deleteArticle = useDeleteArticle();
-	const hasWebhook = cfg?.has_webhook ?? false;
+	const hasWebhook   = cfg?.has_webhook    ?? false;
+	const hasZapierUrl = cfg?.has_zapier_url ?? false;
+	const hasPabblyUrl = cfg?.has_pabbly_url ?? false;
 
 	const article = data?.article;
 
@@ -162,7 +184,7 @@ export function ArticleEditorPage() {
 
 	return (
 		<>
-			{shareOpen && <ShareModal hasWebhook={hasWebhook} onClose={() => setShareOpen(false)} />}
+			{shareOpen && <ShareModal hasWebhook={hasWebhook} hasZapierUrl={hasZapierUrl} hasPabblyUrl={hasPabblyUrl} integrationsPath={`/w/${hashId}/integrations`} onClose={() => setShareOpen(false)} />}
 
 			<div className="max-w-6xl mx-auto pb-20 space-y-6">
 				{/* ── Header ── */}

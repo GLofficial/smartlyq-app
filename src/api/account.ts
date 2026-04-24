@@ -76,3 +76,18 @@ export function useApiKeyRevoke() {
 		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["account", "api-keys"] }),
 	});
 }
+
+export function useAutomationWebhooks() {
+	return useQuery({
+		queryKey: ["account", "automation-webhooks"],
+		queryFn: () => apiClient.get<{ zapier_webhook: string | null; has_zapier: boolean; pabbly_webhook: string | null; has_pabbly: boolean }>("/api/spa/account/automation-webhooks"),
+	});
+}
+
+export function useSaveAutomationWebhook() {
+	return useMutation({
+		mutationFn: (data: { zapier_webhook?: string; pabbly_webhook?: string }) =>
+			apiClient.post<{ message: string }>("/api/spa/account/automation-webhooks/save", data),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["account", "automation-webhooks"] }),
+	});
+}

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, RefreshCw, ArrowRight, Users } from "lucide-react";
+import { CheckCircle, RefreshCw, ArrowRight, Users, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useIntegrations } from "@/api/general";
@@ -11,6 +11,7 @@ import { apiClient } from "@/lib/api-client";
 import { useWorkspacePath } from "@/hooks/use-workspace-path";
 import { toast } from "sonner";
 import { queryClient } from "@/lib/query-client";
+import { useAutomationWebhooks, useSaveAutomationWebhook } from "@/api/account";
 
 // All integrations use SPA OAuth (except WooCommerce = form, Stripe = billing page)
 const OAUTH_INTEGRATIONS = new Set([
@@ -156,36 +157,126 @@ export function IntegrationsPage() {
 				</div>
 			))}
 
-			{/* Automations — Lead Sync */}
+			{/* Automations */}
 			<div className="space-y-3">
 				<h2 className="text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Automations</h2>
-				<Card className="transition-shadow hover:shadow-md">
-					<CardContent className="p-0">
-						<div className="h-1" style={{ backgroundColor: "#1877F2" }} />
-						<div className="flex items-center gap-4 p-5">
-							<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#1877F2]/10">
-								<Users size={22} className="text-[#1877F2]" />
+				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					{/* Facebook Lead Sync */}
+					<Card className="transition-shadow hover:shadow-md">
+						<CardContent className="p-0">
+							<div className="h-1" style={{ backgroundColor: "#1877F2" }} />
+							<div className="flex items-start gap-4 p-5">
+								<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#1877F2]/10">
+									<Users size={22} className="text-[#1877F2]" />
+								</div>
+								<div className="min-w-0 flex-1">
+									<p className="text-sm font-semibold">Facebook Lead Ads → CRM</p>
+									<p className="mt-0.5 text-xs leading-relaxed text-[var(--muted-foreground)]">
+										Every new lead submitted through your Facebook Lead Ad forms lands directly in your CRM contacts.
+									</p>
+								</div>
 							</div>
-							<div className="min-w-0 flex-1">
-								<p className="text-sm font-semibold">Facebook Lead Ads → CRM</p>
-								<p className="mt-0.5 text-xs leading-relaxed text-[var(--muted-foreground)]">
-									Every new lead submitted through your Facebook Lead Ad forms lands directly in your CRM contacts. Map form fields to CRM fields and let the webhook do the rest.
-								</p>
+							<div className="flex items-center justify-end border-t border-[var(--border)] px-5 py-3">
+								<Link to={wp("integrations/lead-sync")}>
+									<Button size="sm" variant="outline" className="gap-1.5">
+										Manage <ArrowRight size={14} />
+									</Button>
+								</Link>
 							</div>
-							<Link to={wp("integrations/lead-sync")}>
-								<Button size="sm" variant="outline" className="gap-1.5 bg-[var(--card)] shadow-sm">
-									Manage <ArrowRight size={14} />
-								</Button>
-							</Link>
-						</div>
-					</CardContent>
-				</Card>
+						</CardContent>
+					</Card>
+					{/* Zapier + Pabbly webhook cards */}
+					<WebhookCard service="zapier" />
+					<WebhookCard service="pabbly" />
+				</div>
 			</div>
 
 			{/* Connect Dialogs */}
 			<WooCommerceDialog open={wooDialogOpen} onClose={() => setWooDialogOpen(false)} />
 			<ShopifyDialog open={shopifyDialogOpen} onClose={() => setShopifyDialogOpen(false)} onConnect={(shop) => startOAuthFlow("shopify", `&shop=${encodeURIComponent(shop)}`)} />
 		</div>
+	);
+}
+
+function WebhookCard({ service }: { service: "zapier" | "pabbly" }) {
+	const { data, isLoading } = useAutomationWebhooks();
+	const save = useSaveAutomationWebhook();
+	const [dialogOpen, setDialogOpen] = useState(false);
+	const [url, setUrl] = useState("");
+
+	const brand = INTEGRATION_BRANDS[service] ?? { logo: "", color: "#666", description: "" };
+	const isConnected = service === "zapier" ? (data?.has_zapier ?? false) : (data?.has_pabbly ?? false);
+	const maskedUrl = service === "zapier" ? (data?.zapier_webhook ?? "") : (data?.pabbly_webhook ?? "");
+	const label = service === "zapier" ? "Zapier" : "Pabbly Connect";
+	const fieldKey = service === "zapier" ? "zapier_webhook" : "pabbly_webhook";
+
+	const handleOpen = () => { setUrl(""); setDialogOpen(true); };
+
+	const handleSave = async () => {
+		if (url.trim() && !url.trim().startsWith("http")) { toast.error("Enter a valid URL."); return; }
+		try {
+			await save.mutateAsync({ [fieldKey]: url.trim() });
+			toast.success(url.trim() ? `${label} webhook saved.` : `${label} webhook removed.`);
+			setDialogOpen(false);
+		} catch (e) {
+			toast.error((e as { error?: string })?.error ?? "Failed to save.");
+		}
+	};
+
+	return (
+		<>
+			<Card className="transition-shadow hover:shadow-md">
+				<CardContent className="p-0">
+					<div className="h-1" style={{ backgroundColor: brand.color }} />
+					<div className="flex items-start gap-4 p-5">
+						<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${brand.color}15` }}>
+							{brand.logo
+								? <img src={brand.logo} alt={label} className="h-7 w-7 object-contain" />
+								: <Zap size={22} style={{ color: brand.color }} />
+							}
+						</div>
+						<div className="min-w-0 flex-1">
+							<p className="text-sm font-semibold">{label}</p>
+							<p className="mt-0.5 text-xs leading-relaxed text-[var(--muted-foreground)]">{brand.description}</p>
+						</div>
+					</div>
+					<div className="flex items-center justify-between border-t border-[var(--border)] px-5 py-3">
+						{isLoading ? (
+							<span className="text-xs text-[var(--muted-foreground)]">Loading...</span>
+						) : isConnected ? (
+							<span className="flex items-center gap-1.5 text-xs font-medium text-green-600">
+								<CheckCircle size={14} /> Connected
+							</span>
+						) : (
+							<span className="text-xs text-[var(--muted-foreground)]">Not configured</span>
+						)}
+						<Button size="sm" className="h-7 text-xs text-white" style={{ backgroundColor: brand.color }} onClick={handleOpen}>
+							{isConnected ? "Update" : "Configure"}
+						</Button>
+					</div>
+				</CardContent>
+			</Card>
+
+			<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+				<DialogContent>
+					<DialogHeader><DialogTitle>{isConnected ? `Update ${label} Webhook` : `Configure ${label} Webhook`}</DialogTitle></DialogHeader>
+					<div className="space-y-3">
+						{isConnected && <p className="text-xs text-[var(--muted-foreground)]">Current: <span className="font-mono">{maskedUrl}</span></p>}
+						<Input
+							placeholder={`https://hooks.${service}.com/...`}
+							value={url}
+							onChange={(e) => setUrl(e.target.value)}
+							onKeyDown={(e) => e.key === "Enter" && handleSave()}
+						/>
+						{isConnected && <p className="text-xs text-[var(--muted-foreground)]">Leave empty to remove the webhook.</p>}
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+						<Button onClick={handleSave} disabled={save.isPending}>{save.isPending ? "Saving..." : "Save"}</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+		</>
 	);
 }
 

@@ -4,6 +4,8 @@ import { apiClient } from "@/lib/api-client";
 export interface ArticleConfig {
 	has_access: boolean;
 	has_webhook: boolean;
+	has_zapier_url: boolean;
+	has_pabbly_url: boolean;
 	total_limit: number | null;
 	languages: string[];
 	tones: string[];
