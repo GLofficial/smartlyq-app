@@ -117,7 +117,7 @@ export function useArticleDetail(id: string) {
 export function useSaveArticle() {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (data: { id: string; title?: string; content?: string; tags?: string; meta_description?: string; slug?: string }) =>
+		mutationFn: (data: { id: string; title?: string; content?: string; tags?: string; meta_description?: string; slug?: string; keywords?: string }) =>
 			apiClient.post<{ ok: boolean }>("/api/spa/article/save", data),
 		onSuccess: (_d, vars) => {
 			qc.invalidateQueries({ queryKey: ["article", "detail", vars.id] });
