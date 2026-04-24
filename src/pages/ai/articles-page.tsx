@@ -20,7 +20,8 @@ export function ArticlesPage() {
 	const [searchInput, setSearchInput] = useState("");
 	const { data, isLoading, isFetching } = useArticlesListFull(page, search);
 
-	const handleOpen = (id: string) => navigate(`/w/${hashId}/articles/${id}`);
+	const handleView = (id: string) => navigate(`/w/${hashId}/articles/${id}`);
+	const handleEdit = (id: string) => navigate(`/w/${hashId}/articles/${id}?edit`);
 	const handleNew  = () => navigate(`/w/${hashId}/article-generator`);
 
 	const handleSearch = (e: React.FormEvent) => {
@@ -39,12 +40,7 @@ export function ArticlesPage() {
 				<div className="flex items-center gap-2 flex-1 max-w-xs justify-end">
 					<form onSubmit={handleSearch} className="relative flex-1">
 						<Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-						<Input
-							value={searchInput}
-							onChange={(e) => setSearchInput(e.target.value)}
-							placeholder="Search articles..."
-							className="pl-8 h-9 text-sm"
-						/>
+						<Input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Search articles..." className="pl-8 h-9 text-sm" />
 					</form>
 					<Button onClick={handleNew} className="gap-1.5 shrink-0">
 						<Plus size={16} /> Create Article
@@ -68,7 +64,11 @@ export function ArticlesPage() {
 				</div>
 			) : (
 				<>
-					{isFetching && !isLoading && <div className="h-0.5 bg-primary/20 rounded-full overflow-hidden"><div className="h-full w-1/3 bg-primary animate-pulse rounded-full" /></div>}
+					{isFetching && !isLoading && (
+						<div className="h-0.5 bg-primary/20 rounded-full overflow-hidden">
+							<div className="h-full w-1/3 bg-primary animate-pulse rounded-full" />
+						</div>
+					)}
 
 					<div className="rounded-xl border border-border overflow-hidden">
 						<table className="w-full text-sm">
@@ -83,7 +83,7 @@ export function ArticlesPage() {
 							</thead>
 							<tbody className="divide-y divide-border">
 								{(data?.articles ?? []).map((a) => (
-									<tr key={a.id} className="hover:bg-muted/30 transition-colors group">
+									<tr key={a.id} className="hover:bg-muted/30 transition-colors">
 										<td className="px-4 py-3">
 											<p className="font-medium truncate max-w-xs" title={a.title}>{a.title || "Untitled"}</p>
 										</td>
@@ -97,31 +97,18 @@ export function ArticlesPage() {
 										<td className="px-4 py-3">
 											<div className="flex items-center gap-1">
 												{a.publish_url ? (
-													<a
-														href={a.publish_url}
-														target="_blank"
-														rel="noreferrer"
-														className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-														title="View published"
-													>
+													<a href={a.publish_url} target="_blank" rel="noreferrer"
+														className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="View published">
 														<Eye size={14} />
 													</a>
 												) : (
-													<button
-														type="button"
-														onClick={() => handleOpen(a.id)}
-														className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-														title="View"
-													>
+													<button type="button" onClick={() => handleView(a.id)}
+														className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="View">
 														<Eye size={14} />
 													</button>
 												)}
-												<button
-													type="button"
-													onClick={() => handleOpen(a.id)}
-													className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-													title="Edit"
-												>
+												<button type="button" onClick={() => handleEdit(a.id)}
+													className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Edit">
 													<Pen size={14} />
 												</button>
 											</div>
