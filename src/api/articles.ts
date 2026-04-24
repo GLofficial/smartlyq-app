@@ -137,6 +137,13 @@ export function useDeleteArticle() {
 	});
 }
 
+export function useShareArticle() {
+	return useMutation({
+		mutationFn: (data: { id: string; zapier: boolean; pabbly: boolean }) =>
+			apiClient.post<{ ok: boolean; sent: number }>("/api/spa/article/share", data),
+	});
+}
+
 export function useArticlesListFull(page = 1, search = "") {
 	return useQuery({
 		queryKey: ["articles", "full", page, search],

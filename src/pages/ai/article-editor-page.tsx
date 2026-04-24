@@ -7,10 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { RichEditor } from "@/components/ui/rich-editor";
-import { useArticleDetail, useSaveArticle, useDeleteArticle, useArticleConfig } from "@/api/articles";
+import { useArticleDetail, useSaveArticle, useDeleteArticle, useArticleConfig, useShareArticle } from "@/api/articles";
 
 // ── Share modal ────────────────────────────────────────────────────────────────
-function ShareModal({ hasWebhook, hasZapierUrl, hasPabblyUrl, integrationsPath, onClose }: {
+function ShareModal({ articleId, hasWebhook, hasZapierUrl, hasPabblyUrl, integrationsPath, onClose }: {
+	articleId: string;
 	hasWebhook: boolean;
 	hasZapierUrl: boolean;
 	hasPabblyUrl: boolean;
@@ -19,11 +20,22 @@ function ShareModal({ hasWebhook, hasZapierUrl, hasPabblyUrl, integrationsPath, 
 }) {
 	const [zapier, setZapier] = useState(false);
 	const [pabbly, setPabbly] = useState(false);
+	const shareArticle = useShareArticle();
 
 	const missingUrls = [
 		...(!hasZapierUrl ? ["Zapier"] : []),
 		...(!hasPabblyUrl ? ["Pabbly"] : []),
 	];
+
+	const handleShare = async () => {
+		try {
+			const res = await shareArticle.mutateAsync({ id: articleId, zapier, pabbly });
+			toast.success(`Article sent to ${res.sent} destination${res.sent !== 1 ? "s" : ""}.`);
+			onClose();
+		} catch (e) {
+			toast.error((e as { error?: string })?.error ?? "Failed to send.");
+		}
+	};
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
@@ -37,13 +49,11 @@ function ShareModal({ hasWebhook, hasZapierUrl, hasPabblyUrl, integrationsPath, 
 						To access this feature, please <a href="/plans" className="underline font-medium">upgrade</a> your current plan.
 					</div>
 				) : missingUrls.length > 0 && (
-					<div className="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 px-4 py-3 text-sm text-yellow-800 dark:text-yellow-300 flex items-start gap-2">
-						<span className="flex-1">
-							{missingUrls.join(" and ")} webhook URL{missingUrls.length > 1 ? "s are" : " is"} not configured.{" "}
-							<Link to={integrationsPath} target="_blank" className="underline font-medium inline-flex items-center gap-0.5">
-								Set up in Integrations <ExternalLink size={11} />
-							</Link>
-						</span>
+					<div className="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 px-4 py-3 text-sm text-yellow-800 dark:text-yellow-300">
+						{missingUrls.join(" and ")} webhook URL{missingUrls.length > 1 ? "s are" : " is"} not configured.{" "}
+						<Link to={integrationsPath} target="_blank" className="underline font-medium inline-flex items-center gap-0.5">
+							Set up in Integrations <ExternalLink size={11} />
+						</Link>
 					</div>
 				)}
 				<label className={`flex items-center gap-3 text-sm ${hasWebhook && hasZapierUrl ? "cursor-pointer" : "text-muted-foreground cursor-not-allowed"}`}>
@@ -54,7 +64,9 @@ function ShareModal({ hasWebhook, hasZapierUrl, hasPabblyUrl, integrationsPath, 
 				</label>
 				<div className="flex justify-end gap-2 pt-2">
 					<Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-					<Button size="sm" disabled={!hasWebhook || (!zapier && !pabbly)}>Share</Button>
+					<Button size="sm" disabled={!hasWebhook || (!zapier && !pabbly) || shareArticle.isPending} onClick={handleShare}>
+						{shareArticle.isPending ? <><Loader2 size={13} className="animate-spin" /> Sending...</> : "Share"}
+					</Button>
 				</div>
 			</div>
 		</div>
@@ -184,7 +196,7 @@ export function ArticleEditorPage() {
 
 	return (
 		<>
-			{shareOpen && <ShareModal hasWebhook={hasWebhook} hasZapierUrl={hasZapierUrl} hasPabblyUrl={hasPabblyUrl} integrationsPath={`/w/${hashId}/integrations`} onClose={() => setShareOpen(false)} />}
+			{shareOpen && <ShareModal articleId={articleId} hasWebhook={hasWebhook} hasZapierUrl={hasZapierUrl} hasPabblyUrl={hasPabblyUrl} integrationsPath={`/w/${hashId}/integrations`} onClose={() => setShareOpen(false)} />}
 
 			<div className="max-w-6xl mx-auto pb-20 space-y-6">
 				{/* ── Header ── */}
