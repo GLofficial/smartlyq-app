@@ -141,8 +141,8 @@ export function ImageToVideoPage() {
 
 	useEffect(() => {
 		if (models.length > 0 && !selectedModel) {
-			const first = models[0];
-			if (first) { setSelectedModel(first.model); setOpts(defaultFullOpts(first)); }
+			const preferred = models.find((m) => m.model === "pollo-v1-6") ?? models[0];
+			if (preferred) { setSelectedModel(preferred.model); setOpts(defaultFullOpts(preferred)); }
 		}
 	}, [models.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
