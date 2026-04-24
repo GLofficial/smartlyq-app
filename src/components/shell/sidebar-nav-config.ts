@@ -55,7 +55,7 @@ export function getNavGroups(wsHash: string): NavGroup[] {
 				{ label: "Templates", path: p("templates"), icon: FileText },
 				{ label: "Campaigns", path: p("campaigns"), icon: Folders },
 				{ label: "Image Generator", path: p("image-generator"), icon: ImagePlus },
-				{ label: "Video Generator", path: p("text-to-video"), icon: VideoIcon },
+				{ label: "Text to Video", path: p("text-to-video"), icon: VideoIcon },
 				{ label: "Image to Video", path: p("image-to-video"), icon: Film },
 				{ label: "Video Editor", path: p("video-editor"), icon: Clapperboard },
 				{ label: "Text to Audio", path: p("text-to-audio"), icon: AudioLines },

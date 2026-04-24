@@ -189,7 +189,7 @@ export function VideoGeneratorPage() {
 
 	return (
 		<div className="space-y-6">
-			<h1 className="text-2xl font-bold">Video Generator</h1>
+			<h1 className="text-2xl font-bold">Text to Video</h1>
 
 			<div className="grid gap-6 lg:grid-cols-5">
 
