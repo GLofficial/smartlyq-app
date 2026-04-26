@@ -124,6 +124,38 @@ export function BrandingTab({ branding, onChange }: Props) {
 					</div>
 				</div>
 
+				{/* Support Contact */}
+				<div className="space-y-3">
+					<h3 className="text-sm font-medium">Support Contact</h3>
+					<p className="text-xs text-[var(--muted-foreground)]">
+						Shown to your customers in calendar booking confirmations,
+						error pages, and "Contact support" links.
+					</p>
+					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+						<div className="space-y-1.5">
+							<label className="text-xs text-[var(--muted-foreground)]">
+								Support Email
+							</label>
+							<Input
+								type="email"
+								value={branding.support_email ?? ""}
+								onChange={(e) => update("support_email", e.target.value)}
+								placeholder="support@yourbrand.com"
+							/>
+						</div>
+						<div className="space-y-1.5">
+							<label className="text-xs text-[var(--muted-foreground)]">
+								Support / Help URL
+							</label>
+							<Input
+								value={branding.support_url ?? ""}
+								onChange={(e) => update("support_url", e.target.value)}
+								placeholder="https://yourbrand.com/help"
+							/>
+						</div>
+					</div>
+				</div>
+
 				<Button onClick={handleSave} disabled={saveMutation.isPending}>
 					<Save size={16} />
 					{saveMutation.isPending ? "Saving..." : "Save Branding"}

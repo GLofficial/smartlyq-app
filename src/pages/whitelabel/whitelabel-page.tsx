@@ -35,6 +35,8 @@ const DEFAULT_BRANDING: WhitelabelSettings["branding"] = {
 	terms_url: "",
 	privacy_url: "",
 	cookie_url: "",
+	support_email: "",
+	support_url: "",
 };
 
 const DEFAULT_SMTP: WhitelabelSettings["smtp"] = {

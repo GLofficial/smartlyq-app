@@ -22,6 +22,8 @@ export interface WhitelabelSettings {
 		terms_url: string;
 		privacy_url: string;
 		cookie_url: string;
+		support_email: string;
+		support_url: string;
 	};
 	domain: {
 		subdomain: string;
