@@ -17,6 +17,7 @@ const SocialDashboardPage = lazy(() => import("@/pages/social/social-dashboard-p
 const ManagePostsPage = lazy(() => import("@/pages/social/manage-posts-page").then((m) => ({ default: m.ManagePostsPage })));
 const CreatePostPage = lazy(() => import("@/pages/social/create-post-page").then((m) => ({ default: m.CreatePostPage })));
 const CalendarPage = lazy(() => import("@/pages/social/calendar-page").then((m) => ({ default: m.CalendarPage })));
+const BookingCalendarPage = lazy(() => import("@/pages/calendar/calendar-page").then((m) => ({ default: m.BookingCalendarPage })));
 const CommentsPage = lazy(() => import("@/pages/social/comments-page").then((m) => ({ default: m.CommentsPage })));
 const InboxPage = lazy(() => import("@/pages/social/inbox-page").then((m) => ({ default: m.InboxPage })));
 const AnalyticsPage = lazy(() => import("@/pages/social/analytics-page").then((m) => ({ default: m.AnalyticsPage })));
@@ -205,10 +206,11 @@ export const router = createBrowserRouter([
 					{ path: "ad-manager/analytics", element: <S><AdManagerProvider><AdAnalyticsPage /></AdManagerProvider></S> },
 					{ path: "ad-manager/*", element: <S><AdManagerProvider><AdManagerPage /></AdManagerProvider></S> },
 
-					/* Media, Video Editor, Presentations */
+					/* Media, Video Editor, Presentations, Calendar */
 					{ path: "media", element: <S><MediaLibraryPage /></S> },
 					{ path: "video-editor", element: <S><VideoEditorPage /></S> },
 					{ path: "presentations", element: <S><PresentationsPage /></S> },
+					{ path: "calendar", element: <S><BookingCalendarPage /></S> },
 
 					/* Integrations */
 					{ path: "integrations", element: <S><IntegrationsPage /></S> },

@@ -20,3 +20,9 @@ export function useVideoEditorProjects() {
 		queryFn: () => apiClient.get<{ projects: { id: number; title: string; thumbnail: string; status: string; modified: string | null }[] }>("/api/spa/external/video-editor/projects"),
 	});
 }
+
+export function useCalendarToken() {
+	return useMutation({
+		mutationFn: () => apiClient.post<{ token: string; calendar_url: string }>("/api/spa/external/calendar/token"),
+	});
+}

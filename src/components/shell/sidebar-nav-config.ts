@@ -44,6 +44,7 @@ export function getNavGroups(wsHash: string): NavGroup[] {
 						{ label: "Tasks", path: p("crm/tasks"), icon: ClipboardList },
 					],
 				},
+				{ label: "Calendar", path: p("calendar"), icon: CalendarCheck },
 			],
 		},
 		{
